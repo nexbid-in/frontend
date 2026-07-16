@@ -1,1 +1,38 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Import Tailwind v4 */
 @import "tailwindcss";
+
+/* Define your custom theme here */
+@theme {
+  /* Custom Colors */
+  --color-primary-green: #10b981;
+  --color-primary-green-hover: #059669;
+  --color-primary-green-light: #ecfdf5;
+  
+  --color-primary-dark: #0f172a;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+
+  /* Custom Font */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Custom Background Gradient */
+  --background-image-demat-cta-gradient: linear-gradient(to right bottom, #fef2f2, #e0e7ff);
+}
+
+/* Base styles */
+@layer base {
+  body {
+    background-color: white;
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Utilities */
+@utility cta-color {
+  background: linear-gradient(0deg, rgba(189, 216, 255, 1) 0%, rgba(179, 252, 210, 1) 15%, rgba(235, 255, 235, 1) 40%, rgba(249, 250, 251, 1) 68%, rgba(249, 250, 251, 1) 99%);
+}
