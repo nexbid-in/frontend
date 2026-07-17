@@ -1,29 +1,20 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage } from '@/features/marketing';
+import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
 
 
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <LandingPage />
-    }, 
-    {
-        path: '/about',
-        element: <AboutPage />
+        element: <MarketingLayout />,
+        children: [
+            { index: true, element: <LandingPage /> },
+            { path: 'about', element: <AboutPage /> },
+            { path: 'products', element: <ProductsPage /> },
+            { path: 'pricing', element: <PricingPage /> },
+            { path: 'support', element: <SupportPage /> }
+        ]
     },
-    {
-        path: '/products',
-        element: <ProductsPage />
-    },
-    {
-        path: '/pricing',
-        element: <PricingPage />
-    },
-    {
-        path: '/support',
-        element: <SupportPage />
-    }
 ]);
 
 export function AppRoutes() {
