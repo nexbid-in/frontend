@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom';
 
-import heroIllustration from '../assets/about/hero-illustration.png';
-import ourStoryImg from '../assets/about/our-story.png';
-import financialChartsImg from '../assets/about/financial-charts.png';
+import heroIllustration from '../assets/pricing/hero-illustration.png';
+import financialGrowthImg from '../assets/pricing/financial-growth.png';
 import ctaImg from '../assets/cta-img.png';
 
-export default function AboutPage() {
+export default function PricingPage() {
     return (
         <>
             {/* Navigation */}
@@ -41,128 +40,101 @@ export default function AboutPage() {
             {/* Hero Section */}
             <header className="relative bg-gradient-to-br from-primary-green-light via-white to-blue-50 pt-24 pb-32">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
-                        <div className="relative z-10">
-                            <h1 className="text-4xl sm:text-5xl font-bold text-nexbid-dark leading-tight">
-                                We’re on a mission to make trading education <span className="text-primary-green">real, safe, and accessible</span> to everyone.
-                            </h1>
-                            <p className="mt-6 text-lg text-nexbid-neutral max-w-xl">
-                                NexBid empowers aspiring traders to learn and practice in real market conditions — without risking their hard-earned money.
-                            </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        <div className="text-center lg:text-left">
+                            <h1 className="text-5xl font-bold text-heading mb-4">Add Virtual <span className="text-primary-green">Funds Anytime</span> You Need.</h1>
+                            <p className="text-body mb-4 leading-relaxed">Every NexBid user starts with <span className=" font-bold">₹10,000 in virtual money</span> to trade risk-free. When your balance runs out, simply add real money to refill your account with <span className=" font-bold">10× value</span>.</p>
+                            <p className="text-sm text-gray-500 mb-6">Minimum add amount: <span className="text-primary-green font-bold">₹100</span> real money = <span className="text-primary-green font-bold">₹1,000</span> virtual money.</p>
+                            <a href="#" className="bg-primary-green text-white rounded-lg px-6 py-3 font-medium hover-primary transition shadow-md">Create Free Account</a>
                         </div>
 
-                        <div className="flex items-center justify-center lg:justify-end">
-                            <img className="w-full max-w-lg h-auto rounded-lg" src={heroIllustration} alt="Abstract illustration of a team collaborating on the NexBid mission" />
+                        <div className="hidden lg:flex justify-center">
+                            <img className="w-full max-w-md" src={heroIllustration} alt="NexBid" />
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Our Story Section */}
-            <section className="py-20 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div className="lg:order-last">
-                            <h2 className="text-3xl font-bold text-nexbid-dark">Our  <span className="text-primary-green">Story</span></h2>
-                            <p className="mt-6 text-lg text-nexbid-neutral leading-relaxed">
-                                Most beginners lose money when they start trading — not because they lack potential, but because they lack experience. NexBid was built to change that.
-                            </p>
-                            <p className="mt-4 text-lg text-nexbid-neutral leading-relaxed">
-                                We bring the real trading experience to a risk-free environment using virtual money, real-time data, and real market mechanics. Our goal is to help you build confidence before investing your hard-earned capital.
-                            </p>
+            {/* How Pricing Work section */}
+            <section className="py-24 bg-white text-center">
+                <div className="max-w-5xl mx-auto px-6">
+                    <h2 className="text-3xl font-semibold text-heading mb-12">How NexBid <span className="text-primary-green font-bold">Pricing</span> Works</h2>
+                    <div className="grid md:grid-cols-3 gap-10">
+                        <div className="p-6 rounded-lg">
+                            <div className="text-primary-green text-5xl mb-4 font-extrabold">1</div>
+                            <h3 className="text-xl font-semibold mb-2 text-heading">Create Account</h3>
+                            <p className="text-body leading-relaxed">Sign up and get ₹10,000 virtual money instantly, no credit card needed.</p>
                         </div>
-
-                        <div className="lg:order-first flex items-center justify-center">
-                            <img className="w-full max-w-md h-auto rounded-lg" src={ourStoryImg} alt="Illustration showing the journey from learning to confident trading" />
+                        <div className="p-6 rounded-lg">
+                            <div className="text-primary-green text-5xl mb-4 font-extrabold">2</div>
+                            <h3 className="text-xl font-semibold mb-2 text-heading">Practice Trading</h3>
+                            <p className="text-body leading-relaxed">Learn real trading without real risks using live market data and features.</p>
+                        </div>
+                        <div className="p-6 rounded-lg">
+                            <div className="text-primary-green text-5xl mb-4 font-extrabold">3</div>
+                            <h3 className="text-xl font-semibold mb-2 text-heading">Top Up Anytime</h3>
+                            <p className="text-body leading-relaxed">Buy more virtual balance when you need it for one-time fees. No subscriptions.</p>
                         </div>
                     </div>
+                    <p className="text-sm text-gray-500 mt-10 font-medium">No subscriptions. No fixed plans. Add only what you need, when you need it.</p>
                 </div>
             </section>
 
-            {/* nexbid Difference Section */}
-            <section className="bg-gradient-to-br from-primary-green-light via-white to-blue-50 py-16 md:py-12 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div>
-                            <h2 className="text-3xl font-bold text-nexbid-dark">What Makes <span className="text-primary-green">nexbid</span> Different</h2>
-                            <p className="mt-6 text-lg text-nexbid-neutral leading-relaxed">
-                                Unlike traditional simulators, NexBid doesn’t just give you virtual money — it gives you the complete real-world trading experience. From brokerage and taxes to leverage and reports, every detail is designed to make your learning as authentic as possible.
-                            </p>
-                            <ul className="mt-8 space-y-4">
-                                <li className="flex items-center">
-                                    <svg className="h-6 w-6 text-primary-green" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span className="ml-3 font-medium text-nexbid-dark">Real Market Conditions</span>
-                                </li>
-                                <li className="flex items-center">
-                                    <svg className="h-6 w-6 text-primary-green" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span className="ml-3 font-medium text-nexbid-dark">Realistic Brokerage Simulation</span>
-                                </li>
-                                <li className="flex items-center">
-                                    <svg className="h-6 w-6 text-primary-green" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span className="ml-3 font-medium text-nexbid-dark">Complete Transparency</span>
-                                </li>
-                            </ul>
-                        </div>
+            {/* Conversion Section  */}
+            <section className="py-24 bg-primary-green-light">
+                <div className="max-w-5xl mx-auto px-6 text-center">
+                    <h2 className="text-3xl font-semibold text-heading mb-4"><span className=" text-primary-green">Simple,</span> Transparent Conversion</h2>
+                    <p className="text-lg text-body mb-10">Every <span className="font-semibold text-primary-green">₹1</span> you add gives you <span className="font-semibold text-primary-green">₹10</span> in virtual trading balance. No hidden multipliers.</p>
 
-                        <div className="flex items-center justify-center">
-                            <img className="w-full max-w-md h-auto rounded-lg" src={financialChartsImg} alt="A chart comparing NexBid's features against competitors" />
+                    <div className="grid md:grid-cols-4 gap-6 mb-12">
+                        <div className="bg-white shadow-md rounded-xl p-6 border-b-4 border-blue-200">
+                            <p className="text-sm text-gray-500">Real Money</p>
+                            <p className="text-2xl font-semibold text-heading">₹100</p>
+                            <span className="text-xl text-primary-green font-bold mt-2 inline-block">→ ₹1,000 V</span>
+                        </div>
+                        <div className="bg-white shadow-md rounded-xl p-6 border-b-4 border-blue-200">
+                            <p className="text-sm text-gray-500">Real Money</p>
+                            <p className="text-2xl font-semibold text-heading">₹250</p>
+                            <span className="text-xl text-primary-green font-bold mt-2 inline-block">→ ₹2,500 V</span>
+                        </div>
+                        <div className="bg-white shadow-md rounded-xl p-6 border-b-4 border-blue-200">
+                            <p className="text-sm text-gray-500">Real Money</p>
+                            <p className="text-2xl font-semibold text-heading">₹500</p>
+                            <span className="text-xl text-primary-green font-bold mt-2 inline-block">→ ₹5,000 V</span>
+                        </div>
+                        <div className="bg-white shadow-md rounded-xl p-6 border-b-4 border-blue-200">
+                            <p className="text-sm text-gray-500">Real Money</p>
+                            <p className="text-2xl font-semibold text-heading">₹1,000</p>
+                            <span className="text-xl text-primary-green font-bold mt-2 inline-block">→ ₹10,000 V</span>
                         </div>
                     </div>
+
+                    <p className="mt-8 text-sm text-gray-500">Add any amount equal to or greater than ₹100 using the in-app deposit feature.</p>
                 </div>
             </section>
 
-            {/* The People Behind nexbid section */}
+            {/* Pays Off Section  */}
             <section className="py-24 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-text-primary">
-                            The People Behind <span className="text-primary-green">nexbid</span>
-                        </h2>
-                        <p className="mt-6 text-lg text-nexbid-neutral max-w-3xl mx-auto">
-                            Behind NexBid is a team of traders, technologists, and designers passionate about helping beginners trade smarter and safer. We believe that learning should feel real, but never risky.
-                        </p>
+                <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center px-8">
+                    <div>
+                        <h2 className="text-3xl font-semibold text-heading mb-6">Why Adding <span className=" text-primary-green">Virtual Funds</span> Pays Off.</h2>
+                        <p className="text-lg text-body mb-8">Refilling your virtual balance is an investment in your trading education, allowing you to:</p>
+                        <ul className="space-y-4 text-body text-base">
+                            <li className="flex items-start">
+                                <span className="text-primary-green mr-3 text-xl font-bold">✓</span> <p><strong>Continue Practicing:</strong> Keep learning and executing trades after your initial balance hits zero.</p>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-primary-green mr-3 text-xl font-bold">✓</span> <p><strong>Improve Risk Management:</strong> Practice capital allocation and position sizing with higher, more realistic balances.</p>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-primary-green mr-3 text-xl font-bold">✓</span> <p><strong>Experience Scenarios:</strong> Trade through diverse market conditions and learn advanced strategies without real-world risk.</p>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-primary-green mr-3 text-xl font-bold">✓</span> <p><strong>Track Long-Term Growth:</strong> Review your performance over months or years, refining your strategy for future real investment.</p>
+                            </li>
+                        </ul>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {/* <!-- Team Experts --> */}
-                        <div className="rounded-xl shadow-md p-8 bg-gray-50 text-center">
-                            <div className="flex justify-center mb-6">
-                                <svg className="w-12 h-12 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                </svg>
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Trading Experts</h3>
-                            <p className="text-gray-600">Crafting real-world strategies and market insights.</p>
-                        </div>
-
-                        {/* <!-- Design Thinkers --> */}
-                        <div className="rounded-xl shadow-md p-8 bg-gray-50 text-center">
-                            <div className="flex justify-center mb-6">
-                                <svg className="w-12 h-12 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
-                                </svg>
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Design Thinkers</h3>
-                            <p className="text-gray-600">Building intuitive, human-centered experiences.</p>
-                        </div>
-
-                        {/* <!-- Tech Innovators --> */}
-                        <div className="rounded-xl shadow-md p-8 bg-gray-50 text-center">
-                            <div className="flex justify-center mb-6">
-                                <svg className="w-12 h-12 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 8l-4 4 4 4" />
-                                </svg>
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Tech Innovators</h3>
-                            <p className="text-gray-600">Powering the platform with precision and scale.</p>
-                        </div>
-                    </div>
+                    <img src={financialGrowthImg} alt="Growth graph illustration" />
                 </div>
             </section>
 

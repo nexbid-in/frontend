@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import { LandingPage, AboutPage } from '@/features/marketing';
+import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage } from '@/features/marketing';
 
 
 const router = createBrowserRouter([
@@ -11,6 +11,18 @@ const router = createBrowserRouter([
     {
         path: '/about',
         element: <AboutPage />
+    },
+    {
+        path: '/products',
+        element: <ProductsPage />
+    },
+    {
+        path: '/pricing',
+        element: <PricingPage />
+    },
+    {
+        path: '/support',
+        element: <SupportPage />
     }
 ]);
 
