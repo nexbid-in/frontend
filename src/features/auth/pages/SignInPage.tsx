@@ -1,8 +1,21 @@
 import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signInSchema, type SignInFormData } from "../schemas";
+
 import { AuthLayout, SocialAuth } from "../components";
 import { Input, Button } from "@/components/ui";
 
 export default function SignInPage() {
+    const { register, handleSubmit, formState: { errors } } = useForm<SignInFormData>({
+        resolver: zodResolver(signInSchema),
+        mode: "onChange" 
+    });
+
+    const onSubmit = (data: SignInFormData) => {
+        console.log(`Valid data ready for API:`, data);
+    };
+
     return (
         <AuthLayout
             heroTitle={
@@ -13,11 +26,24 @@ export default function SignInPage() {
             <h2 className="text-2xl font-bold mb-1.5 text-gray-900">Welcome back</h2>
             <p className="text-sm text-gray-500 mb-8">Sign in to your <span className="text-primary-green font-semibold">nexbid</span> account</p>
 
-            <form className="space-y-4">
-                <Input label="Email Address" id="email-input" name="email" type="email" placeholder="name@example.com" required />
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <Input
+                    label="Email Address" 
+                    id="email-input" 
+                    type="email" 
+                    placeholder="name@example.com" 
+                    {...register("email")}
+                    error={!!errors.email} 
+                />
 
                 <div className="relative">
-                    <Input label="Password" type="password" placeholder="Enter your password" required />
+                    <Input 
+                        label="Password" 
+                        type="password" 
+                        placeholder="Enter your password" 
+                        {...register("password")}
+                        error={errors.password?.message}
+                    />
                     <button type="button" className="absolute right-2.5 top-[30px] text-gray-400 hover:text-gray-600">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -33,7 +59,7 @@ export default function SignInPage() {
                 </div>
 
                 <div>
-                     <Button type="submit">Sign In</Button>
+                    <Button type="submit">Sign In</Button>
                 </div>
             </form>
 

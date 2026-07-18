@@ -1,7 +1,19 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { resetPasswordSchema, type ResetPasswordFormData } from "../schemas";
 import { AuthLayout } from "../components";
 import { Input, Button, OtpInputGroup } from "@/components/ui";
 
 export default function ResetPasswordPage() {
+    const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordFormData>({
+        resolver: zodResolver(resetPasswordSchema),
+        mode: "onChange"
+    });
+
+    const onSubmit = (data: ResetPasswordFormData) => {
+        console.log("Valid data ready for API:", data);
+    };
+
     return (
         <AuthLayout
             heroTitle={
@@ -12,14 +24,20 @@ export default function ResetPasswordPage() {
             <h2 className="text-2xl font-bold mb-1.5 text-gray-900">Check your email</h2>
             <p className="text-sm text-gray-500 mb-8 mt-1">Enter the 6-digit code sent to <span className="font-bold text-gray-900">name@gmail.com</span></p>
 
-            <form className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
                     <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Verification Code</label>
                     <OtpInputGroup />
                 </div>
 
                 <div className="relative">
-                    <Input label="New Password" type="password" placeholder="Min. 8 characters" required />
+                    <Input 
+                        label="New Password" 
+                        type="password" 
+                        placeholder="Min. 8 characters" 
+                        {...register("password")}
+                        error={errors.password?.message}
+                    />
                     <button type="button" className="absolute right-2.5 top-[30px] text-gray-400 hover:text-gray-600">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
