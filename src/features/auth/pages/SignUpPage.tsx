@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema, type SignUpFormData } from "../schemas";
 
 import { AuthLayout, SocialAuth } from "../components";
-import { Input, Button } from "@/components/ui";
+import { Input, Button, PasswordInput } from "@/components/ui";
 
 export default function SignUpPage() {
-    const { register, handleSubmit, formState: { errors } } = useForm<SignUpFormData>({
+    const { register, handleSubmit, formState: { errors, isValid } } = useForm<SignUpFormData>({
         resolver: zodResolver(signUpSchema),
         mode: "onChange"
     });
@@ -59,33 +59,23 @@ export default function SignUpPage() {
                 />
 
                 {/* Password */}
-                <div className="relative">
-                    <Input 
-                        label="Password" 
-                        type="password" 
-                        placeholder="Minimum 8 characters" 
-                        {...register("password")}
-                        error={errors.password?.message}
-                    />
-                    <button type="button" className="absolute right-2.5 top-[30px] text-gray-400 hover:text-gray-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                    </button>
-                </div>
+                <PasswordInput 
+                    label="Password" 
+                    placeholder="Minimum 8 characters" 
+                    {...register("password")}
+                    error={errors.password?.message}
+                />
 
                 {/* Confirm Password */}
-                <Input 
+                <PasswordInput 
                     label="Confirm Password" 
-                    type="password" 
                     placeholder="Repeat password" 
                     {...register("confirmPassword")}
                     error={errors.confirmPassword?.message}
                 />
 
                 <div>
-                    <Button type="submit">Create Free Account</Button>
+                    <Button type="submit" disabled={!isValid}>Create Free Account</Button>
                 </div>
             </form>
 
