@@ -1,7 +1,6 @@
-// src/features/auth/schemas.ts
 import { z } from 'zod';
 
-// 1. Define your base reusable fields
+
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string()
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
@@ -11,7 +10,7 @@ const passwordSchema = z.string()
     .min(8, "Password must be at least 8 characters")
     .max(20, "Password must not exceed 20 characters");
 
-// 2. Combine them for specific forms
+
 export const signInSchema = z.object({
     email: emailSchema,
     password: passwordSchema
@@ -36,7 +35,7 @@ export const resetPasswordSchema = z.object({
     password: passwordSchema
 });
 
-// Infer TypeScript types automatically from the schemas!
+
 export type SignInFormData = z.infer<typeof signInSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;

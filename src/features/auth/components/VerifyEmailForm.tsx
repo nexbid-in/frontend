@@ -1,23 +1,22 @@
-import { AuthLayout } from "../components";
-import { Button, OtpInputGroup } from "@/components/ui";
+import { OtpInputGroup, Button } from "@/components/ui";
 
-export default function VerifyEmailPage() {
+interface VerifyEmailFormProps {
+    email: string;
+    onChangeEmail: () => void;
+}
+
+export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) {
     return (
-        <AuthLayout
-            heroTitle={
-                <>Your Gateway to <br /><span className="text-primary-green">Confident</span> Trading.</>
-            }
-            heroSubtitle="Practice trading with live market data. Build strategies, test ideas, and level up your investing game."
-        >
+        <>
             <h2 className="text-2xl font-bold mb-1.5 text-gray-900">Verify your email</h2>
             <div className="mb-6 mt-1">
                 <p className="text-sm text-gray-500">We sent a 6-digit code to</p>
                 <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-sm font-bold text-gray-900">name@gmail.com</span>
-                    <a href="#" className="text-xs text-primary-green hover:text-primary-green-hover font-medium flex items-center transition">
+                    <span className="text-sm font-bold text-gray-900">{email}</span>
+                    <button type="button" onClick={onChangeEmail} className="text-xs text-primary-green hover:text-primary-green-hover font-medium flex items-center transition cursor-pointer">
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         Change email
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -37,6 +36,6 @@ export default function VerifyEmailPage() {
             <div className="mt-5">
                 <a href="#" className="text-sm text-primary-green hover:text-primary-green-hover font-semibold transition">Resend Code</a>
             </div>
-        </AuthLayout>
-    );
+        </>
+    )
 }

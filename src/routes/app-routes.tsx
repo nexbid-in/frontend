@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
-import { SignUpPage, VerifyEmailPage, SignInPage, ForgotPasswordPage, ResetPasswordPage } from "@/features/auth";
+import { SignUpPage, SignInPage, ForgotPasswordPage, ResetPasswordPage } from "@/features/auth";
 
 
 const router = createBrowserRouter([
@@ -19,10 +19,6 @@ const router = createBrowserRouter([
     {
         path: '/signup',
         element: <SignUpPage />
-    },
-    {
-        path: '/verify-email',
-        element: <VerifyEmailPage />
     },
     {
         path: '/signin',
