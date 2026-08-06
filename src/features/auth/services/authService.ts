@@ -1,0 +1,20 @@
+import { apiClient } from "@/config/apiClient"; // Import your new instance
+import { type SignUpFormData } from "../schemas";
+
+export const authService = {
+    register: async (data: Omit<SignUpFormData, 'confirmPassword'>) => {
+        const response = await apiClient.post('/auth/register', data);
+        console.log("response from authService :", response)
+        return response.data;
+    },
+
+    verifyOtp: async (email: string, otp: string) => {
+        const response = await apiClient.post('/auth/verify-otp', { email, otp });
+        return response.data; 
+    },
+
+    resendOtp: async (email: string) => {
+        const response = await apiClient.post('/auth/resend-otp', { email });
+        return response.data;
+    }
+};

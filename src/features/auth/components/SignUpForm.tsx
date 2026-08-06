@@ -1,23 +1,38 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema, type SignUpFormData } from "../schemas";
 import { Input, PasswordInput, Button } from "@/components/ui";
 import { SocialAuth } from "./SocialAuth";
+import { authService } from "../services/authService";
 
 interface SignUpFormProps {
     onSuccess: (email: string) => void;
 }
 
 export function SignUpForm({ onSuccess }: SignUpFormProps) {
+    const [isLoading, setIsLoading] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+
     const { register, handleSubmit, formState: { errors, isValid } } = useForm<SignUpFormData>({
         resolver: zodResolver(signUpSchema),
         mode: "onChange"
     });
 
-    const onSubmit = (data: SignUpFormData) => {
-        console.log("Valid data ready for API:", data);
-        onSuccess(data.email);
+    const onSubmit = async (data: SignUpFormData) => {
+        setIsLoading(true);
+        setApiError(null);
+        try {
+            const { confirmPassword, ...registerData } = data;
+            await authService.register(registerData);
+
+            onSuccess(data.email);
+        } catch (error: any) {
+            setApiError(error.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -25,6 +40,13 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             <div>
                 <h2 className="text-2xl font-bold mb-1.5 text-gray-900">Create your account</h2>
                 <p className="text-sm text-gray-500 mb-8">Free forever. No credit card required.</p>
+
+                {/* Display API Errors */}
+                {apiError && (
+                    <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                        {apiError}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {/* Name Row */}
@@ -75,7 +97,9 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                     />
 
                     <div>
-                        <Button type="submit" disabled={!isValid}>Create Free Account</Button>
+                        <Button type="submit" disabled={!isValid || isLoading}>
+                            {isLoading ? "Creating Account..." : "Create Free Account"}
+                        </Button>
                     </div>
                 </form>
 
