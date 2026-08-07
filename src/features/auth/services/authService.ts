@@ -4,7 +4,6 @@ import { type SignUpFormData } from "../schemas";
 export const authService = {
     register: async (data: Omit<SignUpFormData, 'confirmPassword'>) => {
         const response = await apiClient.post('/auth/register', data);
-        console.log("response from authService :", response)
         return response.data;
     },
 

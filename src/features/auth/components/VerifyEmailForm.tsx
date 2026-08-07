@@ -1,5 +1,5 @@
 import { OtpInputGroup, Button } from "@/components/ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 
@@ -12,9 +12,29 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
     const navigate = useNavigate();
     const [otp, setOtp] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isResending, setIsResending] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [successMsg, setSuccessMsg] = useState<string | null>(null);
-    
+    const [successMsg, setSuccessMsg] = useState<string | null>('A verification code has been sent to your email.');
+    const [timeLeft, setTimeLeft] = useState(60);
+    const [timerKey, setTimerKey] = useState(0);
+
+    useEffect(() => {
+        setTimeLeft(60);
+
+        const timerId = setInterval(() => {
+            setTimeLeft((prevTime) => {
+                if (prevTime <= 1) {
+                    clearInterval(timerId);
+                    return 0;
+                }
+
+                return prevTime - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timerId);
+    }, [timerKey]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -41,12 +61,16 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
         e.preventDefault();
         setError(null);
         setSuccessMsg(null);
+        setIsResending(true);
 
         try {
             await authService.resendOtp(email);
-            setSuccessMsg("A new code has been sent to your email!");
+            setSuccessMsg("A new verification code has been sent to your email!");
+            setTimerKey(prev => prev + 1);
         } catch (error: any) {
             setError(error.message);
+        } finally {
+            setIsResending(false);
         }
     }
 
@@ -64,12 +88,7 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
                 </div>
             </div>
 
-            <div className="bg-primary-green-light border border-green-200 rounded-md py-2.5 px-3 mb-8 flex items-center">
-                <span className="text-primary-green font-bold mr-2 flex-shrink-0">✓</span>
-                <p className="text-xs text-primary-green-hover font-medium whitespace-nowrap tracking-tight">A verification code has been sent to your email.</p>
-            </div>
-
-             {successMsg && (
+            {successMsg && (
                 <div className="bg-primary-green-light border border-green-200 rounded-md py-2.5 px-3 mb-4 flex items-center">
                     <span className="text-primary-green font-bold mr-2 flex-shrink-0">✓</span>
                     <p className="text-xs text-primary-green-hover font-medium whitespace-nowrap tracking-tight">{successMsg}</p>
@@ -92,10 +111,32 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
             </form>
 
             <div className="mt-5">
-                <button onClick={handleResendCode} className="text-sm text-primary-green hover:text-primary-green-hover font-semibold transition cursor-pointer bg-transparent border-none p-0">
-                    Resend Code
-                </button>
+                {timeLeft > 0 ? (
+                    <p className="text-sm text-gray-500">
+                        Resend code in <span className="font-semibold text-primary-green">{timeLeft}s</span>
+                    </p>
+                ) : (
+                    <button
+                        onClick={handleResendCode}
+                        disabled={isResending}
+                        className="text-sm text-primary-green hover:text-primary-green-hover font-semibold transition cursor-pointer bg-transparent border-none p-0 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isResending ? (
+                            <>
+                                {/* Tailwind animated SVG spinner */}
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-green" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Resending...
+                            </>
+                        ) : (
+                            "Resend Code"
+                        )}
+                    </button>
+                )}
             </div>
+
         </>
     )
 }

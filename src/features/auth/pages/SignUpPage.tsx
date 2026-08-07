@@ -20,12 +20,12 @@ export default function SignUpPage() {
                     setStep('verify');
                 }} />
             </div>
-            <div className={step === 'verify' ? 'block' : 'hidden'}>
+            {step === 'verify' && (
                 <VerifyEmailForm
                     email={userEmail}
                     onChangeEmail={() => setStep('form')}
                 />
-            </div>
+            )}
         </AuthLayout>
     );
 }
