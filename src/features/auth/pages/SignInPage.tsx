@@ -19,7 +19,7 @@ export default function SignInPage() {
     return (
         <AuthLayout
             heroTitle={
-                <>Trade Smarter. Practice Safely. <br /><span className="text-primary-green">Grow Faster</span></>
+                <>Trade Smarter. Practice Safely. <br /><span className="text-primary-green">Grow Faster.</span></>
             }
             heroSubtitle="Practice trading with live market data. Build strategies, test ideas, and level up your investing game."
         >

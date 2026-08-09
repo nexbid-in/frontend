@@ -10,7 +10,7 @@ export default function SignUpPage() {
     return (
         <AuthLayout
             heroTitle={
-                <>Your Gateway to <br /><span className="text-primary-green">Confident</span> Trading.</>
+                <>Trade Smarter. Practice Safely. <br /><span className="text-primary-green">Grow Faster.</span></>
             }
             heroSubtitle="Practice trading with live market data. Build strategies, test ideas, and level up your investing game."
         >
