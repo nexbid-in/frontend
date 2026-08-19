@@ -1,19 +1,36 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInSchema, type SignInFormData } from "../schemas";
 
 import { AuthLayout, SocialAuth } from "../components";
 import { Input, Button, PasswordInput } from "@/components/ui";
+import { useState } from "react";
+import { authService } from "../services/authService";
 
 export default function SignInPage() {
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+
     const { register, handleSubmit, formState: { errors } } = useForm<SignInFormData>({
         resolver: zodResolver(signInSchema),
         mode: "onChange" 
     });
 
-    const onSubmit = (data: SignInFormData) => {
-        console.log(`Valid data ready for API:`, data);
+    const onSubmit = async (data: SignInFormData) => {
+        setIsLoading(true);
+        setApiError(null);
+
+        try {
+            const response = await authService.login(data);
+            console.log("Login Successful!", response);
+            navigate("/")
+        } catch (error: any) {
+            setApiError(error.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -25,6 +42,12 @@ export default function SignInPage() {
         >
             <h2 className="text-2xl font-bold mb-1.5 text-gray-900">Welcome back</h2>
             <p className="text-sm text-gray-500 mb-8">Sign in to your <span className="text-primary-green font-semibold">nexbid</span> account</p>
+
+            {apiError && (
+                <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                    {apiError}
+                </div>
+            )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <Input
@@ -50,7 +73,9 @@ export default function SignInPage() {
                 </div>
 
                 <div>
-                    <Button type="submit">Sign In</Button>
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Signing in..." : "Sign In"}
+                    </Button>
                 </div>
             </form>
 
