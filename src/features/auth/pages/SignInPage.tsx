@@ -8,8 +8,12 @@ import { Input, Button, PasswordInput } from "@/components/ui";
 import { useState } from "react";
 import { authService } from "../services/authService";
 
+import { useAppDispatch } from "@/store/hooks";
+import { setCredentials } from "../store/authSlice";
+
 export default function SignInPage() {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const [isLoading, setIsLoading] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
 
@@ -24,8 +28,10 @@ export default function SignInPage() {
 
         try {
             const response = await authService.login(data);
+
+            dispatch(setCredentials({ user: response.user }));
             console.log("Login Successful!", response);
-            navigate("/")
+            navigate("/app")
         } catch (error: any) {
             setApiError(error.message);
         } finally {
