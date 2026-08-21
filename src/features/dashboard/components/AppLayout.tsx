@@ -1,9 +1,27 @@
-import { Link, Outlet } from "react-router-dom";
-import { useAppSelector } from "@/store/hooks";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+
+import { logout } from "@/features/auth/store/authSlice";
+import { authService } from "@/features/auth/services/authService";
 
 export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+
     const initials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : '??';
+
+    const handleLogout = async () => {
+        try {
+            await authService.logout();
+
+            dispatch(logout());
+
+            navigate('/signin');
+        } catch (error) {
+            console.error("Failed to logout", error);
+        }
+    }
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans">
@@ -12,7 +30,7 @@ export function AppLayout() {
                     <Link to="/app" className="text-2xl font-bold text-primary-green tracking-tight">
                         nexbid
                     </Link>
-                    
+
                     <div className="flex items-center gap-4">
                         <span className="text-sm font-medium text-[#d1d5db]">NIFTY50 Index</span>
                         <div className="flex items-baseline gap-2">
@@ -35,16 +53,34 @@ export function AppLayout() {
                         <span className="text-[#a1a1aa]">Margin Available:</span>
                         <span className="font-medium text-[#e5e5e5]">₹3757.30</span>
                     </div>
-                    
+
                     <button className="text-[#d1d5db] text-xs font-medium border border-[#4b5563] px-3 py-1.5 rounded-md hover:border-white">
                         Add Funds
                     </button>
-                    
+
                     {/* Dynamic User Initials */}
-                    <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center font-semibold text-white cursor-pointer hover:bg-violet-700 transition">
-                        <span>{initials}</span>
+                    <div className="relative group cursor-pointer pb-2 pt-2">
+                        {/* Profile Avatar */}
+                        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center font-semibold text-white group-hover:bg-violet-700 transition-colors">
+                            <span>{initials}</span>
+                        </div>
+
+                        {/* Dropdown Menu (Hidden by default, shown on hover) */}
+                        <div className="absolute right-0 mt-2 w-40 bg-dash-panel border border-dash-border rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div className="px-4 py-2 border-b border-dash-border mb-1">
+                                <p className="text-xs text-dash-text-muted">Signed in as</p>
+                                <p className="text-sm font-semibold truncate">{user?.firstName}</p>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-[#1b1b1b] transition-colors font-medium"
+                            >
+                                Sign Out
+                            </button>
+                        </div>
                     </div>
                 </div>
+                
             </nav>
 
             <main className="flex-1 overflow-hidden h-[calc(100vh-60px)]">
