@@ -29,7 +29,7 @@ export default function SignInPage() {
         try {
             const response = await authService.login(data);
 
-            dispatch(setCredentials({ user: response.user }));
+            dispatch(setCredentials({ user: response.data.user }));
             console.log("Login Successful!", response);
             navigate("/app");
         } catch (error: any) {

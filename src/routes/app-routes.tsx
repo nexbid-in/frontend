@@ -5,6 +5,7 @@ import { SignUpPage, SignInPage, ForgotPasswordPage, ResetPasswordPage } from "@
 
 import { PrivateRoute } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
+import { AppLayout } from "@/features/dashboard/components/AppLayout";
 
 const router = createBrowserRouter([
     {
@@ -40,7 +41,12 @@ const router = createBrowserRouter([
         path: '/app',
         element: <PrivateRoute />,
         children: [
-            { index: true, element: <DashboardPage /> }
+            {
+                element: <AppLayout />,
+                children: [
+                    { index: true, element: <DashboardPage /> }
+                ]
+            }
         ]
     }
 ]);

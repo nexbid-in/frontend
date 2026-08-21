@@ -52,7 +52,7 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
         try {
             const response = await authService.verifyOtp(email, otp);
 
-            dispatch(setCredentials({ user: response.user }));
+            dispatch(setCredentials({ user: response.data.user }));
             console.log("Verification Successful!", response);
             navigate("/app");
         } catch (error: any) {

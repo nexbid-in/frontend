@@ -11,7 +11,7 @@ function App() {
         const checkSession = async () => {
             try {
                 const response = await authService.getMe();
-                dispatch(setCredentials({ user: response.user }));
+                dispatch(setCredentials({ user: response.data.user }));
             } catch (error) {
                 dispatch(setAuthFailed());
             }
