@@ -2,6 +2,8 @@ import { OtpInputGroup, Button } from "@/components/ui";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
+import { useAppDispatch } from "@/store/hooks";
+import { setCredentials } from "../store/authSlice";
 
 interface VerifyEmailFormProps {
     email: string;
@@ -10,6 +12,7 @@ interface VerifyEmailFormProps {
 
 export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const [otp, setOtp] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isResending, setIsResending] = useState(false);
@@ -48,8 +51,10 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
 
         try {
             const response = await authService.verifyOtp(email, otp);
+
+            dispatch(setCredentials({ user: response.user }));
             console.log("Verification Successful!", response);
-            navigate("/");
+            navigate("/app");
         } catch (error: any) {
             setError(error.message);
         } finally {

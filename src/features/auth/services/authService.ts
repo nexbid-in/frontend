@@ -20,5 +20,10 @@ export const authService = {
     login: async (data: SignInFormData) => {
         const response = await apiClient.post('/auth/login', data);
         return response.data;
+    },
+
+    getMe: async () => {
+        const response = await apiClient.get('/auth/me');
+        return response.data;
     }
 };

@@ -2,8 +2,12 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 
 export function PrivateRoute() {
-    const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+    const { isAuthenticated, isAuthLoading } = useAppSelector((state) => state.auth);
 
+    if (isAuthLoading) {
+        return <div className="h-screen w-screen flex items-center justify-center">Loading...</div>;
+    }
+    
     if (!isAuthenticated) {
         return <Navigate to="/signin" replace />;
     }

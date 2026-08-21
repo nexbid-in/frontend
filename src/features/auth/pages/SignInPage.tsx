@@ -31,7 +31,7 @@ export default function SignInPage() {
 
             dispatch(setCredentials({ user: response.user }));
             console.log("Login Successful!", response);
-            navigate("/app")
+            navigate("/app");
         } catch (error: any) {
             setApiError(error.message);
         } finally {
