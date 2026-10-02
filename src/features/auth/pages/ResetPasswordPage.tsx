@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { resetPasswordSchema, type ResetPasswordFormData } from "../schemas";
 import { AuthLayout } from "../components";
-import { Input, Button, OtpInputGroup, PasswordInput } from "@/components/ui";
+import { Button, OtpInputGroup, PasswordInput } from "@/components/ui";
 
 export default function ResetPasswordPage() {
     const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordFormData>({

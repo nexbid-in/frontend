@@ -1,6 +1,5 @@
-import { AuthLayout } from "../components";
 import { useState } from "react";
-import { SignUpForm, VerifyEmailForm } from "../components";
+import { AuthLayout, SignUpForm, VerifyEmailForm } from "../components";
 
 export default function SignUpPage() {
     const [step, setStep] = useState<'form' | 'verify'>('form');
