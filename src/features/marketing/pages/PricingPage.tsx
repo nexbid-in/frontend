@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Link } from 'react-router-dom';
 
 import { CtaBanner } from '../components/CTABanner';
@@ -16,7 +17,7 @@ export default function PricingPage() {
                             <h1 className="text-5xl font-bold text-heading mb-4">Add Virtual <span className="text-primary-green">Funds Anytime</span> You Need.</h1>
                             <p className="text-body mb-4 leading-relaxed">Every NexBid user starts with <span className=" font-bold">₹10,000 in virtual money</span> to trade risk-free. When your balance runs out, simply add real money to refill your account with <span className=" font-bold">10× value</span>.</p>
                             <p className="text-sm text-gray-500 mb-6">Minimum add amount: <span className="text-primary-green font-bold">₹100</span> real money = <span className="text-primary-green font-bold">₹1,000</span> virtual money.</p>
-                            <Link to="/signup" className="bg-primary-green text-white rounded-lg px-6 py-3 font-medium hover-primary transition shadow-md">Create Free Account</Link>
+                            <Link to={APP_ROUTES.SIGN_UP} className="bg-primary-green text-white rounded-lg px-6 py-3 font-medium hover-primary transition shadow-md">Create Free Account</Link>
                         </div>
 
                         <div className="hidden lg:flex justify-center">

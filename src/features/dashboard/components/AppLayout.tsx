@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 
@@ -17,7 +18,7 @@ export function AppLayout() {
 
             dispatch(logout());
 
-            navigate('/signin');
+            navigate(APP_ROUTES.SIGN_IN);
         } catch (error) {
             console.error("Failed to logout", error);
         }
@@ -27,7 +28,7 @@ export function AppLayout() {
         <div className="flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans">
             <nav className="h-[60px] bg-dash-panel flex items-center justify-between px-6 border-b border-dash-border">
                 <div className="flex items-center gap-5">
-                    <Link to="/app" className="text-2xl font-bold text-primary-green tracking-tight">
+                    <Link to={APP_ROUTES.DASHBOARD} className="text-2xl font-bold text-primary-green tracking-tight">
                         nexbid
                     </Link>
 
@@ -41,11 +42,11 @@ export function AppLayout() {
                 </div>
 
                 <div className="flex items-center gap-5">
-                    <Link to="/app" className="text-primary-green px-3 py-1.5 rounded-md font-medium">Markets</Link>
-                    <Link to="/app/watchlist" className="text-[#d1d5db] hover:text-white">Watchlist</Link>
-                    <Link to="/app/portfolio" className="text-[#d1d5db] hover:text-white">Portfolio</Link>
-                    <Link to="/app/orders" className="text-[#d1d5db] hover:text-white">Orders</Link>
-                    <Link to="/app/funds" className="text-[#d1d5db] hover:text-white">Funds</Link>
+                    <Link to={APP_ROUTES.DASHBOARD} className="text-primary-green px-3 py-1.5 rounded-md font-medium">Markets</Link>
+                    <Link to={APP_ROUTES.WATCHLIST} className="text-[#d1d5db] hover:text-white">Watchlist</Link>
+                    <Link to={APP_ROUTES.PORTFOLIO} className="text-[#d1d5db] hover:text-white">Portfolio</Link>
+                    <Link to={APP_ROUTES.ORDERS} className="text-[#d1d5db] hover:text-white">Orders</Link>
+                    <Link to={APP_ROUTES.FUNDS} className="text-[#d1d5db] hover:text-white">Funds</Link>
                 </div>
 
                 <div className="flex items-center gap-5 text-sm">

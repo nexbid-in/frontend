@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,7 +38,7 @@ export default function ForgotPasswordPage() {
             </form>
 
             <div className="mt-6 text-center text-xs text-gray-500">
-                Remember your password? <Link to="/signin" className="text-primary-green hover:text-primary-green-hover font-medium transition">Sign In</Link>
+                Remember your password? <Link to={APP_ROUTES.SIGN_IN} className="text-primary-green hover:text-primary-green-hover font-medium transition">Sign In</Link>
             </div>
         </AuthLayout>
     );

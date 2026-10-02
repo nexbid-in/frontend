@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 
@@ -9,7 +10,7 @@ export function PublicRoute() {
     }
     
     if (isAuthenticated) {
-        return <Navigate to="/app" replace />;
+        return <Navigate to={APP_ROUTES.DASHBOARD} replace />;
     }
 
     return <Outlet />;

@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +32,7 @@ export default function SignInPage() {
 
             dispatch(setCredentials({ user: response.data.user }));
             console.log("Login Successful!", response);
-            navigate("/app");
+            navigate(APP_ROUTES.DASHBOARD);
         } catch (error: any) {
             setApiError(error.message);
         } finally {
@@ -73,7 +74,7 @@ export default function SignInPage() {
                 />
 
                 <div className="flex justify-end">
-                    <Link to="/forgot-password"
+                    <Link to={APP_ROUTES.FORGOT_PASSWORD}
                         className="text-xs text-primary-green hover:text-primary-green-hover transition font-medium">Forgot
                         password?</Link>
                 </div>
@@ -97,7 +98,7 @@ export default function SignInPage() {
             <SocialAuth actionText="Or continue with" />
 
             <div className="mt-6 text-center text-xs text-gray-500">
-                Don't have an account? <Link to="/signup" className="text-primary-green hover:text-primary-green-hover font-medium transition">Create one free</Link>
+                Don't have an account? <Link to={APP_ROUTES.SIGN_UP} className="text-primary-green hover:text-primary-green-hover font-medium transition">Create one free</Link>
             </div>
         </AuthLayout>
     );

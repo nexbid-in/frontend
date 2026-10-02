@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Link } from 'react-router-dom';
 
 import { CtaBanner } from '../components/CTABanner';
@@ -21,7 +22,7 @@ export default function LandingPage() {
                 Practice trading with live market data. Build strategies, test ideas, and level up your investing game.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link to="/signup" className="px-8 py-3 text-lg font-semibold text-white bg-primary-green hover:bg-primary-green-hover rounded-lg shadow-lg transition duration-300 transform hover:scale-105 text-center">
+                <Link to={APP_ROUTES.SIGN_UP} className="px-8 py-3 text-lg font-semibold text-white bg-primary-green hover:bg-primary-green-hover rounded-lg shadow-lg transition duration-300 transform hover:scale-105 text-center">
                   Start Paper Trading
                 </Link>
                 <a href="#features" className="px-8 py-3 text-lg font-semibold text-primary-green bg-white border-2 border-primary-green hover:bg-primary-green-light rounded-lg shadow-lg transition duration-300 transform hover:scale-105 text-center">

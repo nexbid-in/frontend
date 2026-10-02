@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { OtpInputGroup, Button } from "@/components/ui";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -54,7 +55,7 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
 
             dispatch(setCredentials({ user: response.data.user }));
             console.log("Verification Successful!", response);
-            navigate("/app");
+            navigate(APP_ROUTES.DASHBOARD);
         } catch (error: any) {
             setError(error.message);
         } finally {

@@ -7,6 +7,8 @@ import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { PrivateRoute, PublicRoute } from "@/features/auth";
 import { AppLayout } from "@/features/dashboard/components/AppLayout";
 
+import { APP_ROUTES } from "@/constants/routes";
+
 const router = createBrowserRouter([
     // ------------------------------------
     // PUBLIC ROUTES (Guests Only)
@@ -15,30 +17,30 @@ const router = createBrowserRouter([
         element: <PublicRoute />,
         children: [
             {
-                path: '/',
+                path: APP_ROUTES.HOME,
                 element: <MarketingLayout />,
                 children: [
                     { index: true, element: <LandingPage /> },
-                    { path: 'about', element: <AboutPage /> },
-                    { path: 'products', element: <ProductsPage /> },
-                    { path: 'pricing', element: <PricingPage /> },
-                    { path: 'support', element: <SupportPage /> }
+                    { path: APP_ROUTES.ABOUT.replace('/', ''), element: <AboutPage /> },
+                    { path: APP_ROUTES.PRODUCTS.replace('/', ''), element: <ProductsPage /> },
+                    { path: APP_ROUTES.PRICING.replace('/', ''), element: <PricingPage /> },
+                    { path: APP_ROUTES.SUPPORT.replace('/', ''), element: <SupportPage /> }
                 ]
             },
             {
-                path: '/signup',
+                path: APP_ROUTES.SIGN_UP,
                 element: <SignUpPage />
             },
             {
-                path: '/signin',
+                path: APP_ROUTES.SIGN_IN,
                 element: <SignInPage />
             },
             {
-                path: '/forgot-password',
+                path: APP_ROUTES.FORGOT_PASSWORD,
                 element: <ForgotPasswordPage />
             },
             {
-                path: '/reset-password',
+                path: APP_ROUTES.RESET_PASSWORD,
                 element: <ResetPasswordPage />
             }
         ]
@@ -48,7 +50,7 @@ const router = createBrowserRouter([
     // PROTECTED ROUTES (Authenticated Only)
     // ------------------------------------
     {
-        path: '/app',
+        path: APP_ROUTES.DASHBOARD,
         element: <PrivateRoute />,
         children: [
             {
