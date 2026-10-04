@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
             </form>
 
             <div className="mt-6 text-center text-xs text-gray-500">
-                Remember your password? <Link to={APP_ROUTES.SIGN_IN} className="text-primary-green hover:text-primary-green-hover font-medium transition">Sign In</Link>
+                Remember your password? <Link to={APP_ROUTES.USER.SIGN_IN} className="text-primary-green hover:text-primary-green-hover font-medium transition">Sign In</Link>
             </div>
         </AuthLayout>
     );

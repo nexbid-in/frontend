@@ -111,7 +111,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                 </div>
 
                 <div className="mt-6 text-center text-xs text-gray-500">
-                    Already have an account? <Link to={APP_ROUTES.SIGN_IN} className="text-primary-green hover:text-primary-green-hover font-medium transition">Sign In</Link>
+                    Already have an account? <Link to={APP_ROUTES.USER.SIGN_IN} className="text-primary-green hover:text-primary-green-hover font-medium transition">Sign In</Link>
                 </div>
             </div>
         </>

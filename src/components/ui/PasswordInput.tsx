@@ -4,6 +4,7 @@ import { Input, type InputProps } from './Input';
 export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputProps, 'type'>>(
     (props, ref) => {
         const [show, setShow] = useState(false);
+        const iconColor = props.variant === 'dark' ? 'text-slate-500 hover:text-white' : 'text-gray-400 hover:text-gray-600';
 
         return (
             <div className="relative">
@@ -11,7 +12,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputProps, 'type
                 <button
                     type="button"
                     onClick={() => setShow(!show)}
-                    className="absolute right-2.5 top-[30px] text-gray-400 hover:text-gray-600 focus:outline-none"
+                    className={`absolute right-2.5 top-[28px] focus:outline-none transition ${iconColor}`}
                     aria-label={show ? "Hide password" : "Show password"}
                 >
                     {show ? (

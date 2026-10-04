@@ -55,7 +55,7 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
 
             dispatch(setCredentials({ user: response.data.user }));
             console.log("Verification Successful!", response);
-            navigate(APP_ROUTES.DASHBOARD);
+            navigate(APP_ROUTES.USER.DASHBOARD);
         } catch (error: any) {
             setError(error.message);
         } finally {

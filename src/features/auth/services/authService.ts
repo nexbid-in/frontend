@@ -18,8 +18,8 @@ export const authService = {
         return response.data;
     },
 
-    login: async (data: SignInFormData) => {
-        const payload = { ...data, portal: "USER" };
+    login: async (data: SignInFormData, portal: "USER" | "ADMIN" = "USER") => {
+        const payload = { ...data, portal };
         const response = await apiClient.post(API_ROUTES.AUTH.LOGIN, payload);
         return response.data;
     },

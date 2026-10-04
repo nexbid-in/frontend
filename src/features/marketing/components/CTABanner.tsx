@@ -21,7 +21,7 @@ export function CtaBanner() {
                         </p>
                     </div>
                     <div className="flex-shrink-0">
-                        <Link to={APP_ROUTES.SIGN_UP} className="px-8 py-3 bg-primary-green hover:bg-primary-green-hover text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-1 block">
+                        <Link to={APP_ROUTES.USER.SIGN_UP} className="px-8 py-3 bg-primary-green hover:bg-primary-green-hover text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-1 block">
                             Sign Up Now
                         </Link>
                     </div>

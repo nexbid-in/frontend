@@ -18,7 +18,7 @@ export function AppLayout() {
 
             dispatch(logout());
 
-            navigate(APP_ROUTES.SIGN_IN);
+            navigate(APP_ROUTES.USER.SIGN_IN);
         } catch (error) {
             console.error("Failed to logout", error);
         }
@@ -28,7 +28,7 @@ export function AppLayout() {
         <div className="flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans">
             <nav className="h-[60px] bg-dash-panel flex items-center justify-between px-6 border-b border-dash-border">
                 <div className="flex items-center gap-5">
-                    <Link to={APP_ROUTES.DASHBOARD} className="text-2xl font-bold text-primary-green tracking-tight">
+                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-2xl font-bold text-primary-green tracking-tight">
                         nexbid
                     </Link>
 
@@ -42,11 +42,11 @@ export function AppLayout() {
                 </div>
 
                 <div className="flex items-center gap-5">
-                    <Link to={APP_ROUTES.DASHBOARD} className="text-primary-green px-3 py-1.5 rounded-md font-medium">Markets</Link>
-                    <Link to={APP_ROUTES.WATCHLIST} className="text-[#d1d5db] hover:text-white">Watchlist</Link>
-                    <Link to={APP_ROUTES.PORTFOLIO} className="text-[#d1d5db] hover:text-white">Portfolio</Link>
-                    <Link to={APP_ROUTES.ORDERS} className="text-[#d1d5db] hover:text-white">Orders</Link>
-                    <Link to={APP_ROUTES.FUNDS} className="text-[#d1d5db] hover:text-white">Funds</Link>
+                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-primary-green px-3 py-1.5 rounded-md font-medium">Markets</Link>
+                    <Link to={APP_ROUTES.USER.WATCHLIST} className="text-[#d1d5db] hover:text-white">Watchlist</Link>
+                    <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-[#d1d5db] hover:text-white">Portfolio</Link>
+                    <Link to={APP_ROUTES.USER.ORDERS} className="text-[#d1d5db] hover:text-white">Orders</Link>
+                    <Link to={APP_ROUTES.USER.FUNDS} className="text-[#d1d5db] hover:text-white">Funds</Link>
                 </div>
 
                 <div className="flex items-center gap-5 text-sm">

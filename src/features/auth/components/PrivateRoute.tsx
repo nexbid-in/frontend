@@ -10,7 +10,7 @@ export function PrivateRoute() {
     }
     
     if (!isAuthenticated) {
-        return <Navigate to={APP_ROUTES.SIGN_IN} replace />;
+        return <Navigate to={APP_ROUTES.USER.SIGN_IN} replace />;
     }
 
     return <Outlet />;
