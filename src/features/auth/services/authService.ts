@@ -19,7 +19,8 @@ export const authService = {
     },
 
     login: async (data: SignInFormData) => {
-        const response = await apiClient.post(API_ROUTES.AUTH.LOGIN, data);
+        const payload = { ...data, portal: "USER" };
+        const response = await apiClient.post(API_ROUTES.AUTH.LOGIN, payload);
         return response.data;
     },
 
