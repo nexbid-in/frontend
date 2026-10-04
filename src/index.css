@@ -19,9 +19,26 @@
   --color-dash-text: #E6E7EA;
   --color-dash-text-muted: #9AA0A6;
   --color-dash-accent: #5865F2;
+
+  /* Admin Console Theme Colors */
+  --color-bg: #0B0C0E;
+  --color-panel: #101214;
+  --color-panel-2: #141517;
+  --color-card: #111214;
+  --color-border-muted: #27292B;
+  --color-accent: #5865F2;
+  --color-green: #3FC57F;
+  --color-red: #FF5959;
+  --color-muted: #2A2D2F;
   
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --background-image-demat-cta-gradient: linear-gradient(to right bottom, #fef2f2, #e0e7ff);
+}
+
+.admin-theme {
+  color-scheme: dark;
+  --color-text-primary: #E6E7EA;
+  --color-text-secondary: #9AA0A6;
 }
 
 @layer base {
