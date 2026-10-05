@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Link, NavLink } from 'react-router-dom';
 
 export default function Navbar() {
@@ -11,28 +12,28 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="text-3xl font-extrabold text-primary-green tracking-tight">
+            <Link to={APP_ROUTES.USER.HOME} className="text-3xl font-extrabold text-primary-green tracking-tight">
               nexbid
             </Link>
           </div>
 
           <div className="hidden md:flex md:space-x-8">
-            <NavLink to="/about" className={getNavLinkClass}>WHO WE ARE?</NavLink>
+            <NavLink to={APP_ROUTES.USER.ABOUT} className={getNavLinkClass}>WHO WE ARE?</NavLink>
             
             <a href="#news" className="uppercase text-sm font-semibold text-gray-500 hover:text-primary-green transition duration-150">
               NEWS
             </a>
             
-            <NavLink to="/products" className={getNavLinkClass}>PRODUCTS</NavLink>
-            <NavLink to="/pricing" className={getNavLinkClass}>PRICING</NavLink>
-            <NavLink to="/support" className={getNavLinkClass}>SUPPORT</NavLink>
+            <NavLink to={APP_ROUTES.USER.PRODUCTS} className={getNavLinkClass}>PRODUCTS</NavLink>
+            <NavLink to={APP_ROUTES.USER.PRICING} className={getNavLinkClass}>PRICING</NavLink>
+            <NavLink to={APP_ROUTES.USER.SUPPORT} className={getNavLinkClass}>SUPPORT</NavLink>
           </div>
 
           <div className="flex items-center space-x-2">
-            <Link to="/signin" className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-primary-green rounded-md transition duration-150">
+            <Link to={APP_ROUTES.USER.SIGN_IN} className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-primary-green rounded-md transition duration-150">
               Login
             </Link>
-            <Link to="/signup" className="px-4 py-2 text-sm font-semibold text-white bg-primary-green hover:bg-primary-green-hover rounded-md shadow-sm transition duration-150">
+            <Link to={APP_ROUTES.USER.SIGN_UP} className="px-4 py-2 text-sm font-semibold text-white bg-primary-green hover:bg-primary-green-hover rounded-md shadow-sm transition duration-150">
               Sign Up Now
             </Link>
           </div>

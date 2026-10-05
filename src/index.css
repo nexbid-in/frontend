@@ -1,30 +1,49 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-/* Import Tailwind v4 */
 @import "tailwindcss";
 
-/* Define your custom theme here */
 @theme {
-  /* Custom Colors */
+  /* Your Original Public Colors (Restored) */
   --color-primary-green: #10b981;
   --color-primary-green-hover: #059669;
   --color-primary-green-light: #ecfdf5;
-  
   --color-primary-dark: #0f172a;
-  --color-text-primary: #1f2937;
+  --color-text-primary: #1f2937; /* Restored back to dark gray! */
   --color-text-secondary: #6b7280;
 
-  /* Custom Font */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* NEW Dashboard Colors (Prefixed with dash- to avoid collision) */
+  --color-dash-bg: #0B0C0E;
+  --color-dash-panel: #101214;
+  --color-dash-panel-2: #141517;
+  --color-dash-card: #111214;
+  --color-dash-border: #27292B;
+  --color-dash-text: #E6E7EA;
+  --color-dash-text-muted: #9AA0A6;
+  --color-dash-accent: #5865F2;
 
-  /* Custom Background Gradient */
+  /* Admin Console Theme Colors */
+  --color-bg: #0B0C0E;
+  --color-panel: #101214;
+  --color-panel-2: #141517;
+  --color-card: #111214;
+  --color-border-muted: #27292B;
+  --color-accent: #5865F2;
+  --color-green: #3FC57F;
+  --color-red: #FF5959;
+  --color-muted: #2A2D2F;
+  
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --background-image-demat-cta-gradient: linear-gradient(to right bottom, #fef2f2, #e0e7ff);
 }
 
-/* Base styles */
+.admin-theme {
+  color-scheme: dark;
+  --color-text-primary: #E6E7EA;
+  --color-text-secondary: #9AA0A6;
+}
+
 @layer base {
   body {
+    /* Restored to normal scrolling and white background */
     background-color: white;
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
@@ -32,7 +51,6 @@
   }
 }
 
-/* Custom Utilities */
 @utility cta-color {
   background: linear-gradient(0deg, rgba(189, 216, 255, 1) 0%, rgba(179, 252, 210, 1) 15%, rgba(235, 255, 235, 1) 40%, rgba(249, 250, 251, 1) 68%, rgba(249, 250, 251, 1) 99%);
 }
