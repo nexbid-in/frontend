@@ -23,6 +23,12 @@ export const APP_ROUTES = {
     ADMIN: {
         SIGN_IN: '/admin/login',
         DASHBOARD: '/admin/dashboard',
+        USERS: '/admin/users',
+        FUNDS: '/admin/funds',
+        LEVERAGE_COSTS: '/admin/leverage-costs',
+        ORDERS: '/admin/orders',
+        COMMUNITY: '/admin/community',
+        SUPPORT: '/admin/support',
     }
 } as const;
 
