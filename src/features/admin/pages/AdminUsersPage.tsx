@@ -9,8 +9,6 @@ interface UserAccount {
     avatarColor: "green" | "accent" | "red" | "secondary";
     status: "active" | "blocked" | "inactive" | "pending";
     createdAt: string;
-    openPositionsCount: number;
-    exposure: string;
     lastActive: string;
 }
 
@@ -24,8 +22,6 @@ const INITIAL_USERS: UserAccount[] = [
         avatarColor: "green",
         status: "active",
         createdAt: "Jan 12, 2024",
-        openPositionsCount: 6,
-        exposure: "₹1.2 L",
         lastActive: "2 min ago",
     },
     {
@@ -37,8 +33,6 @@ const INITIAL_USERS: UserAccount[] = [
         avatarColor: "accent",
         status: "active",
         createdAt: "Aug 03, 2023",
-        openPositionsCount: 0,
-        exposure: "—",
         lastActive: "45 min ago",
     },
     {
@@ -50,8 +44,6 @@ const INITIAL_USERS: UserAccount[] = [
         avatarColor: "red",
         status: "blocked",
         createdAt: "Nov 28, 2022",
-        openPositionsCount: 1,
-        exposure: "₹42k",
         lastActive: "3 days ago",
     },
     {
@@ -63,8 +55,6 @@ const INITIAL_USERS: UserAccount[] = [
         avatarColor: "green",
         status: "active",
         createdAt: "Feb 14, 2024",
-        openPositionsCount: 12,
-        exposure: "₹4.6 L",
         lastActive: "10 min ago",
     },
     {
@@ -76,8 +66,6 @@ const INITIAL_USERS: UserAccount[] = [
         avatarColor: "secondary",
         status: "inactive",
         createdAt: "May 09, 2023",
-        openPositionsCount: 0,
-        exposure: "—",
         lastActive: "2 weeks ago",
     },
     {
@@ -89,8 +77,6 @@ const INITIAL_USERS: UserAccount[] = [
         avatarColor: "accent",
         status: "active",
         createdAt: "Mar 22, 2024",
-        openPositionsCount: 4,
-        exposure: "₹85k",
         lastActive: "15 min ago",
     },
 ];
@@ -226,7 +212,6 @@ export function AdminUsersPage() {
                             >
                                 <option value="recent">Sort: Recently Active</option>
                                 <option value="newest">Sort: Newest First</option>
-                                <option value="positions">Sort: Highest Exposure</option>
                             </select>
                         </div>
                     </div>
@@ -240,7 +225,6 @@ export function AdminUsersPage() {
                                 <th className="py-3 px-5">User</th>
                                 <th className="py-3 px-5">Status</th>
                                 <th className="py-3 px-5">Account Created</th>
-                                <th className="py-3 px-5">Open Positions</th>
                                 <th className="py-3 px-5">Last Active</th>
                                 <th className="py-3 px-5 text-right">Actions</th>
                             </tr>
@@ -267,17 +251,6 @@ export function AdminUsersPage() {
                                     </td>
                                     <td className="py-3 px-5">{getStatusBadge(user.status)}</td>
                                     <td className="py-3 px-5 text-xs text-text-secondary">{user.createdAt}</td>
-                                    <td className="py-3 px-5">
-                                        <div className="text-xs">
-                                            <span className="font-medium text-text-primary">
-                                                {user.openPositionsCount} open
-                                            </span>
-                                            <span className="text-text-secondary">
-                                                {" "}
-                                                · {user.exposure} {user.exposure !== "—" ? "exposure" : ""}
-                                            </span>
-                                        </div>
-                                    </td>
                                     <td className="py-3 px-5 text-xs text-text-secondary">{user.lastActive}</td>
                                     <td className="py-3 px-5 text-right">
                                         <button
