@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
 import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage, ResetPasswordPage } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
-import { AdminDashboardPage } from "@/features/admin";
+import { AdminDashboardPage, AdminUsersPage, AdminLayout } from "@/features/admin";
 
 import { PrivateRoute, PublicRoute, AdminRoute } from "@/features/auth";
 import { AppLayout } from "@/features/dashboard/components/AppLayout";
@@ -71,12 +71,20 @@ const router = createBrowserRouter([
     // ADMIN ROUTES (Admin Only)
     // ------------------------------------
     {
-        path: APP_ROUTES.ADMIN.DASHBOARD,
         element: <AdminRoute />,
         children: [
             {
-                index: true,
-                element: <AdminDashboardPage />
+                element: <AdminLayout />,
+                children: [
+                    {
+                        path: APP_ROUTES.ADMIN.DASHBOARD,
+                        element: <AdminDashboardPage />
+                    },
+                    {
+                        path: APP_ROUTES.ADMIN.USERS,
+                        element: <AdminUsersPage />
+                    }
+                ]
             }
         ]
     }

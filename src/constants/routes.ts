@@ -23,6 +23,12 @@ export const APP_ROUTES = {
     ADMIN: {
         SIGN_IN: '/admin/login',
         DASHBOARD: '/admin/dashboard',
+        USERS: '/admin/users',
+        FUNDS: '/admin/funds',
+        LEVERAGE_COSTS: '/admin/leverage-costs',
+        ORDERS: '/admin/orders',
+        COMMUNITY: '/admin/community',
+        SUPPORT: '/admin/support',
     }
 } as const;
 
@@ -34,5 +40,9 @@ export const API_ROUTES = {
         RESEND_OTP: '/auth/resend-otp',
         LOGOUT: '/auth/logout',
         ME: '/auth/me',
+    },
+    ADMIN: {
+        GET_USERS: '/admin/getusers',
+        UPDATE_USER_STATUS: (userId: string) => `/admin/users/${userId}/update-status`,
     }
 } as const;
