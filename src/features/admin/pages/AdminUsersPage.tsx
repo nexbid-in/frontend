@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminService, type AdminUserListItemDTO } from "../services/adminService";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function AdminUsersPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -11,6 +12,7 @@ export function AdminUsersPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
+    const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean, userId: string, isBlocked: boolean }>({ isOpen: false, userId: "", isBlocked: false });
     const limit = 6;
 
     useEffect(() => {
@@ -37,6 +39,22 @@ export function AdminUsersPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const openConfirmModal = (user: AdminUserListItemDTO) => {
+        setConfirmModalState({ isOpen: true, userId: user.id, isBlocked: user.isBlocked });
+    };
+
+    const confirmUpdateStatus = () => {
+        const { userId } = confirmModalState;
+        setConfirmModalState({ isOpen: false, userId: "", isBlocked: false });
+        if (userId) {
+            handleUpdateStatus(userId);
+        }
+    };
+
+    const cancelConfirmModal = () => {
+        setConfirmModalState({ isOpen: false, userId: "", isBlocked: false });
     };
 
     const handleUpdateStatus = async (userId: string) => {
@@ -206,7 +224,7 @@ export function AdminUsersPage() {
                                         <td className="py-3 px-5 text-right">
                                             <button
                                                 type="button"
-                                                onClick={() => handleUpdateStatus(user.id)}
+                                                onClick={() => openConfirmModal(user)}
                                                 className={`inline-flex justify-center items-center w-20 py-1 rounded-lg text-xs font-medium bg-panel-2 border border-border-muted transition-colors cursor-pointer ${
                                                     user.isBlocked 
                                                         ? "text-green hover:border-green/50 hover:bg-green/5" 
@@ -253,6 +271,20 @@ export function AdminUsersPage() {
                     </div>
                 </div>
             </section>
+
+            <ConfirmModal
+                isOpen={confirmModalState.isOpen}
+                title="Confirm Action"
+                message={
+                    <>
+                        Are you sure you want to <span className="font-semibold text-text-primary">{confirmModalState.isBlocked ? "unblock" : "block"}</span> this user?
+                    </>
+                }
+                confirmText={confirmModalState.isBlocked ? "Unblock User" : "Block User"}
+                confirmButtonVariant={confirmModalState.isBlocked ? "success" : "danger"}
+                onConfirm={confirmUpdateStatus}
+                onCancel={cancelConfirmModal}
+            />
         </main>
     );
 }

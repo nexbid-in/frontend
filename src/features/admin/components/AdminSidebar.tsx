@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/constants/routes";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface AdminSidebarProps {
     isMobileOpen?: boolean;
@@ -13,11 +15,13 @@ interface AdminSidebarProps {
 export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSidebarProps) {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-    const handleLogout = async () => {
+    const handleLogoutConfirm = async () => {
         try {
             await authService.logout();
             dispatch(logout());
+            setIsLogoutModalOpen(false);
             navigate(APP_ROUTES.ADMIN.SIGN_IN);
         } catch (error) {
             console.error("Failed to logout admin", error);
@@ -234,7 +238,7 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
             {/* Sidebar Footer */}
             <div className="p-3 border-t border-border-muted">
                 <button
-                    onClick={handleLogout}
+                    onClick={() => setIsLogoutModalOpen(true)}
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-panel-2 transition-colors group cursor-pointer"
                 >
                     <div className="flex items-center gap-3">
@@ -279,6 +283,17 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={isLogoutModalOpen}
+                title="Sign Out"
+                message="Are you sure you want to sign out of the Admin Console?"
+                confirmText="Sign Out"
+                cancelText="Stay Signed In"
+                confirmButtonVariant="danger"
+                onConfirm={handleLogoutConfirm}
+                onCancel={() => setIsLogoutModalOpen(false)}
+            />
         </>
     );
 }
