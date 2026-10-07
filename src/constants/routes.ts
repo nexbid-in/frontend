@@ -40,5 +40,8 @@ export const API_ROUTES = {
         RESEND_OTP: '/auth/resend-otp',
         LOGOUT: '/auth/logout',
         ME: '/auth/me',
+    },
+    ADMIN: {
+        GET_USERS: '/admin/getusers',
     }
 } as const;
