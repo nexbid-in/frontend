@@ -171,12 +171,17 @@ export function AdminUsersPage() {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto min-h-[300px]">
-                    {loading ? (
-                        <div className="flex items-center justify-center h-48 text-text-secondary text-sm">Loading users...</div>
-                    ) : error ? (
+                <div className="overflow-x-auto min-h-[300px] relative">
+                    {/* Loading Overlay */}
+                    {loading && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/60 transition-all duration-200">
+                            <div className="w-6 h-6 border-2 border-primary-green/20 border-t-primary-green rounded-full animate-spin"></div>
+                        </div>
+                    )}
+
+                    {error ? (
                         <div className="flex items-center justify-center h-48 text-red text-sm">{error}</div>
-                    ) : users.length === 0 ? (
+                    ) : users.length === 0 && !loading ? (
                         <div className="flex items-center justify-center h-48 text-text-secondary text-sm">No users found.</div>
                     ) : (
                         <table className="w-full text-left border-collapse">
@@ -190,9 +195,9 @@ export function AdminUsersPage() {
                                     <th className="py-3 px-5 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border-muted text-sm">
+                            <tbody className="text-sm">
                                 {users.map((user) => (
-                                    <tr key={user.id} className="hover:bg-panel-2/40 transition-colors">
+                                    <tr key={user.id} className="border-b border-border-muted last:border-0 hover:bg-panel-2/40 transition-colors">
                                         <td className="py-3 px-5">
                                             <div className="flex items-center gap-3">
                                                 {user.profileImage ? (
@@ -253,9 +258,9 @@ export function AdminUsersPage() {
                             type="button"
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="px-2.5 py-1.5 rounded-lg border border-border-muted bg-panel-2 text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg border border-border-muted bg-panel-2 text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                         >
-                            Previous
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         
                         <span className="px-2 font-medium">Page {page} of {totalPages || 1}</span>
@@ -264,9 +269,9 @@ export function AdminUsersPage() {
                             type="button"
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                             disabled={page === totalPages || totalPages === 0}
-                            className="px-2.5 py-1.5 rounded-lg border border-border-muted bg-panel-2 text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg border border-border-muted bg-panel-2 text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                         >
-                            Next
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                         </button>
                     </div>
                 </div>
