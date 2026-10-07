@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { resetPasswordSchema, type ResetPasswordFormData } from "../schemas";
 import { Button, OtpInputGroup, PasswordInput } from "@/components/ui";
+import { authService } from "../services/authService";
 
 interface ResetPasswordFormProps {
     email: string;
@@ -16,6 +17,8 @@ export function ResetPasswordForm({ email, onSuccess, onBack }: ResetPasswordFor
         mode: "onChange"
     });
 
+    const [isLoading, setIsLoading] = useState(false);
+    const [otp, setOtp] = useState("");
     const [isResending, setIsResending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -38,9 +41,28 @@ export function ResetPasswordForm({ email, onSuccess, onBack }: ResetPasswordFor
         return () => clearInterval(timerId);
     }, [timerKey]);
 
-    const onSubmit = (data: ResetPasswordFormData) => {
-        console.log("Valid data ready for API:", data);
-        onSuccess();
+    const onSubmit = async (data: ResetPasswordFormData) => {
+        if (otp.length !== 6) {
+            setError('Please enter the complete 6-digit code.');
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setSuccessMsg(null);
+
+        try {
+            await authService.resetPassword({
+                email,
+                otp,
+                password: data.password
+            });
+            onSuccess();
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleResendCode = async (e: React.MouseEvent) => {
@@ -50,12 +72,16 @@ export function ResetPasswordForm({ email, onSuccess, onBack }: ResetPasswordFor
         setIsResending(true);
 
         try {
-            // TODO: Replace with actual API call to resend password reset OTP
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await authService.forgotPassword(email);
             setSuccessMsg("A new verification code has been sent to your email!");
             setTimerKey(prev => prev + 1);
-        } catch (error: any) {
-            setError(error.message);
+        } catch (err: any) {
+            const errorMsg = err.message || "";
+            if (errorMsg.toLowerCase().includes("not found")) {
+                setError("No account found with this email.");
+            } else {
+                setError(errorMsg);
+            }
         } finally {
             setIsResending(false);
         }
@@ -90,7 +116,7 @@ export function ResetPasswordForm({ email, onSuccess, onBack }: ResetPasswordFor
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
                     <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Verification Code</label>
-                    <OtpInputGroup />
+                    <OtpInputGroup onComplete={(code) => setOtp(code)} />
                 </div>
 
                 <PasswordInput 
@@ -100,7 +126,9 @@ export function ResetPasswordForm({ email, onSuccess, onBack }: ResetPasswordFor
                     error={errors.password?.message}
                 />
 
-                <Button type="submit">Update Password</Button>
+                <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Updating..." : "Update Password"}
+                </Button>
             </form>
 
             <div className="mt-5">

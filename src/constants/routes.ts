@@ -39,6 +39,8 @@ export const API_ROUTES = {
         RESEND_OTP: '/auth/resend-otp',
         LOGOUT: '/auth/logout',
         ME: '/auth/me',
+        FORGOT_PASSWORD: '/auth/forgot-password',
+        RESET_PASSWORD: '/auth/reset-password',
     },
     ADMIN: {
         GET_USERS: '/admin/getusers',
