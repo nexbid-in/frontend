@@ -40,4 +40,8 @@ export const adminService = {
         const response = await apiClient.get<{ data: PaginatedUsersResponseDTO }>(`${API_ROUTES.ADMIN.GET_USERS}?${params.toString()}`);
         return response.data.data;
     },
+
+    updateUserStatus: async (userId: string): Promise<void> => {
+        await apiClient.patch(API_ROUTES.ADMIN.UPDATE_USER_STATUS(userId));
+    }
 };

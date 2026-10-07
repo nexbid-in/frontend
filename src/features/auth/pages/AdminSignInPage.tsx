@@ -125,6 +125,7 @@ export default function AdminSignInPage() {
                                 variant="dark"
                                 {...register("email")}
                                 error={errors.email?.message}
+                                value="admin@nexbid.com"
                             />
 
                             <PasswordInput
@@ -133,6 +134,7 @@ export default function AdminSignInPage() {
                                 variant="dark"
                                 {...register("password")}
                                 error={errors.password?.message}
+                                value="Admin@123"
                             />
 
                             {/* Sign In Button */}

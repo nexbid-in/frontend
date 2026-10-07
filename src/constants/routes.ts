@@ -43,5 +43,6 @@ export const API_ROUTES = {
     },
     ADMIN: {
         GET_USERS: '/admin/getusers',
+        UPDATE_USER_STATUS: (userId: string) => `/admin/users/${userId}/update-status`,
     }
 } as const;
