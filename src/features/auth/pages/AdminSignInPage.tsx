@@ -24,8 +24,12 @@ export default function AdminSignInPage() {
             const response = await authService.login(data, "ADMIN");
             dispatch(setCredentials({ user: response.data.user }));
             navigate(APP_ROUTES.ADMIN.DASHBOARD); 
-        } catch (error: any) {
-            setApiError(error.response?.data?.error?.message || "Invalid email or password");
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setApiError(error.message);
+            } else {
+                setApiError("Invalid email or password");
+            }
         }
     };
 

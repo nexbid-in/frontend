@@ -58,8 +58,12 @@ export function ResetPasswordForm({ email, onSuccess, onBack }: ResetPasswordFor
                 password: data.password
             });
             onSuccess();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("An unexpected error occurred.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -75,12 +79,12 @@ export function ResetPasswordForm({ email, onSuccess, onBack }: ResetPasswordFor
             await authService.forgotPassword(email);
             setSuccessMsg("A new verification code has been sent to your email!");
             setTimerKey(prev => prev + 1);
-        } catch (err: any) {
-            const errorMsg = err.message || "";
+        } catch (err: unknown) {
+            const errorMsg = err instanceof Error ? err.message : "";
             if (errorMsg.toLowerCase().includes("not found")) {
                 setError("No account found with this email.");
             } else {
-                setError(errorMsg);
+                setError(errorMsg || "An unexpected error occurred.");
             }
         } finally {
             setIsResending(false);

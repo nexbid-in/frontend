@@ -29,8 +29,12 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             await authService.register(registerData);
 
             onSuccess(data.email);
-        } catch (error: any) {
-            setApiError(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setApiError(error.message);
+            } else {
+                setApiError("An unexpected error occurred.");
+            }
         } finally {
             setIsLoading(false);
         }

@@ -24,12 +24,12 @@ export function ForgotPasswordForm({ onSuccess }: ForgotPasswordFormProps) {
         try {
             await authService.forgotPassword(data.email);
             onSuccess(data.email);
-        } catch (err: any) {
-            const errorMsg = err.message || "";
+        } catch (err: unknown) {
+            const errorMsg = err instanceof Error ? err.message : "";
             if (errorMsg.toLowerCase().includes("not found")) {
                 setError("No account found with this email.");
             } else {
-                setError(errorMsg);
+                setError(errorMsg || "An unexpected error occurred.");
             }
         } finally {
             setIsLoading(false);

@@ -56,8 +56,12 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
             dispatch(setCredentials({ user: response.data.user }));
             console.log("Verification Successful!", response);
             navigate(APP_ROUTES.USER.DASHBOARD);
-        } catch (error: any) {
-            setError(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError("An unexpected error occurred.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -73,8 +77,12 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
             await authService.resendOtp(email);
             setSuccessMsg("A new verification code has been sent to your email!");
             setTimerKey(prev => prev + 1);
-        } catch (error: any) {
-            setError(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError("An unexpected error occurred.");
+            }
         } finally {
             setIsResending(false);
         }
