@@ -41,6 +41,7 @@ export const API_ROUTES = {
         ME: '/auth/me',
         FORGOT_PASSWORD: '/auth/forgot-password',
         RESET_PASSWORD: '/auth/reset-password',
+        REFRESH: '/auth/refresh',
     },
     ADMIN: {
         GET_USERS: '/admin/getusers',
