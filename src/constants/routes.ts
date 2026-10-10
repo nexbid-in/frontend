@@ -5,7 +5,6 @@ export const APP_ROUTES = {
         SIGN_IN: '/signin',
         SIGN_UP: '/signup',
         FORGOT_PASSWORD: '/forgot-password',
-        RESET_PASSWORD: '/reset-password',
 
         // Marketing Pages
         ABOUT: '/about',
@@ -40,6 +39,9 @@ export const API_ROUTES = {
         RESEND_OTP: '/auth/resend-otp',
         LOGOUT: '/auth/logout',
         ME: '/auth/me',
+        FORGOT_PASSWORD: '/auth/forgot-password',
+        RESET_PASSWORD: '/auth/reset-password',
+        REFRESH: '/auth/refresh',
     },
     ADMIN: {
         GET_USERS: '/admin/getusers',

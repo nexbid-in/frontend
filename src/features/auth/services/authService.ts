@@ -1,4 +1,4 @@
-import { apiClient } from "@/config/apiClient"; // Import your new instance
+import { apiClient } from "@/config/apiClient";
 import { type SignUpFormData, type SignInFormData } from "../schemas";
 import { API_ROUTES } from "@/constants/routes";
 
@@ -31,6 +31,16 @@ export const authService = {
 
     getMe: async () => {
         const response = await apiClient.get(API_ROUTES.AUTH.ME);
+        return response.data;
+    },
+
+    forgotPassword: async (email: string) => {
+        const response = await apiClient.post(API_ROUTES.AUTH.FORGOT_PASSWORD, { email });
+        return response.data;
+    },
+
+    resetPassword: async (data: any) => {
+        const response = await apiClient.post(API_ROUTES.AUTH.RESET_PASSWORD, data);
         return response.data;
     }
 };

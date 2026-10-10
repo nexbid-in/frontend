@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
-import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage, ResetPasswordPage } from "@/features/auth";
+import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { AdminDashboardPage, AdminUsersPage, AdminLayout } from "@/features/admin";
 
@@ -43,10 +43,6 @@ const router = createBrowserRouter([
             {
                 path: APP_ROUTES.USER.FORGOT_PASSWORD,
                 element: <ForgotPasswordPage />
-            },
-            {
-                path: APP_ROUTES.USER.RESET_PASSWORD,
-                element: <ResetPasswordPage />
             }
         ]
     },

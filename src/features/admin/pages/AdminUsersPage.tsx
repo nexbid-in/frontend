@@ -34,8 +34,12 @@ export function AdminUsersPage() {
             setUsers(response.users || []);
             setTotalPages(response.pagination?.totalPages || 1);
             setTotalUsers(response.pagination?.totalUsers || 0);
-        } catch (err: any) {
-            setError(err.message || "Failed to fetch users");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message || "Failed to fetch users");
+            } else {
+                setError("Failed to fetch users");
+            }
         } finally {
             setLoading(false);
         }
@@ -63,8 +67,12 @@ export function AdminUsersPage() {
                 u.id === userId ? { ...u, isBlocked: !u.isBlocked } : u
             ));
             await adminService.updateUserStatus(userId);
-        } catch (err: any) {
-            setError(err.message || "Failed to update user status");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message || "Failed to update user status");
+            } else {
+                setError("Failed to update user status");
+            }
             fetchUsers(); 
         }
     };

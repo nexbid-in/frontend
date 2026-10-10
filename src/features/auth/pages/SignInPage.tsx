@@ -33,8 +33,12 @@ export default function SignInPage() {
             dispatch(setCredentials({ user: response.data.user }));
             console.log("Login Successful!", response);
             navigate(APP_ROUTES.USER.DASHBOARD);
-        } catch (error: any) {
-            setApiError(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setApiError(error.message);
+            } else {
+                setApiError("An unexpected error occurred.");
+            }
         } finally {
             setIsLoading(false);
         }
