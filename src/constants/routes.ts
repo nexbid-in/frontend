@@ -44,7 +44,7 @@ export const API_ROUTES = {
         REFRESH: '/auth/refresh',
     },
     ADMIN: {
-        GET_USERS: '/admin/getusers',
-        UPDATE_USER_STATUS: (userId: string) => `/admin/users/${userId}/update-status`,
+        USERS: '/admin/users',
+        USER_STATUS: (userId: string) => `/admin/users/${userId}/status`,
     }
 } as const;
