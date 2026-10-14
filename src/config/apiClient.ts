@@ -2,9 +2,10 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { store } from "@/store/store";
 import { logout } from "@/features/auth/store/authSlice";
 import { API_ROUTES } from "@/constants/routes";
+import { env } from "./env";
 
 export const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:7000/api',
+    baseURL: env.API_URL,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
