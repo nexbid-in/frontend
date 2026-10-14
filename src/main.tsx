@@ -5,11 +5,16 @@ import App from './App.tsx'
 
 import { Provider } from 'react-redux'
 import { store } from './store/store.ts'
+import { GoogleOAuthProvider } from '@react-oauth/google'
+
+const GOOGLE_CLIENT_ID = "115862889762-rpq0n867f4godq5g7bqs7ep9iv5hf36c.apps.googleusercontent.com";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store} >
-      <App />
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} >
+        <App />
+      </GoogleOAuthProvider>
     </Provider>
   </StrictMode>,
 )

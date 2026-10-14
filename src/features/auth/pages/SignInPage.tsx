@@ -20,7 +20,7 @@ export default function SignInPage() {
 
     const { register, handleSubmit, formState: { errors } } = useForm<SignInFormData>({
         resolver: zodResolver(signInSchema),
-        mode: "onChange" 
+        mode: "onChange"
     });
 
     const onSubmit = async (data: SignInFormData) => {
@@ -62,17 +62,17 @@ export default function SignInPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <Input
-                    label="Email Address" 
-                    id="email-input" 
-                    type="email" 
-                    placeholder="name@example.com" 
+                    label="Email Address"
+                    id="email-input"
+                    type="email"
+                    placeholder="name@example.com"
                     {...register("email")}
-                    error={!!errors.email} 
+                    error={!!errors.email}
                 />
 
-                <PasswordInput 
-                    label="Password" 
-                    placeholder="Enter your password" 
+                <PasswordInput
+                    label="Password"
+                    placeholder="Enter your password"
                     {...register("password")}
                     error={errors.password?.message}
                 />
@@ -99,7 +99,10 @@ export default function SignInPage() {
                 <span>256-bit SSL · Your data is always secure</span>
             </div>
 
-            <SocialAuth actionText="Or continue with" />
+            <SocialAuth
+                actionText="Or continue with"
+                onError={(err) => setApiError(err)}
+            />
 
             <div className="mt-6 text-center text-xs text-gray-500">
                 Don't have an account? <Link to={APP_ROUTES.USER.SIGN_UP} className="text-primary-green hover:text-primary-green-hover font-medium transition">Create one free</Link>
