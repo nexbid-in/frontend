@@ -1,9 +1,7 @@
 import { APP_ROUTES } from "@/constants/routes";
-import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 
-import { logout } from "@/features/auth/store/authSlice";
-import { authService } from "@/features/auth/services/authService";
 import { hideToast, showToast } from "@/store/uiSlice";
 import { Toast } from "@/components/ui";
 
@@ -13,7 +11,6 @@ export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
     const toast = useAppSelector((state) => state.ui.toast);
     const dispatch = useAppDispatch();
-    const navigate = useNavigate();
     const location = useLocation();
     const [imageError, setImageError] = useState(false);
 
@@ -40,18 +37,7 @@ export function AppLayout() {
     };
 
     const initials = getInitials();
-
-    const handleLogout = async () => {
-        try {
-            await authService.logout();
-
-            dispatch(logout());
-
-            navigate(APP_ROUTES.USER.SIGN_IN);
-        } catch (error) {
-            console.error("Failed to logout", error);
-        }
-    }
+    const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans">
@@ -71,7 +57,16 @@ export function AppLayout() {
                 </div>
 
                 <div className="flex items-center gap-5">
-                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-primary-green px-3 py-1.5 rounded-md font-medium">Markets</Link>
+                    <Link
+                        to={APP_ROUTES.USER.DASHBOARD}
+                        className={`${
+                            isMarketsActive
+                                ? "text-primary-green font-medium"
+                                : "text-[#d1d5db] hover:text-white"
+                        } px-3 py-1.5 rounded-md transition-colors`}
+                    >
+                        Markets
+                    </Link>
                     <Link to={APP_ROUTES.USER.WATCHLIST} className="text-[#d1d5db] hover:text-white">Watchlist</Link>
                     <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-[#d1d5db] hover:text-white">Portfolio</Link>
                     <Link to={APP_ROUTES.USER.ORDERS} className="text-[#d1d5db] hover:text-white">Orders</Link>
@@ -84,13 +79,13 @@ export function AppLayout() {
                         <span className="font-medium text-[#e5e5e5]">₹3757.30</span>
                     </div>
 
-                    <button className="text-[#d1d5db] text-xs font-medium border border-[#4b5563] px-3 py-1.5 rounded-md hover:border-white">
+                    <button className="text-[#d1d5db] text-xs font-medium border border-[#4b5563] px-3 py-1.5 rounded-md hover:border-white cursor-pointer">
                         Add Funds
                     </button>
 
                     {/* Dynamic User Profile Avatar */}
                     <div className="relative group cursor-pointer pb-2 pt-2">
-                        {/* Profile Avatar */}
+                        {/* Profile Avatar (No direct redirect on avatar click) */}
                         <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center font-semibold text-white group-hover:bg-violet-700 transition-colors overflow-hidden shrink-0 select-none">
                             {user?.profileImage && !imageError ? (
                                 <img
@@ -106,19 +101,19 @@ export function AppLayout() {
                         </div>
 
                         {/* Dropdown Menu (Hidden by default, shown on hover) */}
-                        <div className="absolute right-0 mt-2 w-40 bg-dash-panel border border-dash-border rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="absolute right-0 mt-2 w-44 bg-dash-panel border border-dash-border rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div className="px-4 py-2 border-b border-dash-border mb-1">
                                 <p className="text-xs text-dash-text-muted">Signed in as</p>
-                                <p className="text-sm font-semibold truncate">
+                                <p className="text-sm font-semibold truncate text-[#e5e5e5]">
                                     {user?.firstName}{user?.lastName && user.lastName !== 'undefined' ? ` ${user.lastName}` : ''}
                                 </p>
                             </div>
-                            <button
-                                onClick={handleLogout}
-                                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-[#1b1b1b] transition-colors font-medium"
+                            <Link
+                                to={APP_ROUTES.USER.PROFILE}
+                                className="block w-full text-left px-4 py-2 text-sm text-[#d1d5db] hover:text-white hover:bg-[#1b1b1b] transition-colors font-medium"
                             >
-                                Sign Out
-                            </button>
+                                My Profile
+                            </Link>
                         </div>
                     </div>
                 </div>

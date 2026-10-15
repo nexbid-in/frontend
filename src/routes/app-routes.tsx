@@ -7,6 +7,14 @@ import { AdminDashboardPage, AdminUsersPage, AdminLayout } from "@/features/admi
 
 import { PrivateRoute, PublicRoute, AdminRoute } from "@/features/auth";
 import { AppLayout } from "@/features/dashboard/components/AppLayout";
+import {
+    ProfileLayout,
+    PersonalDetailsPage,
+    PnLStatementPage,
+    TradeBookPage,
+    JournalPage,
+    MyTicketsPage
+} from "@/features/profile";
 
 import { APP_ROUTES } from "@/constants/routes";
 
@@ -57,7 +65,18 @@ const router = createBrowserRouter([
             {
                 element: <AppLayout />,
                 children: [
-                    { index: true, element: <DashboardPage /> }
+                    { index: true, element: <DashboardPage /> },
+                    {
+                        path: "profile",
+                        element: <ProfileLayout />,
+                        children: [
+                            { index: true, element: <PersonalDetailsPage /> },
+                            { path: "pnl", element: <PnLStatementPage /> },
+                            { path: "trade-book", element: <TradeBookPage /> },
+                            { path: "journal", element: <JournalPage /> },
+                            { path: "tickets", element: <MyTicketsPage /> },
+                        ]
+                    }
                 ]
             }
         ]

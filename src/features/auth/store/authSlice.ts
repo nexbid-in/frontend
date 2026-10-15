@@ -7,6 +7,8 @@ export interface AuthUser {
     lastName?: string | null;
     role: 'USER' | 'ADMIN';
     profileImage?: string | null;
+    phone?: string | null;
+    userCode?: string | null;
 }
 
 interface AuthState {

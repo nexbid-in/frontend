@@ -14,6 +14,11 @@ export const APP_ROUTES = {
 
         // Protected Routes
         DASHBOARD: '/app',
+        PROFILE: '/app/profile',
+        PROFILE_PNL: '/app/profile/pnl',
+        PROFILE_TRADE_BOOK: '/app/profile/trade-book',
+        PROFILE_JOURNAL: '/app/profile/journal',
+        PROFILE_TICKETS: '/app/profile/tickets',
         WATCHLIST: '/app/watchlist',
         PORTFOLIO: '/app/portfolio',
         ORDERS: '/app/orders',
