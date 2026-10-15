@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "../store/authSlice";
+import { showToast } from "@/store/uiSlice";
 
 interface VerifyEmailFormProps {
     email: string;
@@ -53,8 +54,18 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
         try {
             const response = await authService.verifyOtp(email, otp);
 
+            const firstName = response.data?.user?.firstName;
+            const welcomeGreeting = firstName ? `, ${firstName}` : "";
+
+            // Dispatch welcome confirmation toast to Redux
+            dispatch(showToast({
+                title: "Account Created Successfully",
+                message: `Welcome to nexbid${welcomeGreeting}! Your trading account is ready.`,
+                type: "success",
+            }));
+
+            // Save credentials and navigate
             dispatch(setCredentials({ user: response.data.user }));
-            console.log("Verification Successful!", response);
             navigate(APP_ROUTES.USER.DASHBOARD);
         } catch (error: unknown) {
             if (error instanceof Error) {

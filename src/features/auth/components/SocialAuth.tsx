@@ -2,6 +2,7 @@ import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "../store/authSlice";
+import { showToast } from "@/store/uiSlice";
 import { authService } from "../services/authService";
 import { APP_ROUTES } from "@/constants/routes";
 import { useState } from "react";
@@ -27,10 +28,28 @@ export function SocialAuth({ actionText, buttonText = "Continue with Google", on
             setIsLoading(true);
             const response = await authService.googleAuth(credentialResponse.credential);
 
-            // 1. Save user into Redux store
-            dispatch(setCredentials({ user: response.data.user }));
+            const firstName = response.data?.user?.firstName;
+            const welcomeGreeting = firstName ? `, ${firstName}` : "";
+            const isNewUser = response.data?.isNewUser;
+            const isFromSignUp = actionText.toLowerCase().includes("sign up");
 
-            // 2. Redirect to dashboard
+            // Dispatch toast to Redux if new user or signing in through the signup page
+            if (isNewUser) {
+                dispatch(showToast({
+                    title: "Account Created Successfully",
+                    message: `Welcome to nexbid${welcomeGreeting}! Your account has been created with Google.`,
+                    type: "success",
+                }));
+            } else if (isFromSignUp) {
+                dispatch(showToast({
+                    title: "Welcome Back",
+                    message: `Welcome back${welcomeGreeting}! You are now signed in to your account.`,
+                    type: "info",
+                }));
+            }
+
+            // Save credentials and navigate
+            dispatch(setCredentials({ user: response.data.user }));
             navigate(APP_ROUTES.USER.DASHBOARD);
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : "Google authentication failed";

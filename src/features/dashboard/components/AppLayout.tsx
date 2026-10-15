@@ -1,17 +1,28 @@
 import { APP_ROUTES } from "@/constants/routes";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
+import { hideToast, showToast } from "@/store/uiSlice";
+import { Toast } from "@/components/ui";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
+    const toast = useAppSelector((state) => state.ui.toast);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+        if (location.state?.toast) {
+            dispatch(showToast(location.state.toast));
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state, dispatch]);
 
     const getInitials = () => {
         if (!user) return '??';
@@ -117,6 +128,17 @@ export function AppLayout() {
             <main className="flex-1 overflow-hidden h-[calc(100vh-60px)]">
                 <Outlet />
             </main>
+
+            {/* Notification Toast */}
+            {toast && (
+                <Toast
+                    title={toast.title}
+                    message={toast.message}
+                    type={toast.type}
+                    duration={toast.duration}
+                    onClose={() => dispatch(hideToast())}
+                />
+            )}
         </div>
     );
 }
