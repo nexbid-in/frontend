@@ -108,7 +108,10 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                     </div>
                 </form>
 
-                <SocialAuth actionText="Or sign up with" />
+                <SocialAuth
+                    actionText="Or sign up with" 
+                    onError={(err) => setApiError(err)}
+                />
 
                 <div className="mt-5 text-center text-[10px] text-gray-500">
                     By signing up I agree to the <a href="#" className="text-primary-green hover:underline">Terms of Service</a> and <a href="#" className="text-primary-green hover:underline">Privacy Policy</a>

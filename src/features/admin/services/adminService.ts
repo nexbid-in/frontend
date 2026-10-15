@@ -37,11 +37,11 @@ export const adminService = {
         if (search) params.append("search", search);
         if (status && status !== "all") params.append("status", status.toUpperCase());
 
-        const response = await apiClient.get<{ data: PaginatedUsersResponseDTO }>(`${API_ROUTES.ADMIN.GET_USERS}?${params.toString()}`);
+        const response = await apiClient.get<{ data: PaginatedUsersResponseDTO }>(`${API_ROUTES.ADMIN.USERS}?${params.toString()}`);
         return response.data.data;
     },
 
     updateUserStatus: async (userId: string): Promise<void> => {
-        await apiClient.patch(API_ROUTES.ADMIN.UPDATE_USER_STATUS(userId));
+        await apiClient.patch(API_ROUTES.ADMIN.USER_STATUS(userId));
     }
 };

@@ -42,9 +42,10 @@ export const API_ROUTES = {
         FORGOT_PASSWORD: '/auth/forgot-password',
         RESET_PASSWORD: '/auth/reset-password',
         REFRESH: '/auth/refresh',
+        GOOGLE: '/auth/google',
     },
     ADMIN: {
-        GET_USERS: '/admin/getusers',
-        UPDATE_USER_STATUS: (userId: string) => `/admin/users/${userId}/update-status`,
+        USERS: '/admin/users',
+        USER_STATUS: (userId: string) => `/admin/users/${userId}/status`,
     }
 } as const;

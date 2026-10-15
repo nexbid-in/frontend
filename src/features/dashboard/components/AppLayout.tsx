@@ -1,16 +1,45 @@
 import { APP_ROUTES } from "@/constants/routes";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
+import { hideToast, showToast } from "@/store/uiSlice";
+import { Toast } from "@/components/ui";
+
+import { useState, useEffect } from "react";
 
 export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
+    const toast = useAppSelector((state) => state.ui.toast);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
+    const [imageError, setImageError] = useState(false);
 
-    const initials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : '??';
+    useEffect(() => {
+        if (location.state?.toast) {
+            dispatch(showToast(location.state.toast));
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state, dispatch]);
+
+    const getInitials = () => {
+        if (!user) return '??';
+
+        const first = user.firstName?.trim() || '';
+        const last = user.lastName && user.lastName !== 'undefined' ? user.lastName.trim() : '';
+
+        if (first && last) {
+            return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+        }
+        if (first) {
+            return first.charAt(0).toUpperCase();
+        }
+        return '?';
+    };
+
+    const initials = getInitials();
 
     const handleLogout = async () => {
         try {
@@ -59,18 +88,30 @@ export function AppLayout() {
                         Add Funds
                     </button>
 
-                    {/* Dynamic User Initials */}
+                    {/* Dynamic User Profile Avatar */}
                     <div className="relative group cursor-pointer pb-2 pt-2">
                         {/* Profile Avatar */}
-                        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center font-semibold text-white group-hover:bg-violet-700 transition-colors">
-                            <span>{initials}</span>
+                        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center font-semibold text-white group-hover:bg-violet-700 transition-colors overflow-hidden shrink-0 select-none">
+                            {user?.profileImage && !imageError ? (
+                                <img
+                                    src={user.profileImage}
+                                    alt={user.firstName || "Profile"}
+                                    className="w-full h-full object-cover"
+                                    onError={() => setImageError(true)}
+                                    referrerPolicy="no-referrer"
+                                />
+                            ) : (
+                                <span className="text-xs font-semibold">{initials}</span>
+                            )}
                         </div>
 
                         {/* Dropdown Menu (Hidden by default, shown on hover) */}
                         <div className="absolute right-0 mt-2 w-40 bg-dash-panel border border-dash-border rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div className="px-4 py-2 border-b border-dash-border mb-1">
                                 <p className="text-xs text-dash-text-muted">Signed in as</p>
-                                <p className="text-sm font-semibold truncate">{user?.firstName}</p>
+                                <p className="text-sm font-semibold truncate">
+                                    {user?.firstName}{user?.lastName && user.lastName !== 'undefined' ? ` ${user.lastName}` : ''}
+                                </p>
                             </div>
                             <button
                                 onClick={handleLogout}
@@ -87,6 +128,17 @@ export function AppLayout() {
             <main className="flex-1 overflow-hidden h-[calc(100vh-60px)]">
                 <Outlet />
             </main>
+
+            {/* Notification Toast */}
+            {toast && (
+                <Toast
+                    title={toast.title}
+                    message={toast.message}
+                    type={toast.type}
+                    duration={toast.duration}
+                    onClose={() => dispatch(hideToast())}
+                />
+            )}
         </div>
     );
 }

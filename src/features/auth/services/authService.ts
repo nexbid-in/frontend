@@ -10,7 +10,7 @@ export const authService = {
 
     verifyOtp: async (email: string, otp: string) => {
         const response = await apiClient.post(API_ROUTES.AUTH.VERIFY_OTP, { email, otp });
-        return response.data; 
+        return response.data;
     },
 
     resendOtp: async (email: string) => {
@@ -42,5 +42,10 @@ export const authService = {
     resetPassword: async (data: any) => {
         const response = await apiClient.post(API_ROUTES.AUTH.RESET_PASSWORD, data);
         return response.data;
-    }
+    },
+
+    googleAuth: async (credential: string) => {
+        const response = await apiClient.post(API_ROUTES.AUTH.GOOGLE, { credential });
+        return response.data;
+    },
 };
