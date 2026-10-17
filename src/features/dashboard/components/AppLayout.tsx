@@ -67,6 +67,10 @@ export function AppLayout() {
         setIsDropdownOpen(false);
     }, [location.pathname]);
 
+    useEffect(() => {
+        setImageError(false);
+    }, [user?.profileImage]);
+
     const getInitials = () => {
         if (!user) return '??';
 

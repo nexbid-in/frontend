@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout } from "@/features/auth/store/authSlice";
@@ -70,6 +70,10 @@ export function ProfileLayout() {
     const location = useLocation();
     const [imageError, setImageError] = useState(false);
     const [showSignOutModal, setShowSignOutModal] = useState(false);
+
+    useEffect(() => {
+        setImageError(false);
+    }, [user?.profileImage]);
 
     const getInitials = () => {
         if (!user) return "VR";

@@ -12,7 +12,7 @@ export function Toast({
     title,
     message,
     type = "success",
-    duration = 30000,
+    duration = 20000,
     onClose,
 }: ToastProps) {
     const [isVisible, setIsVisible] = useState(false);

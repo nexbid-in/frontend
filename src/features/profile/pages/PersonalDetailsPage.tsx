@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { profileService, type UserProfileDTO } from "../services/profileService";
+import { EditProfileModal } from "../components/EditProfileModal";
 
 interface InfoTooltipProps {
     text: string;
@@ -37,6 +38,7 @@ export function PersonalDetailsPage() {
     const [profile, setProfile] = useState<UserProfileDTO | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [theme, setTheme] = useState<"light" | "dark">("dark");
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -95,7 +97,28 @@ export function PersonalDetailsPage() {
             {isLoading ? (
                 <div className="h-8 w-48 bg-dash-panel-2 animate-pulse rounded mb-8" />
             ) : (
-                <h1 className="text-2xl font-semibold mb-8 text-[#E6E7EA]">{fullName}</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-2xl font-semibold text-[#E6E7EA]">{fullName}</h1>
+                    <button
+                        type="button"
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors cursor-pointer"
+                    >
+                        <svg
+                            className="w-3.5 h-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L7.125 19.875 3 21l1.125-4.125L18.375 2.625z" />
+                            <path d="M15.75 5.25l3 3" />
+                        </svg>
+                        <span>Edit</span>
+                    </button>
+                </div>
             )}
 
             {/* Personal Details Information */}
@@ -228,6 +251,14 @@ export function PersonalDetailsPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Edit Profile Modal */}
+            <EditProfileModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                currentProfile={profile}
+                onProfileUpdated={(updated) => setProfile(updated)}
+            />
         </div>
     );
 }
