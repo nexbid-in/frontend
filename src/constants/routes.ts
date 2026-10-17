@@ -49,6 +49,9 @@ export const API_ROUTES = {
         REFRESH: '/auth/refresh',
         GOOGLE: '/auth/google',
     },
+    USER: {
+        PROFILE: '/users/profile',
+    },
     ADMIN: {
         USERS: '/admin/users',
         USER_STATUS: (userId: string) => `/admin/users/${userId}/status`,

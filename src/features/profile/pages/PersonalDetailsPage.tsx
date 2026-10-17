@@ -1,35 +1,89 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppSelector } from "@/store/hooks";
+import { profileService, type UserProfileDTO } from "../services/profileService";
 
 export function PersonalDetailsPage() {
-    const user = useAppSelector((state) => state.auth.user);
+    const authUser = useAppSelector((state) => state.auth.user);
+    const [profile, setProfile] = useState<UserProfileDTO | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [theme, setTheme] = useState<"light" | "dark">("dark");
 
-    const displayName = user?.firstName || "Vaisakh";
-    const lastName = user?.lastName && user.lastName !== "undefined" ? user.lastName.trim() : "";
-    const fullName = user ? `${displayName}${lastName ? ` ${lastName}` : ""}` : "Vaisakh Ramanan";
-    const userEmail = user?.email || "vaisakh123@gmail.com";
-    // Phone will be populated via dedicated GET /api/v1/users/profile
-    const userPhone = "9876543210";
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchProfile = async () => {
+            try {
+                setIsLoading(true);
+                const data = await profileService.getProfile();
+                if (isMounted) {
+                    setProfile(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user profile:", error);
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        fetchProfile();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const displayName = profile?.firstName || authUser?.firstName || "";
+    const lastName = profile?.lastName || (authUser?.lastName && authUser.lastName !== "undefined" ? authUser.lastName.trim() : "");
+    const fullName = `${displayName}${lastName ? ` ${lastName}` : ""}`.trim() || "User";
+    const userEmail = profile?.email || authUser?.email || "—";
+    const userPhone = profile?.mobile ? profile.mobile : (isLoading ? "" : "Not provided");
+
+    const getPasswordDisplay = () => {
+        if (profile?.hasPassword) {
+            return "••••••••";
+        }
+        if (profile?.isGoogleLinked) {
+            return "Managed via Google";
+        }
+        return "••••••••";
+    };
 
     return (
         <div>
-            <h1 className="text-2xl font-semibold mb-8 text-[#E6E7EA]">{fullName}</h1>
+            {isLoading ? (
+                <div className="h-8 w-48 bg-dash-panel-2 animate-pulse rounded mb-8" />
+            ) : (
+                <h1 className="text-2xl font-semibold mb-8 text-[#E6E7EA]">{fullName}</h1>
+            )}
 
             {/* Personal Details Information */}
             <section className="mb-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8 text-sm">
                     <div>
                         <p className="text-[#9AA0A6] mb-1">Email</p>
-                        <p className="font-medium text-[#E6E7EA]">{userEmail}</p>
+                        {isLoading ? (
+                            <div className="h-5 w-36 bg-dash-panel-2 animate-pulse rounded" />
+                        ) : (
+                            <p className="font-medium text-[#E6E7EA]">{userEmail}</p>
+                        )}
                     </div>
                     <div>
                         <p className="text-[#9AA0A6] mb-1">Mobile number</p>
-                        <p className="font-medium text-[#E6E7EA]">{userPhone}</p>
+                        {isLoading ? (
+                            <div className="h-5 w-28 bg-dash-panel-2 animate-pulse rounded" />
+                        ) : (
+                            <p className="font-medium text-[#E6E7EA]">{userPhone}</p>
+                        )}
                     </div>
                     <div>
                         <p className="text-[#9AA0A6] mb-1">Password</p>
-                        <p className="font-medium text-[#E6E7EA]">********</p>
+                        {isLoading ? (
+                            <div className="h-5 w-24 bg-dash-panel-2 animate-pulse rounded" />
+                        ) : (
+                            <p className="font-medium text-[#E6E7EA]">{getPasswordDisplay()}</p>
+                        )}
                     </div>
                 </div>
             </section>
