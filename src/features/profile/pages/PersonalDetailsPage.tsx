@@ -9,7 +9,8 @@ export function PersonalDetailsPage() {
     const lastName = user?.lastName && user.lastName !== "undefined" ? user.lastName.trim() : "";
     const fullName = user ? `${displayName}${lastName ? ` ${lastName}` : ""}` : "Vaisakh Ramanan";
     const userEmail = user?.email || "vaisakh123@gmail.com";
-    const userPhone = user?.phone || "9876543210";
+    // Phone will be populated via dedicated GET /api/v1/users/profile
+    const userPhone = "9876543210";
 
     return (
         <div>

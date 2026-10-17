@@ -26,7 +26,7 @@ export function ProfileLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [imageError, setImageError] = useState(false);
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showSignOutModal, setShowSignOutModal] = useState(false);
 
     const getInitials = () => {
         if (!user) return "VR";
@@ -44,16 +44,14 @@ export function ProfileLayout() {
     };
 
     const initials = getInitials();
-    const displayName = user?.firstName || "Vaisakh";
-    const clientCode = user?.userCode || (user?.id ? `XV${user.id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "XV16644");
 
-    const handleLogout = async () => {
+    const handleSignOut = async () => {
         try {
             await authService.logout();
             dispatch(logout());
             navigate(APP_ROUTES.USER.SIGN_IN);
         } catch (error) {
-            console.error("Failed to logout", error);
+            console.error("Failed to sign out", error);
         }
     };
 
@@ -76,7 +74,7 @@ export function ProfileLayout() {
                                 {user?.profileImage && !imageError ? (
                                     <img
                                         src={user.profileImage}
-                                        alt={displayName}
+                                        alt={user.firstName}
                                         className="w-full h-full object-cover"
                                         onError={() => setImageError(true)}
                                         referrerPolicy="no-referrer"
@@ -86,8 +84,8 @@ export function ProfileLayout() {
                                 )}
                             </div>
                             <div className="text-center">
-                                <p className="font-semibold text-lg text-dash-text">{displayName}</p>
-                                <p className="text-sm text-dash-text-muted">{clientCode}</p>
+                                <p className="font-semibold text-lg text-dash-text">{user?.firstName}</p>
+                                <p className="text-sm text-dash-text-muted">{user?.id}</p>
                             </div>
                         </div>
 
@@ -112,15 +110,15 @@ export function ProfileLayout() {
                         </nav>
                     </div>
 
-                    {/* Logout Option */}
+                    {/* Sign out Option */}
                     <div className="pt-4 border-t border-dash-border mt-4">
                         <button
                             type="button"
-                            onClick={() => setShowLogoutModal(true)}
-                            className="w-full text-left p-2.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-[#1f2226] transition-colors font-medium text-sm flex items-center gap-2 cursor-pointer"
+                            onClick={() => setShowSignOutModal(true)}
+                            className="w-full text-left p-2.5 rounded-lg text-gray-300 hover:text-white hover:bg-[#1f2226] transition-colors font-medium text-sm flex items-center gap-2 cursor-pointer"
                         >
                             <svg
-                                className="w-4 h-4"
+                                className="w-4 h-4 text-dash-text-muted"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -132,7 +130,7 @@ export function ProfileLayout() {
                                 <polyline points="16 17 21 12 16 7" />
                                 <line x1="21" y1="12" x2="9" y2="12" />
                             </svg>
-                            <span>Logout</span>
+                            <span>Sign out</span>
                         </button>
                     </div>
                 </aside>
@@ -143,19 +141,19 @@ export function ProfileLayout() {
                 </main>
             </section>
 
-            {/* Logout Confirmation Modal */}
+            {/* Sign Out Confirmation Modal */}
             <ConfirmModal
-                isOpen={showLogoutModal}
-                title="Confirm Logout"
-                message="Are you sure you want to log out of your account?"
-                confirmText="Log Out"
+                isOpen={showSignOutModal}
+                title="Confirm Sign Out"
+                message="Are you sure you want to sign out of your account?"
+                confirmText="Sign Out"
                 cancelText="Cancel"
                 confirmButtonVariant="danger"
                 onConfirm={() => {
-                    setShowLogoutModal(false);
-                    handleLogout();
+                    setShowSignOutModal(false);
+                    handleSignOut();
                 }}
-                onCancel={() => setShowLogoutModal(false)}
+                onCancel={() => setShowSignOutModal(false)}
             />
         </div>
     );
