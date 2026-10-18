@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
-import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage } from "@/features/auth";
+import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage, AccountSuspendedPage } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { AdminDashboardPage, AdminUsersPage, AdminLayout } from "@/features/admin";
 
@@ -18,7 +18,7 @@ import {
 
 import { APP_ROUTES } from "@/constants/routes";
 
-const router = createBrowserRouter([
+export const router = createBrowserRouter([
     // ------------------------------------
     // PUBLIC ROUTES (Guests Only)
     // ------------------------------------
@@ -51,6 +51,10 @@ const router = createBrowserRouter([
             {
                 path: APP_ROUTES.USER.FORGOT_PASSWORD,
                 element: <ForgotPasswordPage />
+            },
+            {
+                path: APP_ROUTES.USER.ACCOUNT_SUSPENDED,
+                element: <AccountSuspendedPage />
             }
         ]
     },

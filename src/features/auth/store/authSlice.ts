@@ -12,12 +12,14 @@ interface AuthState {
     user: AuthUser | null;
     isAuthenticated: boolean;
     isAuthLoading: boolean;
+    isBlocked: boolean;
 }
 
 const initialState: AuthState = {
     user: null,
     isAuthenticated: false,
-    isAuthLoading: true
+    isAuthLoading: true,
+    isBlocked: false,
 };
 
 const authSlice = createSlice({
@@ -31,22 +33,31 @@ const authSlice = createSlice({
             state.user = action.payload.user;
             state.isAuthenticated = true; 
             state.isAuthLoading = false;
+            state.isBlocked = false;
         },
         
         logout: (state) => {
             state.user = null;
             state.isAuthenticated = false;
             state.isAuthLoading = false;
+            state.isBlocked = false;
         },
 
         setAuthFailed: (state) => {
             state.user = null;
             state.isAuthenticated = false;
             state.isAuthLoading = false;
+        },
+
+        setAccountBlocked: (state) => {
+            state.user = null;
+            state.isAuthenticated = false;
+            state.isAuthLoading = false;
+            state.isBlocked = true;
         }
     },
 });
 
-export const { setCredentials, logout, setAuthFailed } = authSlice.actions;
+export const { setCredentials, logout, setAuthFailed, setAccountBlocked } = authSlice.actions;
 
 export default authSlice.reducer;

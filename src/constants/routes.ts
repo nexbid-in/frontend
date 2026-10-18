@@ -5,6 +5,7 @@ export const APP_ROUTES = {
         SIGN_IN: '/signin',
         SIGN_UP: '/signup',
         FORGOT_PASSWORD: '/forgot-password',
+        ACCOUNT_SUSPENDED: '/account-suspended',
 
         // Marketing Pages
         ABOUT: '/about',

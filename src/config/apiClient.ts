@@ -1,6 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { store } from "@/store/store";
-import { logout } from "@/features/auth/store/authSlice";
+import { logout, setAccountBlocked } from "@/features/auth/store/authSlice";
 import { API_ROUTES } from "@/constants/routes";
 import { env } from "./env";
 
@@ -34,11 +34,18 @@ apiClient.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        const message = 
-            (error.response?.data as any)?.error?.message || 
-            (error.response?.data as any)?.message || 
-            error.message || 
+        const errorData = error.response?.data as any;
+        const errorCode = errorData?.error?.code || errorData?.code;
+        const message =
+            errorData?.error?.message ||
+            errorData?.message ||
+            error.message ||
             'An unexpected error occurred';
+
+        if (errorCode === 'ACCOUNT_BLOCKED') {
+            store.dispatch(setAccountBlocked());
+            return Promise.reject(new Error(message));
+        }
 
         const isAuthLogin = originalRequest?.url?.includes(API_ROUTES.AUTH.LOGIN);
 
