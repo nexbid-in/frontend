@@ -6,6 +6,7 @@ import { showToast } from "@/store/uiSlice";
 import { authService } from "../services/authService";
 import { APP_ROUTES } from "@/constants/routes";
 import { useState } from "react";
+import { store } from "@/store/store";
 
 interface SocialAuthProps {
     actionText: string;
@@ -52,6 +53,10 @@ export function SocialAuth({ actionText, buttonText = "Continue with Google", on
             dispatch(setCredentials({ user: response.data.user }));
             navigate(APP_ROUTES.USER.DASHBOARD);
         } catch (err: unknown) {
+            if (store.getState().auth.isBlocked) {
+                navigate(APP_ROUTES.USER.ACCOUNT_SUSPENDED);
+                return;
+            }
             const errorMessage = err instanceof Error ? err.message : "Google authentication failed";
             onError?.(errorMessage);
         } finally {

@@ -2,32 +2,26 @@ import { Link } from "react-router-dom";
 import { APP_ROUTES } from "@/constants/routes";
 
 export default function AccountSuspendedPage() {
-    return (
-        <div className="min-h-screen bg-[#0d0e11] text-[#E6E7EA] flex flex-col justify-between items-center p-6 relative overflow-hidden select-none">
-            {/* Background ambient lighting */}
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-500/10 blur-[120px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-10 right-10 w-80 h-80 bg-primary-green/5 blur-[100px] rounded-full pointer-events-none" />
 
-            {/* Top brand header */}
-            <header className="w-full max-w-5xl flex items-center justify-between py-4 z-10">
+    return (
+        <div className="h-screen w-full bg-[#F8FAFC] text-gray-900 flex flex-col justify-between items-center px-4 py-3 sm:px-6 sm:py-4 overflow-hidden select-none">
+            {/* Top Brand Header */}
+            <header className="w-full max-w-5xl flex items-center justify-between py-2 sm:py-3 shrink-0">
                 <Link to={APP_ROUTES.USER.HOME} className="flex items-center gap-2">
-                    <span className="text-2xl font-extrabold text-primary-green tracking-tight">nexbid</span>
+                    <span className="text-2xl sm:text-3xl font-extrabold text-primary-green tracking-tight">nexbid</span>
                 </Link>
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                    Security Notice
+                <div className="flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-semibold shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    Security & Compliance Notice
                 </div>
             </header>
 
             {/* Main Center Card */}
-            <main className="w-full max-w-lg my-auto z-10">
-                <div className="bg-[#141517] border border-white/10 rounded-2xl p-8 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-xl text-center">
-                    {/* Top gradient accent line */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-amber-500 to-red-500" />
-
+            <main className="w-full max-w-lg my-auto flex flex-col justify-center">
+                <div className="bg-white border border-gray-200/90 rounded-2xl p-6 sm:p-8 shadow-xl shadow-gray-200/60 text-center relative">
                     {/* Shield Icon Badge */}
-                    <div className="relative mx-auto w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-6 shadow-[0_0_30px_rgba(239,68,68,0.25)]">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
+                    <div className="relative mx-auto w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 mb-4 sm:mb-5 shadow-sm">
+                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -37,51 +31,51 @@ export default function AccountSuspendedPage() {
                     </div>
 
                     {/* Headings */}
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#E6E7EA] mb-2 tracking-tight">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 sm:mb-2 tracking-tight">
                         Account Suspended
                     </h1>
-                    <p className="text-sm text-[#9AA0A6] mb-8 leading-relaxed max-w-md mx-auto">
-                        Your Nexbid account has been temporarily blocked by administration. Active trading sessions have been terminated to safeguard your account.
+                    <p className="text-xs sm:text-sm text-gray-600 mb-5 sm:mb-6 leading-relaxed max-w-md mx-auto">
+                        Your Nexbid account has been restricted by administration. All active trading sessions have been terminated to safeguard your account.
                     </p>
 
-                    {/* Status & Explanation Box */}
-                    <div className="bg-[#1a1c20] border border-white/5 rounded-xl p-4 mb-8 text-left space-y-3.5">
-                        <div className="flex items-start gap-3">
-                            <span className="w-2 h-2 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                    {/* Status Information Box */}
+                    <div className="bg-gray-50 border border-gray-200/70 rounded-xl p-3.5 sm:p-4 mb-5 sm:mb-6 text-left space-y-2.5 sm:space-y-3">
+                        <div className="flex items-start gap-2.5">
+                            <span className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
                             <div>
-                                <p className="text-xs font-semibold text-[#E6E7EA]">Current Status: Restricted</p>
-                                <p className="text-[12px] text-[#9AA0A6] mt-0.5 leading-relaxed">
-                                    All market orders, open positions, and account modifications are frozen pending administrative review.
+                                <p className="text-xs font-semibold text-gray-900">Current Status: Restricted</p>
+                                <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 leading-relaxed">
+                                    All live orders, simulated positions, and profile actions have been locked pending administrative review.
                                 </p>
                             </div>
                         </div>
 
-                        <div className="border-t border-white/5 pt-3 flex items-start gap-3">
-                            <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                        <div className="border-t border-gray-200/70 pt-2.5 flex items-start gap-2.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                             <div>
-                                <p className="text-xs font-semibold text-[#E6E7EA]">Resolution & Support</p>
-                                <p className="text-[12px] text-[#9AA0A6] mt-0.5 leading-relaxed">
-                                    If you believe this suspension is in error or wish to request an account review, our compliance support desk is available to assist you.
+                                <p className="text-xs font-semibold text-gray-900">Resolution & Support</p>
+                                <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 leading-relaxed">
+                                    If you believe this suspension was made in error or wish to request an account review, our support desk is ready to assist you.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Actions */}
+                    {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <a
-                            href="mailto:support@nexbid.com?subject=Nexbid%20Account%20Suspension%20Inquiry"
-                            className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold bg-primary-green hover:bg-primary-green-hover text-white transition-all shadow-md cursor-pointer"
+                        <Link
+                            to={APP_ROUTES.USER.SUPPORT}
+                            className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-primary-green hover:bg-primary-green-hover text-white transition-all shadow-sm hover:shadow cursor-pointer"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                             </svg>
                             <span>Contact Support</span>
-                        </a>
+                        </Link>
 
                         <Link
                             to={APP_ROUTES.USER.SIGN_IN}
-                            className="flex-1 inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium text-[#9AA0A6] hover:text-[#E6E7EA] hover:bg-white/5 border border-white/10 transition-colors cursor-pointer"
+                            className="flex-1 inline-flex items-center justify-center py-2.5 sm:py-3 px-4 rounded-xl text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition-colors cursor-pointer"
                         >
                             Return to Sign In
                         </Link>
@@ -90,8 +84,8 @@ export default function AccountSuspendedPage() {
             </main>
 
             {/* Bottom Footer Note */}
-            <footer className="w-full max-w-5xl text-center py-4 text-xs text-[#9AA0A6] z-10">
-                <p>Nexbid Risk & Compliance Desk · Automated Security System</p>
+            <footer className="w-full max-w-5xl text-center py-2 sm:py-3 text-[11px] sm:text-xs text-gray-500 shrink-0">
+                <p>Nexbid Risk & Compliance Desk · Automated Security Safeguard</p>
             </footer>
         </div>
     );

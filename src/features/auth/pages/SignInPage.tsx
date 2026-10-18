@@ -11,6 +11,7 @@ import { authService } from "../services/authService";
 
 import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "../store/authSlice";
+import { store } from "@/store/store";
 
 export default function SignInPage() {
     const navigate = useNavigate();
@@ -34,6 +35,10 @@ export default function SignInPage() {
             console.log("Login Successful!", response);
             navigate(APP_ROUTES.USER.DASHBOARD);
         } catch (error: unknown) {
+            if (store.getState().auth.isBlocked) {
+                navigate(APP_ROUTES.USER.ACCOUNT_SUSPENDED);
+                return;
+            }
             if (error instanceof Error) {
                 setApiError(error.message);
             } else {
