@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from "react";
 export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
     const toast = useAppSelector((state) => state.ui.toast);
+    const theme = useAppSelector((state) => state.ui.theme);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const location = useLocation();
@@ -72,7 +73,7 @@ export function AppLayout() {
     const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans">
+        <div className="dashboard-root flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans" data-theme={theme}>
             <nav className="h-[60px] bg-dash-panel flex items-center justify-between px-6 border-b border-dash-border">
                 <div className="flex items-center gap-5">
                     <Link to={APP_ROUTES.USER.DASHBOARD} className="text-2xl font-bold text-primary-green tracking-tight">
@@ -80,9 +81,9 @@ export function AppLayout() {
                     </Link>
 
                     <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-[#d1d5db]">NIFTY50 Index</span>
+                        <span className="text-sm font-medium text-dash-text-muted">NIFTY50 Index</span>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-sm font-semibold text-[#f5f5f5]">25,492.30</span>
+                            <span className="text-sm font-semibold text-dash-text">25,492.30</span>
                             <span className="text-xs font-medium text-[#ef4444]">-17.40 (-0.07%)</span>
                         </div>
                     </div>
@@ -94,24 +95,24 @@ export function AppLayout() {
                         className={`${
                             isMarketsActive
                                 ? "text-primary-green font-medium"
-                                : "text-[#d1d5db] hover:text-white"
+                                : "text-dash-text-muted hover:text-dash-text"
                         } px-3 py-1.5 rounded-md transition-colors`}
                     >
                         Markets
                     </Link>
-                    <Link to={APP_ROUTES.USER.WATCHLIST} className="text-[#d1d5db] hover:text-white">Watchlist</Link>
-                    <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-[#d1d5db] hover:text-white">Portfolio</Link>
-                    <Link to={APP_ROUTES.USER.ORDERS} className="text-[#d1d5db] hover:text-white">Orders</Link>
-                    <Link to={APP_ROUTES.USER.FUNDS} className="text-[#d1d5db] hover:text-white">Funds</Link>
+                    <Link to={APP_ROUTES.USER.WATCHLIST} className="text-dash-text-muted hover:text-dash-text transition-colors">Watchlist</Link>
+                    <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-dash-text-muted hover:text-dash-text transition-colors">Portfolio</Link>
+                    <Link to={APP_ROUTES.USER.ORDERS} className="text-dash-text-muted hover:text-dash-text transition-colors">Orders</Link>
+                    <Link to={APP_ROUTES.USER.FUNDS} className="text-dash-text-muted hover:text-dash-text transition-colors">Funds</Link>
                 </div>
 
                 <div className="flex items-center gap-5 text-sm">
                     <div className="flex items-center gap-2">
-                        <span className="text-[#a1a1aa]">Margin Available:</span>
-                        <span className="font-medium text-[#e5e5e5]">₹3757.30</span>
+                        <span className="text-dash-text-muted">Margin Available:</span>
+                        <span className="font-medium text-dash-text">₹3757.30</span>
                     </div>
 
-                    <button className="text-[#d1d5db] text-xs font-medium border border-[#4b5563] px-3 py-1.5 rounded-md hover:border-white cursor-pointer">
+                    <button className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text px-3 py-1.5 rounded-md transition-colors cursor-pointer">
                         Add Funds
                     </button>
 
@@ -171,7 +172,7 @@ export function AppLayout() {
                                     <Link
                                         to={APP_ROUTES.USER.PROFILE}
                                         onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#d1d5db] hover:text-white hover:bg-dash-panel-2 transition-colors font-medium"
+                                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors font-medium"
                                     >
                                         <svg
                                             className="w-4 h-4 text-dash-text-muted"
@@ -197,7 +198,7 @@ export function AppLayout() {
                                             setIsDropdownOpen(false);
                                             setShowSignOutModal(true);
                                         }}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-[#d1d5db] hover:text-white hover:bg-dash-panel-2 transition-colors font-medium cursor-pointer text-left"
+                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors font-medium cursor-pointer text-left"
                                     >
                                         <svg
                                             className="w-4 h-4 text-dash-text-muted"

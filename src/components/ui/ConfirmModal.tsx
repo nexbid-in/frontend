@@ -32,17 +32,17 @@ export function ConfirmModal({
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-panel border border-border-muted rounded-xl p-6 max-w-sm w-full shadow-2xl">
-                <h3 className="text-lg font-semibold text-[#E6E7EA] mb-2">
+                <h3 className="text-lg font-semibold text-dash-text mb-2">
                     {title}
                 </h3>
-                <div className="text-sm text-[#9AA0A6] mb-6">
+                <div className="text-sm text-dash-text-muted mb-6">
                     {message}
                 </div>
                 <div className="flex items-center justify-end gap-3">
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="px-4 py-2 rounded-lg text-sm font-medium text-[#9AA0A6] hover:text-[#E6E7EA] hover:bg-panel-2 transition-colors border border-transparent hover:border-border-muted cursor-pointer"
+                        className="px-4 py-2 rounded-lg text-sm font-medium text-dash-text-muted hover:text-dash-text hover:bg-panel-2 transition-colors border border-transparent hover:border-border-muted cursor-pointer"
                     >
                         {cancelText}
                     </button>

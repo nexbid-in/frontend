@@ -117,13 +117,13 @@ export function ProfileLayout() {
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        className={`flex items-center gap-2.5 w-full text-left p-2.5 rounded-lg transition-colors font-medium text-sm ${
+                                        className={`flex items-center gap-2.5 w-full text-left p-2.5 rounded-lg font-medium text-sm border ${
                                             isActive
-                                                ? "text-green font-semibold bg-dash-panel"
-                                                : "text-gray-300 hover:text-white hover:bg-[#1f2226]"
+                                                ? "text-primary-green font-semibold bg-dash-panel border-dash-border shadow-xs"
+                                                : "border-transparent text-dash-text-muted hover:text-dash-text hover:bg-dash-panel/60 transition-colors"
                                         }`}
                                     >
-                                        <span className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-green" : "text-dash-text-muted"}`}>
+                                        <span className={`w-4 h-4 shrink-0 ${isActive ? "text-primary-green" : "text-dash-text-muted transition-colors"}`}>
                                             {item.icon}
                                         </span>
                                         <span>{item.label}</span>
@@ -138,7 +138,7 @@ export function ProfileLayout() {
                         <button
                             type="button"
                             onClick={() => setShowSignOutModal(true)}
-                            className="w-full text-left p-2.5 rounded-lg text-gray-300 hover:text-white hover:bg-[#1f2226] transition-colors font-medium text-sm flex items-center gap-2.5 cursor-pointer"
+                            className="w-full text-left p-2.5 rounded-lg text-dash-text-muted hover:text-dash-text hover:bg-dash-panel/60 transition-colors font-medium text-sm flex items-center gap-2.5 cursor-pointer"
                         >
                             <svg
                                 className="w-4 h-4 text-dash-text-muted"

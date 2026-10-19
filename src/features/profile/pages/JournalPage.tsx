@@ -1,7 +1,7 @@
 export function JournalPage() {
     return (
         <div className="flex flex-col flex-1 h-full">
-            <h1 className="text-2xl font-semibold text-[#E6E7EA]">Journal</h1>
+            <h1 className="text-2xl font-semibold text-dash-text">Journal</h1>
 
             <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto py-12">
                 <div className="w-16 h-16 rounded-full bg-dash-panel-2 flex items-center justify-center text-primary-green mb-4">
@@ -19,7 +19,7 @@ export function JournalPage() {
                         />
                     </svg>
                 </div>
-                <h2 className="text-xl font-semibold text-[#E6E7EA] mb-2">Trading Journal & Notes</h2>
+                <h2 className="text-xl font-semibold text-dash-text mb-2">Trading Journal & Notes</h2>
                 <p className="text-sm text-dash-text-muted">
                     Log your daily trading thesis, review past mistakes, and refine your edge over time.
                 </p>

@@ -201,7 +201,7 @@ export function EditProfileModal({
                 {/* Header */}
                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-dash-border">
                     <div>
-                        <h3 className="text-lg font-semibold text-[#E6E7EA]">Edit Profile</h3>
+                        <h3 className="text-lg font-semibold text-dash-text">Edit Profile</h3>
                         <p className="text-xs text-dash-text-muted mt-0.5">
                             Update your personal information and photo
                         </p>
@@ -209,7 +209,7 @@ export function EditProfileModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="text-dash-text-muted hover:text-[#E6E7EA] p-1.5 rounded-lg hover:bg-dash-panel-2 transition-colors cursor-pointer"
+                        className="text-dash-text-muted hover:text-dash-text p-1.5 rounded-lg hover:bg-dash-panel-2 transition-colors cursor-pointer"
                         aria-label="Close"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +229,7 @@ export function EditProfileModal({
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {/* Profile Photo Upload Section */}
                     <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-dash-text-muted mb-2">
                             Profile Picture
                         </label>
                         <div className="flex items-center gap-4 p-3 bg-dash-panel-2 rounded-xl border border-dash-border">
@@ -302,7 +302,7 @@ export function EditProfileModal({
                         <Input
                             label="First Name"
                             id="edit-firstname"
-                            variant="dark"
+                            variant="dash"
                             placeholder="First name"
                             {...register("firstName")}
                             error={errors.firstName?.message}
@@ -311,7 +311,7 @@ export function EditProfileModal({
                         <Input
                             label="Last Name"
                             id="edit-lastname"
-                            variant="dark"
+                            variant="dash"
                             placeholder="Last name"
                             {...register("lastName")}
                             error={errors.lastName?.message}
@@ -319,14 +319,14 @@ export function EditProfileModal({
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-dash-text-muted mb-1.5">
                             Email Address
                         </label>
                         <input
                             type="email"
                             disabled
                             value={currentProfile?.email || authUser?.email || ""}
-                            className="w-full rounded-md px-3 py-2.5 text-sm bg-white/[0.02] border border-white/5 text-slate-500 cursor-not-allowed outline-none select-none"
+                            className="w-full rounded-md px-3 py-2.5 text-sm bg-dash-panel-2 border border-dash-border text-dash-text-muted cursor-not-allowed outline-none select-none"
                         />
                         <p className="mt-1 text-[11px] text-dash-text-muted">
                             Email address is managed via your sign-in credentials and cannot be edited here.
@@ -336,7 +336,7 @@ export function EditProfileModal({
                     <Input
                         label="Mobile Number"
                         id="edit-mobile"
-                        variant="dark"
+                        variant="dash"
                         placeholder="10-digit mobile number"
                         {...register("mobile")}
                         error={errors.mobile?.message}
@@ -348,7 +348,7 @@ export function EditProfileModal({
                             type="button"
                             onClick={onClose}
                             disabled={isSubmitting}
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-[#9AA0A6] hover:text-[#E6E7EA] hover:bg-dash-panel-2 transition-colors border border-transparent hover:border-dash-border cursor-pointer disabled:opacity-50"
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors border border-transparent hover:border-dash-border cursor-pointer disabled:opacity-50"
                         >
                             Cancel
                         </button>

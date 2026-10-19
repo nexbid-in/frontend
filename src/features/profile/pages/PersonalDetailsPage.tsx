@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setTheme } from "@/store/uiSlice";
 import { profileService, type UserProfileDTO } from "../services/profileService";
 import { EditProfileModal } from "../components/EditProfileModal";
 
@@ -11,7 +12,7 @@ function InfoTooltip({ text }: InfoTooltipProps) {
     return (
         <span className="relative group/tooltip inline-flex items-center cursor-pointer">
             <svg
-                className="w-3.5 h-3.5 text-dash-text-muted hover:text-[#E6E7EA] transition-colors shrink-0"
+                className="w-3.5 h-3.5 text-dash-text-muted hover:text-dash-text transition-colors shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -24,20 +25,21 @@ function InfoTooltip({ text }: InfoTooltipProps) {
                 <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/tooltip:flex flex-col items-center pointer-events-none z-50">
-                <span className="bg-[#18191c] text-[#E6E7EA] text-xs font-normal px-2.5 py-1 rounded border border-dash-border shadow-xl whitespace-nowrap">
+                <span className="bg-dash-panel text-dash-text text-xs font-normal px-2.5 py-1 rounded border border-dash-border shadow-xl whitespace-nowrap">
                     {text}
                 </span>
-                <span className="w-1.5 h-1.5 bg-[#18191c] border-r border-b border-dash-border rotate-45 -mt-0.5" />
+                <span className="w-1.5 h-1.5 bg-dash-panel border-r border-b border-dash-border rotate-45 -mt-0.5" />
             </span>
         </span>
     );
 }
 
 export function PersonalDetailsPage() {
+    const dispatch = useAppDispatch();
     const authUser = useAppSelector((state) => state.auth.user);
+    const theme = useAppSelector((state) => state.ui.theme);
     const [profile, setProfile] = useState<UserProfileDTO | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [theme, setTheme] = useState<"light" | "dark">("dark");
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     useEffect(() => {
@@ -92,13 +94,24 @@ export function PersonalDetailsPage() {
         return "••••••••";
     };
 
+    const handleThemeChange = (newTheme: "light" | "dark") => {
+        if (!document.startViewTransition) {
+            dispatch(setTheme(newTheme));
+            return;
+        }
+
+        document.startViewTransition(() => {
+            dispatch(setTheme(newTheme));
+        });
+    };
+
     return (
         <div>
             {isLoading ? (
                 <div className="h-8 w-48 bg-dash-panel-2 animate-pulse rounded mb-8" />
             ) : (
                 <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-2xl font-semibold text-[#E6E7EA]">{fullName}</h1>
+                    <h1 className="text-2xl font-semibold text-dash-text">{fullName}</h1>
                     <button
                         type="button"
                         onClick={() => setIsEditModalOpen(true)}
@@ -125,24 +138,24 @@ export function PersonalDetailsPage() {
             <section className="mb-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8 text-sm">
                     <div>
-                        <p className="text-[#9AA0A6] mb-1">Client ID</p>
+                        <p className="text-dash-text-muted mb-1">Client ID</p>
                         {isLoading ? (
                             <div className="h-5 w-28 bg-dash-panel-2 animate-pulse rounded" />
                         ) : (
-                            <p className="font-medium text-[#E6E7EA]">{clientId}</p>
+                            <p className="font-medium text-dash-text">{clientId}</p>
                         )}
                     </div>
                     <div>
-                        <p className="text-[#9AA0A6] mb-1">Email</p>
+                        <p className="text-dash-text-muted mb-1">Email</p>
                         {isLoading ? (
                             <div className="h-5 w-36 bg-dash-panel-2 animate-pulse rounded" />
                         ) : (
-                            <p className="font-medium text-[#E6E7EA]">{userEmail}</p>
+                            <p className="font-medium text-dash-text">{userEmail}</p>
                         )}
                     </div>
                     <div>
                         <div className="flex items-center gap-1.5 mb-1">
-                            <p className="text-[#9AA0A6]">Mobile number</p>
+                            <p className="text-dash-text-muted">Mobile number</p>
                             {!isLoading && !hasMobile && (
                                 <InfoTooltip text="Use edit to add number" />
                             )}
@@ -150,12 +163,12 @@ export function PersonalDetailsPage() {
                         {isLoading ? (
                             <div className="h-5 w-28 bg-dash-panel-2 animate-pulse rounded" />
                         ) : (
-                            <p className="font-medium text-[#E6E7EA]">{userPhone}</p>
+                            <p className="font-medium text-dash-text">{userPhone}</p>
                         )}
                     </div>
                     <div>
                         <div className="flex items-center gap-1.5 mb-1">
-                            <p className="text-[#9AA0A6]">Password</p>
+                            <p className="text-dash-text-muted">Password</p>
                             {!isLoading && !hasPassword && (
                                 <InfoTooltip text="Use forgot password to add password" />
                             )}
@@ -163,19 +176,19 @@ export function PersonalDetailsPage() {
                         {isLoading ? (
                             <div className="h-5 w-24 bg-dash-panel-2 animate-pulse rounded" />
                         ) : (
-                            <p className="font-medium text-[#E6E7EA]">{getPasswordDisplay()}</p>
+                            <p className="font-medium text-dash-text">{getPasswordDisplay()}</p>
                         )}
                     </div>
                     <div>
-                        <p className="text-[#9AA0A6] mb-1">Member since</p>
+                        <p className="text-dash-text-muted mb-1">Member since</p>
                         {isLoading ? (
                             <div className="h-5 w-28 bg-dash-panel-2 animate-pulse rounded" />
                         ) : (
-                            <p className="font-medium text-[#E6E7EA]">{memberSince}</p>
+                            <p className="font-medium text-dash-text">{memberSince}</p>
                         )}
                     </div>
                     <div>
-                        <p className="text-[#9AA0A6] mb-1">Google account</p>
+                        <p className="text-dash-text-muted mb-1">Google account</p>
                         {isLoading ? (
                             <div className="h-5 w-24 bg-dash-panel-2 animate-pulse rounded" />
                         ) : (
@@ -185,7 +198,7 @@ export function PersonalDetailsPage() {
                                         profile?.isGoogleLinked ? "bg-primary-green" : "bg-gray-500"
                                     }`}
                                 />
-                                <p className="font-medium text-[#E6E7EA]">
+                                <p className="font-medium text-dash-text">
                                     {profile?.isGoogleLinked ? "Linked" : "Not linked"}
                                 </p>
                             </div>
@@ -196,12 +209,12 @@ export function PersonalDetailsPage() {
 
             {/* Settings Section */}
             <section className="border-dash-border pt-8 mt-24">
-                <h2 className="text-2xl font-semibold mb-4 text-[#E6E7EA]">Settings</h2>
+                <h2 className="text-2xl font-semibold mb-4 text-dash-text">Settings</h2>
                 <div className="border-t border-dash-border mb-6"></div>
 
                 <div className="space-y-6">
                     <div className="flex items-center gap-8">
-                        <label className="text-[#9AA0A6] text-sm pt-1 min-w-[80px]">Theme</label>
+                        <label className="text-dash-text-muted text-sm pt-1 min-w-[80px]">Theme</label>
                         <div className="flex items-center space-x-6 text-sm">
                             <label className="flex items-center space-x-2.5 cursor-pointer select-none group">
                                 <input
@@ -209,21 +222,21 @@ export function PersonalDetailsPage() {
                                     name="theme"
                                     value="light"
                                     checked={theme === "light"}
-                                    onChange={() => setTheme("light")}
+                                    onChange={() => handleThemeChange("light")}
                                     className="sr-only"
                                 />
                                 <div
                                     className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                         theme === "light"
-                                            ? "border-blue-500 bg-[#141517]"
-                                            : "border-[#4b5563] bg-[#141517] group-hover:border-gray-400"
+                                            ? "border-blue-500 bg-dash-panel-2"
+                                            : "border-dash-border bg-dash-panel-2 group-hover:border-dash-text-muted"
                                     }`}
                                 >
                                     {theme === "light" && (
                                         <div className="w-2 h-2 rounded-full bg-blue-500" />
                                     )}
                                 </div>
-                                <span className="text-[#E6E7EA]">Light</span>
+                                <span className="text-dash-text">Light</span>
                             </label>
                             <label className="flex items-center space-x-2.5 cursor-pointer select-none group">
                                 <input
@@ -231,21 +244,21 @@ export function PersonalDetailsPage() {
                                     name="theme"
                                     value="dark"
                                     checked={theme === "dark"}
-                                    onChange={() => setTheme("dark")}
+                                    onChange={() => handleThemeChange("dark")}
                                     className="sr-only"
                                 />
                                 <div
                                     className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                         theme === "dark"
-                                            ? "border-blue-500 bg-[#141517]"
-                                            : "border-[#4b5563] bg-[#141517] group-hover:border-gray-400"
+                                            ? "border-blue-500 bg-dash-panel-2"
+                                            : "border-dash-border bg-dash-panel-2 group-hover:border-dash-text-muted"
                                     }`}
                                 >
                                     {theme === "dark" && (
                                         <div className="w-2 h-2 rounded-full bg-blue-500" />
                                     )}
                                 </div>
-                                <span className="text-[#E6E7EA]">Dark</span>
+                                <span className="text-dash-text">Dark</span>
                             </label>
                         </div>
                     </div>
