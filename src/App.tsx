@@ -8,6 +8,12 @@ function App() {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
+        const hasSession = document.cookie.includes("has_session=true");
+        if (!hasSession) {
+            dispatch(setAuthFailed());
+            return;
+        }
+
         const checkSession = async () => {
             try {
                 const response = await authService.getMe();
