@@ -4,3 +4,4 @@ export * from './Input';
 export * from './OtpInputGroup';
 export * from './PasswordInput';
 export * from './Toast';
+export * from './UserAvatar';

@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
 import { APP_ROUTES } from "@/constants/routes";
-import { ConfirmModal } from "@/components/ui";
+import { ConfirmModal, UserAvatar } from "@/components/ui";
 
 interface ProfileNavItem {
     path: string;
@@ -68,29 +68,7 @@ export function ProfileLayout() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const [imageError, setImageError] = useState(false);
     const [showSignOutModal, setShowSignOutModal] = useState(false);
-
-    useEffect(() => {
-        setImageError(false);
-    }, [user?.profileImage]);
-
-    const getInitials = () => {
-        if (!user) return "VR";
-
-        const first = user.firstName?.trim() || "";
-        const last = user.lastName && user.lastName !== "undefined" ? user.lastName.trim() : "";
-
-        if (first && last) {
-            return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
-        }
-        if (first) {
-            return first.charAt(0).toUpperCase();
-        }
-        return "VR";
-    };
-
-    const initials = getInitials();
 
     const handleSignOut = async () => {
         try {
@@ -117,19 +95,14 @@ export function ProfileLayout() {
                     <div>
                         {/* User Avatar & Identification */}
                         <div className="flex flex-col items-center pb-4 mb-4 border-b border-dash-border">
-                            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-white mb-2 overflow-hidden shadow-inner select-none">
-                                {user?.profileImage && !imageError ? (
-                                    <img
-                                        src={user.profileImage}
-                                        alt={user.firstName}
-                                        className="w-full h-full object-cover"
-                                        onError={() => setImageError(true)}
-                                        referrerPolicy="no-referrer"
-                                    />
-                                ) : (
-                                    <span>{initials}</span>
-                                )}
-                            </div>
+                            <UserAvatar
+                                src={user?.profileImage}
+                                firstName={user?.firstName}
+                                lastName={user?.lastName}
+                                size="lg"
+                                className="mb-2 shadow-inner"
+                                fallbackClassName="bg-blue-600 text-white"
+                            />
                             <div className="text-center">
                                 <p className="font-semibold text-lg text-dash-text">{user?.firstName}</p>
                                 <p className="text-sm text-dash-text-muted">{user?.id}</p>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Input } from "@/components/ui";
+import { Input, UserAvatar } from "@/components/ui";
 import { profileService, type UserProfileDTO, type UpdateProfileDTO } from "../services/profileService";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCredentials } from "@/features/auth/store/authSlice";
@@ -96,17 +96,7 @@ export function EditProfileModal({
 
     if (!isOpen) return null;
 
-    const getInitials = () => {
-        const first = currentProfile?.firstName || authUser?.firstName || "";
-        const last = currentProfile?.lastName || authUser?.lastName || "";
-        if (first && last) {
-            return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
-        }
-        if (first) {
-            return first.charAt(0).toUpperCase();
-        }
-        return "U";
-    };
+
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         setImageError(null);
@@ -245,17 +235,14 @@ export function EditProfileModal({
                         <div className="flex items-center gap-4 p-3 bg-dash-panel-2 rounded-xl border border-dash-border">
                             {/* Avatar Preview */}
                             <div className="relative group shrink-0">
-                                <div className="w-16 h-16 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center text-lg font-bold text-white border-2 border-dash-border shadow-inner select-none">
-                                    {previewUrl ? (
-                                        <img
-                                            src={previewUrl}
-                                            alt="Profile Preview"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <span>{getInitials()}</span>
-                                    )}
-                                </div>
+                                <UserAvatar
+                                    src={previewUrl}
+                                    firstName={currentProfile?.firstName || authUser?.firstName}
+                                    lastName={currentProfile?.lastName || authUser?.lastName}
+                                    size="lg"
+                                    className="border-2 border-dash-border shadow-inner"
+                                    fallbackClassName="bg-blue-600 text-white"
+                                />
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}

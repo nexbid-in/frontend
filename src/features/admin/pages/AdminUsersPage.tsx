@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminService, type AdminUserListItemDTO } from "../services/adminService";
-import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ConfirmModal, UserAvatar } from "@/components/ui";
 
 export function AdminUsersPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -91,12 +91,6 @@ export function AdminUsersPage() {
                 Active
             </span>
         );
-    };
-
-    const getInitials = (firstName: string, lastName: string) => {
-        const f = firstName ? firstName.charAt(0) : "";
-        const l = lastName ? lastName.charAt(0) : "";
-        return (f + l).toUpperCase() || "U";
     };
 
     const formatDate = (dateValue: string | Date | null) => {
@@ -208,13 +202,11 @@ export function AdminUsersPage() {
                                     <tr key={user.id} className="border-b border-border-muted last:border-0 hover:bg-panel-2/40 transition-colors">
                                         <td className="py-3 px-5">
                                             <div className="flex items-center gap-3">
-                                                {user.profileImage ? (
-                                                    <img src={user.profileImage} alt={user.firstName} className="w-8 h-8 rounded-full object-cover" />
-                                                ) : (
-                                                    <div className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-xs text-green`}>
-                                                        {getInitials(user.firstName, user.lastName)}
-                                                    </div>
-                                                )}
+                                                <UserAvatar
+                                                    src={user.profileImage}
+                                                    firstName={user.firstName}
+                                                    lastName={user.lastName}
+                                                />
                                                 <div>
                                                     <p className="font-medium text-text-primary">{user.firstName} {user.lastName}</p>
                                                     <p className="text-xs font-mono text-text-secondary">

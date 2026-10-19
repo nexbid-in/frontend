@@ -5,7 +5,7 @@ import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
 
 import { hideToast, showToast } from "@/store/uiSlice";
-import { Toast, ConfirmModal } from "@/components/ui";
+import { Toast, ConfirmModal, UserAvatar } from "@/components/ui";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -15,7 +15,6 @@ export function AppLayout() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const [imageError, setImageError] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [showSignOutModal, setShowSignOutModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -67,26 +66,6 @@ export function AppLayout() {
         setIsDropdownOpen(false);
     }, [location.pathname]);
 
-    useEffect(() => {
-        setImageError(false);
-    }, [user?.profileImage]);
-
-    const getInitials = () => {
-        if (!user) return '??';
-
-        const first = user.firstName?.trim() || '';
-        const last = user.lastName && user.lastName !== 'undefined' ? user.lastName.trim() : '';
-
-        if (first && last) {
-            return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
-        }
-        if (first) {
-            return first.charAt(0).toUpperCase();
-        }
-        return '?';
-    };
-
-    const initials = getInitials();
     const fullName = user
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
@@ -144,23 +123,19 @@ export function AppLayout() {
                             onClick={() => setIsDropdownOpen((prev) => !prev)}
                             aria-expanded={isDropdownOpen}
                             aria-haspopup="menu"
-                            className={`w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center font-semibold text-white overflow-hidden shrink-0 select-none cursor-pointer transition-all ${
+                            className={`rounded-full shrink-0 select-none cursor-pointer transition-all ${
                                 isDropdownOpen
                                     ? "ring-2 ring-primary-green"
                                     : "hover:ring-2 hover:ring-dash-border focus:outline-none focus:ring-2 focus:ring-primary-green"
                             }`}
                         >
-                            {user?.profileImage && !imageError ? (
-                                <img
-                                    src={user.profileImage}
-                                    alt={fullName}
-                                    className="w-full h-full object-cover"
-                                    onError={() => setImageError(true)}
-                                    referrerPolicy="no-referrer"
-                                />
-                            ) : (
-                                <span className="text-xs font-semibold">{initials}</span>
-                            )}
+                            <UserAvatar
+                                src={user?.profileImage}
+                                firstName={user?.firstName}
+                                lastName={user?.lastName}
+                                size="sm"
+                                fallbackClassName="bg-violet-600 text-white"
+                            />
                         </button>
 
                         {/* Dropdown Menu (Opened on click) */}
@@ -171,19 +146,13 @@ export function AppLayout() {
                             >
                                 {/* First Section: Profile image, Full name, Email (Google & GitHub style) */}
                                 <div className="px-4 py-3 border-b border-dash-border flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center font-semibold text-white overflow-hidden shrink-0 select-none">
-                                        {user?.profileImage && !imageError ? (
-                                            <img
-                                                src={user.profileImage}
-                                                alt={fullName}
-                                                className="w-full h-full object-cover"
-                                                onError={() => setImageError(true)}
-                                                referrerPolicy="no-referrer"
-                                            />
-                                        ) : (
-                                            <span className="text-sm font-semibold">{initials}</span>
-                                        )}
-                                    </div>
+                                    <UserAvatar
+                                        src={user?.profileImage}
+                                        firstName={user?.firstName}
+                                        lastName={user?.lastName}
+                                        size="md"
+                                        fallbackClassName="bg-violet-600 text-white"
+                                    />
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm font-semibold text-dash-text truncate leading-tight">
                                             {fullName}
