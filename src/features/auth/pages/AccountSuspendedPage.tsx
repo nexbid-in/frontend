@@ -1,7 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { APP_ROUTES } from "@/constants/routes";
+import { useAppSelector } from "@/store/hooks";
 
 export default function AccountSuspendedPage() {
+    const { isBlocked } = useAppSelector((state) => state.auth);
+
+    if (!isBlocked) {
+        return <Navigate to={APP_ROUTES.USER.HOME} />
+    }
 
     return (
         <div className="h-screen w-full bg-[#F8FAFC] text-gray-900 flex flex-col justify-between items-center px-4 py-3 sm:px-6 sm:py-4 overflow-hidden select-none">
@@ -65,6 +71,7 @@ export default function AccountSuspendedPage() {
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Link
                             to={APP_ROUTES.USER.SUPPORT}
+                            replace
                             className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-primary-green hover:bg-primary-green-hover text-white transition-all shadow-sm hover:shadow cursor-pointer"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -75,6 +82,7 @@ export default function AccountSuspendedPage() {
 
                         <Link
                             to={APP_ROUTES.USER.SIGN_IN}
+                            replace
                             className="flex-1 inline-flex items-center justify-center py-2.5 sm:py-3 px-4 rounded-xl text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition-colors cursor-pointer"
                         >
                             Return to Sign In
