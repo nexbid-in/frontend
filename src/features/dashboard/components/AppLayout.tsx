@@ -71,6 +71,7 @@ export function AppLayout() {
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
     const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
+    const isFundsActive = location.pathname === APP_ROUTES.USER.FUNDS;
 
     return (
         <div className="dashboard-root flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans" data-theme={theme}>
@@ -103,7 +104,16 @@ export function AppLayout() {
                     <Link to={APP_ROUTES.USER.WATCHLIST} className="text-dash-text-muted hover:text-dash-text transition-colors">Watchlist</Link>
                     <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-dash-text-muted hover:text-dash-text transition-colors">Portfolio</Link>
                     <Link to={APP_ROUTES.USER.ORDERS} className="text-dash-text-muted hover:text-dash-text transition-colors">Orders</Link>
-                    <Link to={APP_ROUTES.USER.FUNDS} className="text-dash-text-muted hover:text-dash-text transition-colors">Funds</Link>
+                    <Link
+                        to={APP_ROUTES.USER.FUNDS}
+                        className={`${
+                            isFundsActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-3 py-1.5 rounded-md transition-colors`}
+                    >
+                        Funds
+                    </Link>
                 </div>
 
                 <div className="flex items-center gap-5 text-sm">
@@ -112,9 +122,12 @@ export function AppLayout() {
                         <span className="font-medium text-dash-text">₹3757.30</span>
                     </div>
 
-                    <button className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text px-3 py-1.5 rounded-md transition-colors cursor-pointer">
+                    <Link
+                        to={APP_ROUTES.USER.FUNDS}
+                        className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text-muted hover:bg-dash-panel-2 px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer"
+                    >
                         Add Funds
-                    </button>
+                    </Link>
 
                     {/* Dynamic User Profile Avatar & Dropdown */}
                     <div className="relative" ref={dropdownRef}>
