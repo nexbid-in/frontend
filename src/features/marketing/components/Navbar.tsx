@@ -31,7 +31,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-2">
             <Link to={APP_ROUTES.USER.SIGN_IN} className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-primary-green rounded-md transition duration-150">
-              Login
+              Sign In
             </Link>
             <Link to={APP_ROUTES.USER.SIGN_UP} className="px-4 py-2 text-sm font-semibold text-white bg-primary-green hover:bg-primary-green-hover rounded-md shadow-sm transition duration-150">
               Sign Up Now

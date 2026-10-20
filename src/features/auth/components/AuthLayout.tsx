@@ -1,5 +1,6 @@
+import { APP_ROUTES } from '@/constants/routes';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface AuthLayoutProps {
     children: React.ReactNode;
@@ -22,7 +23,7 @@ export function AuthLayout({ children, heroTitle, heroSubtitle }: AuthLayoutProp
 
                 <div className="z-10">
                     <div className="flex items-center space-x-2 mb-12">
-                        <span className="text-3xl font-extrabold text-primary-green tracking-tight">nexbid</span>
+                        <Link to={APP_ROUTES.USER.HOME} className="text-3xl font-extrabold text-primary-green tracking-tight">nexbid</Link>
                     </div>
 
                     <h1 className="text-3xl xl:text-4xl font-bold mb-4 text-gray-900">

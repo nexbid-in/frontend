@@ -1,5 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+export type Theme = 'dark' | 'light';
+
 export interface ToastNotification {
     title: string;
     message: string;
@@ -9,10 +11,24 @@ export interface ToastNotification {
 
 interface UiState {
     toast: ToastNotification | null;
+    theme: Theme;
 }
+
+const getInitialTheme = (): Theme => {
+    try {
+        const saved = localStorage.getItem('nexbid_theme');
+        if (saved === 'light' || saved === 'dark') {
+            return saved;
+        }
+    } catch {
+        // Fallback if localStorage is restricted
+    }
+    return 'dark';
+};
 
 const initialState: UiState = {
     toast: null,
+    theme: getInitialTheme(),
 };
 
 export const uiSlice = createSlice({
@@ -25,8 +41,16 @@ export const uiSlice = createSlice({
         hideToast: (state) => {
             state.toast = null;
         },
+        setTheme: (state, action: PayloadAction<Theme>) => {
+            state.theme = action.payload;
+            try {
+                localStorage.setItem('nexbid_theme', action.payload);
+            } catch {
+                // Ignore storage write errors
+            }
+        },
     },
 });
 
-export const { showToast, hideToast } = uiSlice.actions;
+export const { showToast, hideToast, setTheme } = uiSlice.actions;
 export default uiSlice.reducer;

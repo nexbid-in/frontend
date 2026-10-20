@@ -1,16 +1,24 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
-import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage } from "@/features/auth";
+import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage, AccountSuspendedPage } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { AdminDashboardPage, AdminUsersPage, AdminLayout } from "@/features/admin";
 
 import { PrivateRoute, PublicRoute, AdminRoute } from "@/features/auth";
 import { AppLayout } from "@/features/dashboard/components/AppLayout";
+import {
+    ProfileLayout,
+    PersonalDetailsPage,
+    PnLStatementPage,
+    TradeBookPage,
+    JournalPage,
+    MyTicketsPage
+} from "@/features/profile";
 
 import { APP_ROUTES } from "@/constants/routes";
 
-const router = createBrowserRouter([
+export const router = createBrowserRouter([
     // ------------------------------------
     // PUBLIC ROUTES (Guests Only)
     // ------------------------------------
@@ -43,6 +51,10 @@ const router = createBrowserRouter([
             {
                 path: APP_ROUTES.USER.FORGOT_PASSWORD,
                 element: <ForgotPasswordPage />
+            },
+            {
+                path: APP_ROUTES.USER.ACCOUNT_SUSPENDED,
+                element: <AccountSuspendedPage />
             }
         ]
     },
@@ -57,7 +69,18 @@ const router = createBrowserRouter([
             {
                 element: <AppLayout />,
                 children: [
-                    { index: true, element: <DashboardPage /> }
+                    { index: true, element: <DashboardPage /> },
+                    {
+                        path: "profile",
+                        element: <ProfileLayout />,
+                        children: [
+                            { index: true, element: <PersonalDetailsPage /> },
+                            { path: "pnl", element: <PnLStatementPage /> },
+                            { path: "trade-book", element: <TradeBookPage /> },
+                            { path: "journal", element: <JournalPage /> },
+                            { path: "tickets", element: <MyTicketsPage /> },
+                        ]
+                    }
                 ]
             }
         ]

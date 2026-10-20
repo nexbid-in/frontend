@@ -1,6 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { store } from "@/store/store";
-import { logout } from "@/features/auth/store/authSlice";
+import { logout, setAccountBlocked } from "@/features/auth/store/authSlice";
 import { API_ROUTES } from "@/constants/routes";
 import { env } from "./env";
 
@@ -29,20 +29,45 @@ const processQueue = (error: unknown = null) => {
     failedQueue = [];
 };
 
+export interface ApiErrorResponse<T = unknown> {
+    success: false;
+    error: {
+        code: string;
+        message: string;
+        details?: T;
+    };
+}
+
 apiClient.interceptors.response.use(
     (response) => response,
-    async (error: AxiosError) => {
+    async (error: AxiosError<ApiErrorResponse>) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        const message = 
-            (error.response?.data as any)?.error?.message || 
-            (error.response?.data as any)?.message || 
-            error.message || 
+        const errorData = error.response?.data;
+        const errorCode = errorData?.error?.code;
+        const message =
+            errorData?.error?.message ||
+            error.message ||
             'An unexpected error occurred';
 
-        const isAuthLogin = originalRequest?.url?.includes(API_ROUTES.AUTH.LOGIN);
+        if (errorCode === 'ACCOUNT_BLOCKED') {
+            store.dispatch(setAccountBlocked());
+            return Promise.reject(new Error(message));
+        }
 
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthLogin) {
+        const GUEST_AUTH_ROUTES = [
+            API_ROUTES.AUTH.LOGIN,
+            API_ROUTES.AUTH.REGISTER,
+            API_ROUTES.AUTH.FORGOT_PASSWORD,
+            API_ROUTES.AUTH.RESET_PASSWORD,
+            API_ROUTES.AUTH.VERIFY_OTP,
+            API_ROUTES.AUTH.RESEND_OTP,
+            API_ROUTES.AUTH.GOOGLE,
+        ];
+
+        const isAuthRoute = GUEST_AUTH_ROUTES.some((route) => originalRequest?.url?.includes(route));
+
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthRoute) {
             if (originalRequest.url?.includes(API_ROUTES.AUTH.REFRESH)) {
                 store.dispatch(logout());
                 return Promise.reject(new Error(message));
