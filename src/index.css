@@ -19,6 +19,10 @@
   --color-dash-text: #E6E7EA;
   --color-dash-text-muted: #9AA0A6;
   --color-dash-accent: #5865F2;
+  --color-dash-nav-active: #22252A;
+  --color-dash-nav-border: transparent;
+  --color-dash-sidebar: #101214;
+  --color-dash-sidebar-hover: #141517;
 
   /* Admin Console Theme Colors */
   --color-bg: #0B0C0E;
@@ -56,6 +60,10 @@
   --color-dash-text-muted: #64748B;
   --color-dash-accent: #4F46E5;
   --color-primary-green: #059669;
+  --color-dash-nav-active: #E2E8F0;
+  --color-dash-nav-border: transparent;
+  --color-dash-sidebar: #F1F5F9;
+  --color-dash-sidebar-hover: #EAEFF5;
 
   /* Shared modal & panel tokens */
   --color-panel: #FFFFFF;
@@ -74,6 +82,10 @@
   --color-dash-text-muted: #9AA0A6;
   --color-dash-accent: #5865F2;
   --color-primary-green: #10b981;
+  --color-dash-nav-active: #22252A;
+  --color-dash-nav-border: transparent;
+  --color-dash-sidebar: #101214;
+  --color-dash-sidebar-hover: #141517;
 
   --color-panel: #101214;
   --color-panel-2: #141517;
@@ -93,3 +105,14 @@
 @utility cta-color {
   background: linear-gradient(0deg, rgba(189, 216, 255, 1) 0%, rgba(179, 252, 210, 1) 15%, rgba(235, 255, 235, 1) 40%, rgba(249, 250, 251, 1) 68%, rgba(249, 250, 251, 1) 99%);
 }
+
+/* Ensure seamless view transitions without conflicting with CSS transitions */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+}
+
+html:has(::view-transition-old(root)) * {
+  transition: none !important;
+}
+

@@ -91,7 +91,7 @@ export function ProfileLayout() {
         <div className="flex flex-1 overflow-hidden h-full p-4 gap-4">
             <section className="flex-1 bg-dash-panel border border-dash-border rounded-md h-full flex flex-col md:flex-row overflow-hidden">
                 {/* Profile Navigation Sidebar */}
-                <aside className="w-full md:w-64 p-6 bg-dash-panel-2 border-b md:border-b-0 md:border-r border-dash-border flex flex-col justify-between shrink-0 overflow-y-auto">
+                <aside className="w-full md:w-64 p-6 bg-dash-sidebar border-b md:border-b-0 md:border-r border-dash-border flex flex-col justify-between shrink-0 overflow-y-auto">
                     <div>
                         {/* User Avatar & Identification */}
                         <div className="flex flex-col items-center pb-4 mb-4 border-b border-dash-border">
@@ -117,13 +117,13 @@ export function ProfileLayout() {
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        className={`flex items-center gap-2.5 w-full text-left p-2.5 rounded-lg font-medium text-sm border ${
+                                        className={`flex items-center gap-2.5 w-full text-left p-2.5 rounded-lg font-medium text-sm border transition-colors duration-150 ease-out active:scale-[0.98] ${
                                             isActive
-                                                ? "text-primary-green font-semibold bg-dash-panel border-dash-border shadow-xs"
-                                                : "border-transparent text-dash-text-muted hover:text-dash-text hover:bg-dash-panel/60 transition-colors"
+                                                ? "text-primary-green bg-dash-nav-active border-dash-nav-border"
+                                                : "border-transparent text-dash-text-muted hover:text-dash-text hover:bg-dash-sidebar-hover"
                                         }`}
                                     >
-                                        <span className={`w-4 h-4 shrink-0 ${isActive ? "text-primary-green" : "text-dash-text-muted transition-colors"}`}>
+                                        <span className={`w-4 h-4 shrink-0 ${isActive ? "text-primary-green" : "text-current"}`}>
                                             {item.icon}
                                         </span>
                                         <span>{item.label}</span>
@@ -138,10 +138,10 @@ export function ProfileLayout() {
                         <button
                             type="button"
                             onClick={() => setShowSignOutModal(true)}
-                            className="w-full text-left p-2.5 rounded-lg text-dash-text-muted hover:text-dash-text hover:bg-dash-panel/60 transition-colors font-medium text-sm flex items-center gap-2.5 cursor-pointer"
+                            className="w-full text-left p-2.5 rounded-lg text-dash-text-muted hover:text-dash-text hover:bg-dash-sidebar-hover border border-transparent transition-colors duration-150 ease-out active:scale-[0.98] font-medium text-sm flex items-center gap-2.5 cursor-pointer"
                         >
                             <svg
-                                className="w-4 h-4 text-dash-text-muted"
+                                className="w-4 h-4 shrink-0 text-current"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
