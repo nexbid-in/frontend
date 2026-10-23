@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { showToast } from "@/store/uiSlice";
-import type { TransactionRecord } from "../types";
+import { fundsService } from "../services/fundsService";
+import type { WalletOverviewDTO } from "../types";
 import { StatementModal } from "../components/StatementModal";
 import { PaymentModal } from "../components/PaymentModal";
 
-const CONVERSION_RATE = 10; // 1 Real INR = 10 Virtual INR
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 
 // Standard Indian Currency Number Formatter
@@ -22,11 +22,10 @@ const formatINR = (number: number) => {
 export const FundsPage: React.FC = () => {
     const dispatch = useAppDispatch();
 
-    // Financial State (with realistic dummy baseline)
-    const [availableVirtual, setAvailableVirtual] = useState<number>(234567.0);
-    const [usedMargin] = useState<number>(190433.0);
-    const [totalVirtual, setTotalVirtual] = useState<number>(500000.0);
-    const [totalReal, setTotalReal] = useState<number>(5000.0);
+    // Backend Wallet Overview State
+    const [overview, setOverview] = useState<WalletOverviewDTO | null>(null);
+    const [isLoadingOverview, setIsLoadingOverview] = useState<boolean>(true);
+    const [overviewError, setOverviewError] = useState<string | null>(null);
 
     // Deposit Input State
     const [depositAmount, setDepositAmount] = useState<string>("1000");
@@ -36,34 +35,38 @@ export const FundsPage: React.FC = () => {
     const [isStatementOpen, setIsStatementOpen] = useState<boolean>(false);
     const [isPaymentOpen, setIsPaymentOpen] = useState<boolean>(false);
 
-    // Initial dummy transaction ledger
-    const [transactions, setTransactions] = useState<TransactionRecord[]>([
-        {
-            id: "tx-1",
-            txnNumber: "TXN-902148",
-            date: "18 Oct 2026, 11:20 AM",
-            type: "Virtual Margin Credit",
-            realAmount: 2000,
-            virtualAmount: 20000,
-            paymentMethod: "UPI (GPay)",
-            status: "Completed",
-        },
-        {
-            id: "tx-2",
-            txnNumber: "TXN-884012",
-            date: "15 Oct 2026, 02:45 PM",
-            type: "Virtual Margin Credit",
-            realAmount: 3000,
-            virtualAmount: 30000,
-            paymentMethod: "Net Banking (HDFC)",
-            status: "Completed",
-        },
-    ]);
+    // Fetch Wallet Overview from API
+    const fetchOverview = useCallback(async () => {
+        try {
+            setIsLoadingOverview(true);
+            setOverviewError(null);
+            const data = await fundsService.getOverview();
+            setOverview(data);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Failed to load wallet overview";
+            setOverviewError(message);
+            dispatch(
+                showToast({
+                    type: "error",
+                    title: "Funds Error",
+                    message,
+                })
+            );
+        } finally {
+            setIsLoadingOverview(false);
+        }
+    }, [dispatch]);
+
+    useEffect(() => {
+        fetchOverview();
+    }, [fetchOverview]);
 
     // Live Calculations
+    const conversionRate = overview?.exchangeRate?.ratio ?? 10;
+    const availableBalance = overview?.balance ?? 0;
     const numericReal = parseFloat(depositAmount) || 0;
-    const virtualReceived = numericReal > 0 ? numericReal * CONVERSION_RATE : 0;
-    const projectedBalance = availableVirtual + virtualReceived;
+    const virtualReceived = numericReal > 0 ? numericReal * conversionRate : 0;
+    const projectedBalance = availableBalance + virtualReceived;
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -97,29 +100,16 @@ export const FundsPage: React.FC = () => {
     };
 
     const handlePaymentSuccess = (paymentMethod: string) => {
-        const newVirtualCredit = numericReal * CONVERSION_RATE;
-        const now = new Date();
-        const formattedDate = `${now.getDate()} Oct ${now.getFullYear()}, ${now.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-        })}`;
-
-        const newTxn: TransactionRecord = {
-            id: `tx-${Date.now()}`,
-            txnNumber: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-            date: formattedDate,
-            type: "Virtual Margin Credit",
-            realAmount: numericReal,
-            virtualAmount: newVirtualCredit,
-            paymentMethod,
-            status: "Completed",
-        };
-
-        // Update financial state
-        setAvailableVirtual((prev) => prev + newVirtualCredit);
-        setTotalVirtual((prev) => prev + newVirtualCredit);
-        setTotalReal((prev) => prev + numericReal);
-        setTransactions((prev) => [newTxn, ...prev]);
+        // Optimistically update local view while refreshing from API
+        const newVirtualCredit = numericReal * conversionRate;
+        if (overview) {
+            setOverview({
+                ...overview,
+                balance: overview.balance + newVirtualCredit,
+                totalVirtualMoneyBought: overview.totalVirtualMoneyBought + newVirtualCredit,
+                totalRealMoneyUsed: overview.totalRealMoneyUsed + numericReal,
+            });
+        }
 
         setIsPaymentOpen(false);
 
@@ -127,9 +117,38 @@ export const FundsPage: React.FC = () => {
             showToast({
                 type: "success",
                 title: "Margin Credited Successfully",
-                message: `${formatINR(newVirtualCredit)} V-INR has been added to your trading account.`,
+                message: `${formatINR(newVirtualCredit)} V-INR has been added via ${paymentMethod}.`,
                 duration: 5000,
             })
+        );
+
+        // Re-fetch overview from backend
+        fetchOverview();
+    };
+
+    const renderTradingStatus = (status: string | undefined) => {
+        const normalized = (status || "ACTIVE").toUpperCase();
+        if (normalized === "ACTIVE") {
+            return (
+                <span className="text-primary-green font-medium flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-green animate-pulse"></span>
+                    Active
+                </span>
+            );
+        }
+        if (normalized === "FROZEN") {
+            return (
+                <span className="text-amber-400 font-medium flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Frozen
+                </span>
+            );
+        }
+        return (
+            <span className="text-rose-400 font-medium flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                Suspended
+            </span>
         );
     };
 
@@ -145,6 +164,31 @@ export const FundsPage: React.FC = () => {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        {/* Refresh Button */}
+                        <button
+                            type="button"
+                            onClick={fetchOverview}
+                            disabled={isLoadingOverview}
+                            className="inline-flex items-center gap-1.5 text-xs text-dash-text-muted hover:text-dash-text transition-colors cursor-pointer disabled:opacity-50"
+                            title="Refresh overview"
+                        >
+                            <svg
+                                className={`w-3.5 h-3.5 ${isLoadingOverview ? "animate-spin text-primary-green" : ""}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                                />
+                            </svg>
+                            <span className="hidden sm:inline">Refresh</span>
+                        </button>
+
+                        {/* View Statement Button */}
                         <button
                             type="button"
                             id="openStatementBtn"
@@ -170,7 +214,21 @@ export const FundsPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Main Body: Two Columns (Left: Available Virtual + Capital & Margin, Right: Buy Virtual Money) */}
+                {/* Optional Error Alert Banner */}
+                {overviewError && (
+                    <div className="mt-3 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-center justify-between shrink-0">
+                        <span>Failed to sync wallet data: {overviewError}</span>
+                        <button
+                            type="button"
+                            onClick={fetchOverview}
+                            className="text-xs font-medium underline text-rose-300 hover:text-rose-200 cursor-pointer"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
+
+                {/* Main Body: Two Columns */}
                 <div className="flex-1 pt-4 grid grid-cols-1 lg:grid-cols-2 gap-5 overflow-hidden">
                     {/* LEFT SIDE: Available Virtual Balance (Top) and Capital & Margin Details (Bottom) */}
                     <div className="flex flex-col gap-4 h-full overflow-hidden">
@@ -185,12 +243,16 @@ export const FundsPage: React.FC = () => {
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2 mt-2">
-                                <p
-                                    id="availableVirtualDisplay"
-                                    className="text-3xl font-semibold text-dash-text font-mono tracking-tight"
-                                >
-                                    {formatINR(availableVirtual)}
-                                </p>
+                                {isLoadingOverview && !overview ? (
+                                    <div className="h-9 w-48 bg-dash-border/60 rounded animate-pulse my-0.5"></div>
+                                ) : (
+                                    <p
+                                        id="availableVirtualDisplay"
+                                        className="text-3xl font-semibold text-dash-text font-mono tracking-tight"
+                                    >
+                                        {formatINR(availableBalance)}
+                                    </p>
+                                )}
                                 <span className="text-xs text-dash-text-muted font-medium">V-INR</span>
                             </div>
                             <p className="text-xs text-dash-text-muted mt-1">
@@ -208,42 +270,55 @@ export const FundsPage: React.FC = () => {
                                 <div className="space-y-3.5 text-xs pt-3.5">
                                     <div className="flex justify-between items-center text-dash-text-muted">
                                         <span>Available Margin</span>
-                                        <span className="font-mono font-medium text-dash-text">
-                                            {formatINR(availableVirtual)}
-                                        </span>
+                                        {isLoadingOverview && !overview ? (
+                                            <div className="h-4 w-24 bg-dash-border/60 rounded animate-pulse"></div>
+                                        ) : (
+                                            <span className="font-mono font-medium text-dash-text">
+                                                {formatINR(availableBalance)}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="flex justify-between items-center text-dash-text-muted">
                                         <span>Used Margin (Open Positions)</span>
-                                        <span className="font-mono font-medium text-dash-text">
-                                            {formatINR(usedMargin)}
-                                        </span>
+                                        {isLoadingOverview && !overview ? (
+                                            <div className="h-4 w-20 bg-dash-border/60 rounded animate-pulse"></div>
+                                        ) : (
+                                            <span className="font-mono font-medium text-dash-text">
+                                                {formatINR(overview?.usedMargin ?? 0)}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="pt-3 border-t border-dash-border flex justify-between items-center text-dash-text-muted">
                                         <span className="font-medium text-dash-text">Total Virtual Money Bought</span>
-                                        <span
-                                            id="totalVirtualDisplay"
-                                            className="font-mono font-semibold text-dash-text"
-                                        >
-                                            {formatINR(totalVirtual)}
-                                        </span>
+                                        {isLoadingOverview && !overview ? (
+                                            <div className="h-4 w-28 bg-dash-border/60 rounded animate-pulse"></div>
+                                        ) : (
+                                            <span
+                                                id="totalVirtualDisplay"
+                                                className="font-mono font-semibold text-dash-text"
+                                            >
+                                                {formatINR(overview?.totalVirtualMoneyBought ?? 0)}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="flex justify-between items-center text-dash-text-muted">
                                         <span className="font-medium text-dash-text">Total Real Money Used</span>
-                                        <span id="totalRealDisplay" className="font-mono font-semibold text-dash-text">
-                                            {formatINR(totalReal)}
-                                        </span>
+                                        {isLoadingOverview && !overview ? (
+                                            <div className="h-4 w-24 bg-dash-border/60 rounded animate-pulse"></div>
+                                        ) : (
+                                            <span id="totalRealDisplay" className="font-mono font-semibold text-dash-text">
+                                                {formatINR(overview?.totalRealMoneyUsed ?? 0)}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Simple Account & Settlement Status */}
+                            {/* Account & Settlement Status */}
                             <div className="pt-3 border-t border-dash-border space-y-2.5 text-xs text-dash-text-muted">
                                 <div className="flex items-center justify-between">
                                     <span>Trading Status</span>
-                                    <span className="text-primary-green font-medium flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-primary-green animate-pulse"></span>
-                                        Active
-                                    </span>
+                                    {renderTradingStatus(overview?.tradingStatus)}
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span>Settlement Cycle</span>
@@ -263,7 +338,7 @@ export const FundsPage: React.FC = () => {
                             <div className="border-b border-dash-border pb-3">
                                 <h2 className="text-sm font-semibold text-dash-text">Buy Virtual Money</h2>
                                 <p className="text-xs text-dash-text-muted mt-0.5">
-                                    Enter the real amount in INR. Virtual credits will be added to your available margin automatically at a 1:10 ratio.
+                                    Enter the real amount in INR. Virtual credits will be added to your available margin automatically at a 1:{conversionRate} ratio.
                                 </p>
                             </div>
 
@@ -321,7 +396,9 @@ export const FundsPage: React.FC = () => {
                             <div className="rounded-md border border-dash-border bg-dash-card p-4 space-y-3">
                                 <div className="flex justify-between items-center text-xs text-dash-text-muted">
                                     <span>Exchange Rate:</span>
-                                    <span className="font-mono text-dash-text">₹1.00 Real = ₹10.00 Virtual</span>
+                                    <span className="font-mono text-dash-text">
+                                        ₹{overview?.exchangeRate?.real ?? 1}.00 Real = ₹{conversionRate}.00 Virtual
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center text-xs text-dash-text-muted">
                                     <span>Real Money to Deposit:</span>
@@ -367,11 +444,11 @@ export const FundsPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Statement Ledger History Modal */}
+            {/* Statement Ledger History Modal (Live API integration) */}
             <StatementModal
                 isOpen={isStatementOpen}
                 onClose={() => setIsStatementOpen(false)}
-                transactions={transactions}
+                overview={overview}
                 formatINR={formatINR}
             />
 

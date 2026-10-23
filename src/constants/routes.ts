@@ -54,6 +54,10 @@ export const API_ROUTES = {
         PROFILE: '/users/profile',
         UPLOAD_SIGNATURE: '/users/profile/upload-signature',
     },
+    WALLET: {
+        OVERVIEW: '/wallet/overview',
+        STATEMENT: '/wallet/statement',
+    },
     ADMIN: {
         USERS: '/admin/users',
         USER_STATUS: (userId: string) => `/admin/users/${userId}/status`,
