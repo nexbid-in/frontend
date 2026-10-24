@@ -47,7 +47,39 @@ export interface GetWalletStatementParams {
     endDate?: string;
 }
 
-// Legacy aliases for backward compatibility if referenced elsewhere
+
+export interface CreateTopupOrderRequestDTO {
+    realAmount: number;
+}
+
+export interface CreateTopupOrderResponseDTO {
+    orderId: string;
+    paymentOrderId: string;
+    amount: number; 
+    currency: string;
+    virtualAmount: number;
+    keyId: string;
+}
+
+export interface VerifyTopupPaymentRequestDTO {
+    orderId: string;
+    paymentId: string;
+    signature: string;
+}
+
+export interface VerifyTopupPaymentResponseDTO {
+    success: boolean;
+    balance: number;
+    virtualAmountAdded: number;
+}
+
+export interface RazorpaySuccessHandlerArgs {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+}
+
+
 export interface TransactionRecord {
     id: string;
     txnNumber: string;

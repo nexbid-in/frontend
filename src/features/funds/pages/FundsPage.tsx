@@ -86,12 +86,32 @@ export const FundsPage: React.FC = () => {
     };
 
     const handleOpenPayment = () => {
-        if (numericReal <= 0) {
+        if (!numericReal || numericReal < 10) {
             dispatch(
                 showToast({
                     type: "error",
                     title: "Invalid Amount",
-                    message: "Please enter a valid deposit amount greater than ₹0.",
+                    message: "Minimum deposit amount is ₹10.",
+                })
+            );
+            return;
+        }
+        if (numericReal > 100000) {
+            dispatch(
+                showToast({
+                    type: "error",
+                    title: "Invalid Amount",
+                    message: "Maximum deposit amount is ₹1,00,000.",
+                })
+            );
+            return;
+        }
+        if (!Number.isInteger(numericReal)) {
+            dispatch(
+                showToast({
+                    type: "error",
+                    title: "Invalid Amount",
+                    message: "Please enter a whole number amount without decimals.",
                 })
             );
             return;
@@ -99,14 +119,13 @@ export const FundsPage: React.FC = () => {
         setIsPaymentOpen(true);
     };
 
-    const handlePaymentSuccess = (paymentMethod: string) => {
-        // Optimistically update local view while refreshing from API
-        const newVirtualCredit = numericReal * conversionRate;
+    const handlePaymentSuccess = (virtualAmountAdded: number, newBalance: number) => {
+        // Optimistically update local view with verified data from server
         if (overview) {
             setOverview({
                 ...overview,
-                balance: overview.balance + newVirtualCredit,
-                totalVirtualMoneyBought: overview.totalVirtualMoneyBought + newVirtualCredit,
+                balance: newBalance,
+                totalVirtualMoneyBought: overview.totalVirtualMoneyBought + virtualAmountAdded,
                 totalRealMoneyUsed: overview.totalRealMoneyUsed + numericReal,
             });
         }
@@ -117,7 +136,7 @@ export const FundsPage: React.FC = () => {
             showToast({
                 type: "success",
                 title: "Margin Credited Successfully",
-                message: `${formatINR(newVirtualCredit)} V-INR has been added via ${paymentMethod}.`,
+                message: `${formatINR(virtualAmountAdded)} V-INR has been added to your trading account.`,
                 duration: 5000,
             })
         );
@@ -452,12 +471,13 @@ export const FundsPage: React.FC = () => {
                 formatINR={formatINR}
             />
 
-            {/* Payment Checkout Modal */}
+            {/* Payment Checkout Modal (Razorpay) */}
             <PaymentModal
                 isOpen={isPaymentOpen}
                 onClose={() => setIsPaymentOpen(false)}
                 realAmount={numericReal}
                 virtualAmount={virtualReceived}
+                conversionRate={conversionRate}
                 onPaymentSuccess={handlePaymentSuccess}
                 formatINR={formatINR}
             />

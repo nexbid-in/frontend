@@ -4,6 +4,9 @@ import type {
     WalletOverviewDTO,
     PaginatedWalletStatementResponseDTO,
     GetWalletStatementParams,
+    CreateTopupOrderResponseDTO,
+    VerifyTopupPaymentRequestDTO,
+    VerifyTopupPaymentResponseDTO,
 } from "../types";
 
 export const fundsService = {
@@ -48,6 +51,24 @@ export const fundsService = {
             params: queryParams,
         });
 
+        return response.data.data;
+    },
+
+    createTopupOrder: async (realAmount: number): Promise<CreateTopupOrderResponseDTO> => {
+        const response = await apiClient.post<{
+            success: boolean;
+            message: string;
+            data: CreateTopupOrderResponseDTO;
+        }>(API_ROUTES.WALLET.CREATE_ORDER, { realAmount });
+        return response.data.data;
+    },
+
+    verifyTopupPayment: async (data: VerifyTopupPaymentRequestDTO): Promise<VerifyTopupPaymentResponseDTO> => {
+        const response = await apiClient.post<{
+            success: boolean;
+            message: string;
+            data: VerifyTopupPaymentResponseDTO;
+        }>(API_ROUTES.WALLET.VERIFY_PAYMENT, data);
         return response.data.data;
     },
 };
