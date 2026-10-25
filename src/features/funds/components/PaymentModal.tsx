@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { showToast } from "@/store/uiSlice";
 import { fundsService } from "../services/fundsService";
 import { loadRazorpayScript } from "../utils/loadRazorpay";
-import type { RazorpayOptions } from "@/types/razorpay";
+import type { RazorpayOptions, RazorpayFailureResponse } from "@/types/razorpay";
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -182,7 +182,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             const rzp = new window.Razorpay(options);
 
             // Handle bank failure or payment decline event from Razorpay
-            rzp.on("payment.failed", async (failure: any) => {
+            rzp.on("payment.failed", async (failure: RazorpayFailureResponse) => {
                 console.error("Razorpay Payment Failure:", failure);
                 hasFailedRef.current = true;
 

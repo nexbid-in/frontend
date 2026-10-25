@@ -1,6 +1,6 @@
 import React, { type ButtonHTMLAttributes } from 'react';
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ({ children, className = '', ...props }, ref) => {

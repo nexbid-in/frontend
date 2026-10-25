@@ -18,7 +18,7 @@ function App() {
             try {
                 const response = await authService.getMe();
                 dispatch(setCredentials({ user: response.data.user }));
-            } catch (error) {
+            } catch {
                 dispatch(setAuthFailed());
             }
         };

@@ -17,8 +17,15 @@ export function AppLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [prevPathname, setPrevPathname] = useState(location.pathname);
     const [showSignOutModal, setShowSignOutModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown on route changes
+    if (prevPathname !== location.pathname) {
+        setPrevPathname(location.pathname);
+        setIsDropdownOpen(false);
+    }
 
     const handleSignOut = async () => {
         try {
@@ -61,11 +68,6 @@ export function AppLayout() {
             document.removeEventListener("keydown", handleKeyDown);
         };
     }, [isDropdownOpen]);
-
-    // Close dropdown on route changes
-    useEffect(() => {
-        setIsDropdownOpen(false);
-    }, [location.pathname]);
 
     const fullName = user
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"

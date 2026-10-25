@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { adminService, type AdminUserListItemDTO } from "../services/adminService";
 import { ConfirmModal, UserAvatar } from "@/components/ui";
 
@@ -15,18 +15,7 @@ export function AdminUsersPage() {
     const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean, userId: string, isBlocked: boolean }>({ isOpen: false, userId: "", isBlocked: false });
     const limit = 6;
 
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            fetchUsers();
-        }, 300);
-        return () => clearTimeout(timeoutId);
-    }, [page, searchQuery, statusFilter]);
-
-    useEffect(() => {
-        setPage(1);
-    }, [searchQuery, statusFilter]);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
         setError("");
         try {
@@ -43,7 +32,18 @@ export function AdminUsersPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit, searchQuery, statusFilter]);
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchUsers();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [fetchUsers]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, statusFilter]);
 
     const openConfirmModal = (user: AdminUserListItemDTO) => {
         setConfirmModalState({ isOpen: true, userId: user.id, isBlocked: user.isBlocked });

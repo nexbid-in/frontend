@@ -39,7 +39,7 @@ export const authService = {
         return response.data;
     },
 
-    resetPassword: async (data: any) => {
+    resetPassword: async (data: { email: string; otp: string; password: string }) => {
         const response = await apiClient.post(API_ROUTES.AUTH.RESET_PASSWORD, data);
         return response.data;
     },

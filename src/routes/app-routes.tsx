@@ -19,7 +19,7 @@ import {
 
 import { APP_ROUTES } from "@/constants/routes";
 
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
     // ------------------------------------
     // PUBLIC ROUTES (Guests Only)
     // ------------------------------------

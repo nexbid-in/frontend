@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export interface ToastProps {
     title: string;
@@ -23,10 +23,10 @@ export function Toast({
         return () => clearTimeout(timer);
     }, []);
 
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         setIsVisible(false);
         setTimeout(onClose, 250);
-    };
+    }, [onClose]);
 
     useEffect(() => {
         if (duration <= 0 || isPaused) return;
@@ -36,7 +36,7 @@ export function Toast({
         }, duration);
 
         return () => clearTimeout(timer);
-    }, [duration, isPaused]);
+    }, [duration, isPaused, handleClose]);
 
     const isSuccess = type === "success";
 

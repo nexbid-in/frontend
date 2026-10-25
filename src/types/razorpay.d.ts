@@ -48,7 +48,8 @@ export interface RazorpayOptions {
 export interface RazorpayInstance {
     open: () => void;
     close: () => void;
-    on: (event: "payment.failed" | string, callback: (response: RazorpayFailureResponse | unknown) => void) => void;
+    on(event: "payment.failed", callback: (response: RazorpayFailureResponse) => void | Promise<void>): void;
+    on(event: string, callback: (response: unknown) => void | Promise<void>): void;
 }
 
 declare global {
