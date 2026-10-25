@@ -7,11 +7,16 @@ import type {
     WalletTransactionType,
 } from "../types";
 
+import { TopupHistoryView } from "./TopupHistoryView";
+
+export type StatementModalTab = "statement" | "topup_history";
+
 interface StatementModalProps {
     isOpen: boolean;
     onClose: () => void;
     overview?: WalletOverviewDTO | null;
     formatINR: (num: number) => string;
+    initialTab?: StatementModalTab;
 }
 
 const FILTER_TYPES: { label: string; value: WalletTransactionType | "ALL" }[] = [
@@ -49,8 +54,19 @@ export const StatementModal: React.FC<StatementModalProps> = ({
     onClose,
     overview,
     formatINR,
+    initialTab = "statement",
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
+
+    // Active View Tab State
+    const [activeTab, setActiveTab] = useState<StatementModalTab>(initialTab);
+
+    // Sync active tab whenever modal opens with a specific initialTab
+    useEffect(() => {
+        if (isOpen && initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [isOpen, initialTab]);
 
     // Filter & Query States
     const [selectedType, setSelectedType] = useState<WalletTransactionType | "ALL">("ALL");
@@ -196,14 +212,14 @@ export const StatementModal: React.FC<StatementModalProps> = ({
             {/* Modal Container */}
             <div
                 ref={modalRef}
-                className="relative w-full max-w-4xl max-h-[90vh] bg-dash-panel border border-dash-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-10"
+                className="relative w-full max-w-6xl max-h-[90vh] bg-dash-panel border border-dash-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-10"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="statement-title"
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-dash-border shrink-0 bg-dash-panel-2/50">
-                    <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-dash-border shrink-0 bg-dash-panel-2/50 gap-3">
+                    <div className="min-w-0 pr-4">
                         <div className="flex items-center gap-2">
                             <svg
                                 className="w-4 h-4 text-primary-green"
@@ -214,51 +230,73 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             >
-                                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
-                                <path d="M14 8H8" />
-                                <path d="M16 12H8" />
-                                <path d="M13 16H8" />
+                                {activeTab === "statement" ? (
+                                    <>
+                                        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+                                        <path d="M14 8H8" />
+                                        <path d="M16 12H8" />
+                                        <path d="M13 16H8" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <rect width="20" height="14" x="2" y="5" rx="2" />
+                                        <line x1="2" x2="22" y1="10" />
+                                    </>
+                                )}
                             </svg>
-                            <h2 id="statement-title" className="text-base font-semibold text-dash-text tracking-tight">
-                                Funds Statement & Ledger
+                            <h2 id="statement-title" className="text-base font-semibold text-dash-text tracking-tight truncate">
+                                {activeTab === "statement" ? "Funds Statement & Ledger" : "Top-up Orders & History"}
                             </h2>
                         </div>
-                        <p className="text-xs text-dash-text-muted mt-0.5">
-                            Real-time transaction statement with running margin balance audit trail
+                        <p className="text-xs text-dash-text-muted mt-0.5 truncate">
+                            {activeTab === "statement"
+                                ? "Real-time transaction statement with running margin balance audit trail"
+                                : "Audit log of all top-up attempts, Razorpay order IDs, and payment verification statuses"}
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Refresh Button */}
-                        <button
-                            type="button"
-                            onClick={handleRefresh}
-                            disabled={isLoading}
-                            className="p-1.5 rounded-md text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors cursor-pointer disabled:opacity-50"
-                            title="Refresh Statement"
-                            aria-label="Refresh statement"
-                        >
-                            <svg
-                                className={`w-4 h-4 ${isLoading ? "animate-spin text-primary-green" : ""}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                strokeWidth="2"
+                    <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Tab Switcher Pills */}
+                        <div className="flex items-center bg-dash-card p-0.5 rounded-lg border border-dash-border">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab("statement")}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-150 cursor-pointer flex items-center gap-1.5 outline-none focus:outline-none select-none ${
+                                    activeTab === "statement"
+                                        ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border"
+                                        : "text-dash-text-muted hover:text-dash-text border border-transparent hover:bg-dash-panel/50"
+                                }`}
                             >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-                                />
-                            </svg>
-                        </button>
+                                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1Z" />
+                                    <path d="M14 8H8" />
+                                    <path d="M16 12H8" />
+                                </svg>
+                                <span>Statement</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab("topup_history")}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-150 cursor-pointer flex items-center gap-1.5 outline-none focus:outline-none select-none ${
+                                    activeTab === "topup_history"
+                                        ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border"
+                                        : "text-dash-text-muted hover:text-dash-text border border-transparent hover:bg-dash-panel/50"
+                                }`}
+                            >
+                                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <rect width="20" height="14" x="2" y="5" rx="2" />
+                                    <line x1="2" x2="22" y1="10" />
+                                </svg>
+                                <span>Top-up Orders</span>
+                            </button>
+                        </div>
 
                         {/* Close Button */}
                         <button
                             type="button"
                             onClick={onClose}
-                            className="text-dash-text-muted hover:text-dash-text p-1.5 rounded-md hover:bg-dash-panel-2 transition-colors cursor-pointer"
-                            aria-label="Close statement modal"
+                            className="text-dash-text-muted hover:text-dash-text p-1.5 rounded-md hover:bg-dash-panel-2 transition-colors cursor-pointer outline-none focus:outline-none"
+                            aria-label="Close modal"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -270,20 +308,20 @@ export const StatementModal: React.FC<StatementModalProps> = ({
 
                 {/* Summary Metrics Banner */}
                 {overview && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-6 py-3 bg-dash-card border-b border-dash-border shrink-0">
-                        <div className="flex items-center justify-between text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-6 py-3 bg-dash-panel-2/30 border-b border-dash-border shrink-0">
+                        <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
                             <span className="text-dash-text-muted">Total Real Deposited:</span>
                             <span className="font-mono font-semibold text-dash-text">
                                 {formatINR(overview.totalRealMoneyUsed)}
                             </span>
                         </div>
-                        <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
                             <span className="text-dash-text-muted">Total Virtual Bought:</span>
                             <span className="font-mono font-semibold text-primary-green">
                                 {formatINR(overview.totalVirtualMoneyBought)} V-INR
                             </span>
                         </div>
-                        <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
                             <span className="text-dash-text-muted">Available Margin:</span>
                             <span className="font-mono font-semibold text-dash-text">
                                 {formatINR(overview.balance)} V-INR
@@ -292,8 +330,12 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </div>
                 )}
 
-                {/* Controls Bar: Type Filters & Search */}
-                <div className="px-6 py-3 border-b border-dash-border bg-dash-panel-2/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+                {activeTab === "topup_history" ? (
+                    <TopupHistoryView formatINR={formatINR} onClose={onClose} />
+                ) : (
+                    <>
+                        {/* Controls Bar: Type Filters & Search */}
+                        <div className="px-6 py-3 border-b border-dash-border bg-dash-panel-2/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
                     {/* Filter Pills */}
                     <div className="flex flex-wrap items-center gap-1.5">
                         {FILTER_TYPES.map((filter) => {
@@ -305,7 +347,7 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                                     onClick={() => handleTypeChange(filter.value)}
                                     className={`px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
                                         isSelected
-                                            ? "bg-primary-green text-white font-medium shadow-xs"
+                                            ? "bg-primary-green border border-primary-green text-white font-medium shadow-xs"
                                             : "bg-dash-card border border-dash-border text-dash-text-muted hover:text-dash-text hover:border-dash-text-muted"
                                     }`}
                                 >
@@ -316,7 +358,8 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </div>
 
                     {/* Search Form */}
-                    <form onSubmit={handleSearchSubmit} className="relative flex items-center min-w-[220px]">
+                    <div className="flex items-center gap-2">
+                        <form onSubmit={handleSearchSubmit} className="relative flex items-center min-w-[260px] sm:w-72">
                         <input
                             type="text"
                             value={searchInput}
@@ -348,6 +391,30 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                             </button>
                         )}
                     </form>
+
+                        <button
+                            type="button"
+                            onClick={handleRefresh}
+                            disabled={isLoading}
+                            className="p-1.5 rounded-md text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors cursor-pointer disabled:opacity-50 border border-dash-border bg-dash-card outline-none focus:outline-none"
+                            title="Refresh Statement"
+                            aria-label="Refresh statement"
+                        >
+                            <svg
+                                className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-primary-green" : ""}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                                />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Table Content */}
@@ -433,13 +500,13 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs">
                                 <thead>
-                                    <tr className="border-b border-dash-border text-dash-text-muted uppercase text-[10px] tracking-wider">
-                                        <th className="pb-2.5 font-medium">Date & Time</th>
-                                        <th className="pb-2.5 font-medium">Reference ID</th>
-                                        <th className="pb-2.5 font-medium">Type</th>
-                                        <th className="pb-2.5 font-medium">Description</th>
-                                        <th className="pb-2.5 font-medium text-right">Amount (V-INR)</th>
-                                        <th className="pb-2.5 font-medium text-right">Balance After</th>
+                                    <tr className="border-b border-dash-border text-dash-text-muted uppercase text-[10px] tracking-wider bg-dash-panel-2/30">
+                                        <th className="px-5 py-3 font-semibold">Date & Time</th>
+                                        <th className="px-5 py-3 font-semibold">Reference ID</th>
+                                        <th className="px-5 py-3 font-semibold">Type</th>
+                                        <th className="px-5 py-3 font-semibold">Description</th>
+                                        <th className="px-5 py-3 font-semibold text-right">Amount (V-INR)</th>
+                                        <th className="px-5 py-3 font-semibold text-right">Balance After</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-dash-border">
@@ -447,25 +514,25 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                                         const credit = isCredit(tx.type);
                                         return (
                                             <tr key={tx.id} className="hover:bg-dash-panel-2/50 transition-colors">
-                                                <td className="py-3 text-dash-text whitespace-nowrap">
+                                                <td className="px-5 py-3.5 text-dash-text whitespace-nowrap">
                                                     {formatDate(tx.createdAt)}
                                                 </td>
-                                                <td className="py-3 font-mono text-[11px] text-dash-text-muted whitespace-nowrap">
+                                                <td className="px-5 py-3.5 font-mono text-[11px] text-dash-text-muted whitespace-nowrap">
                                                     {tx.referenceId}
                                                 </td>
-                                                <td className="py-3 whitespace-nowrap">{renderTypeBadge(tx.type)}</td>
-                                                <td className="py-3 text-dash-text-muted whitespace-nowrap max-w-[240px] truncate" title={tx.description}>
+                                                <td className="px-5 py-3.5 whitespace-nowrap">{renderTypeBadge(tx.type)}</td>
+                                                <td className="px-5 py-3.5 text-dash-text-muted whitespace-nowrap max-w-[240px] truncate" title={tx.description}>
                                                     {tx.description || "-"}
                                                 </td>
                                                 <td
-                                                    className={`py-3 font-mono font-medium text-right whitespace-nowrap ${
+                                                    className={`px-5 py-3.5 font-mono font-medium text-right whitespace-nowrap ${
                                                         credit ? "text-primary-green" : "text-rose-400"
                                                     }`}
                                                 >
                                                     {credit ? "+" : "-"}
                                                     {formatINR(Math.abs(tx.amount))}
                                                 </td>
-                                                <td className="py-3 font-mono font-semibold text-right text-dash-text whitespace-nowrap">
+                                                <td className="px-5 py-3.5 font-mono font-semibold text-right text-dash-text whitespace-nowrap">
                                                     {formatINR(tx.balanceAfter)}
                                                 </td>
                                             </tr>
@@ -522,7 +589,9 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </>
+        )}
+    </div>
+</div>
     );
 };

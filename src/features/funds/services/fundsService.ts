@@ -9,6 +9,8 @@ import type {
     VerifyTopupPaymentResponseDTO,
     FailTopupPaymentRequestDTO,
     FailTopupPaymentResponseDTO,
+    PaginatedTopupHistoryResponseDTO,
+    GetTopupHistoryParams,
 } from "../types";
 
 export const fundsService = {
@@ -80,6 +82,41 @@ export const fundsService = {
             message: string;
             data: FailTopupPaymentResponseDTO;
         }>(API_ROUTES.WALLET.FAIL_PAYMENT, data);
+        return response.data.data;
+    },
+
+    getTopupHistory: async (
+        params: GetTopupHistoryParams = {}
+    ): Promise<PaginatedTopupHistoryResponseDTO> => {
+        const queryParams: Record<string, string | number> = {
+            page: params.page ?? 1,
+            limit: params.limit ?? 10,
+        };
+
+        if (params.search && params.search.trim() !== "") {
+            queryParams.search = params.search.trim();
+        }
+
+        if (params.status && params.status !== "ALL") {
+            queryParams.status = params.status;
+        }
+
+        if (params.startDate) {
+            queryParams.startDate = params.startDate;
+        }
+
+        if (params.endDate) {
+            queryParams.endDate = params.endDate;
+        }
+
+        const response = await apiClient.get<{
+            success: boolean;
+            message: string;
+            data: PaginatedTopupHistoryResponseDTO;
+        }>(API_ROUTES.WALLET.TOPUP_HISTORY, {
+            params: queryParams,
+        });
+
         return response.data.data;
     },
 };

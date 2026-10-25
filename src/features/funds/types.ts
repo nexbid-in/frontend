@@ -85,6 +85,40 @@ export interface FailTopupPaymentResponseDTO {
     status: 'FAILED';
 }
 
+export type PaymentOrderStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
+
+export interface TopupHistoryItemDTO {
+    id: string;
+    orderId: string;
+    paymentId: string | null;
+    realAmount: number;
+    virtualAmount: number;
+    status: PaymentOrderStatus;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface TopupHistoryPagination {
+    page: number;
+    limit: number;
+    totalOrders: number;
+    totalPages: number;
+}
+
+export interface PaginatedTopupHistoryResponseDTO {
+    orders: TopupHistoryItemDTO[];
+    pagination: TopupHistoryPagination;
+}
+
+export interface GetTopupHistoryParams {
+    page?: number;
+    limit?: number;
+    status?: PaymentOrderStatus | 'ALL';
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
 export interface RazorpaySuccessHandlerArgs {
     razorpay_payment_id: string;
     razorpay_order_id: string;

@@ -3,7 +3,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { showToast } from "@/store/uiSlice";
 import { fundsService } from "../services/fundsService";
 import type { WalletOverviewDTO } from "../types";
-import { StatementModal } from "../components/StatementModal";
+import { StatementModal, type StatementModalTab } from "../components/StatementModal";
 import { PaymentModal } from "../components/PaymentModal";
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
@@ -33,6 +33,7 @@ export const FundsPage: React.FC = () => {
 
     // Modals
     const [isStatementOpen, setIsStatementOpen] = useState<boolean>(false);
+    const [historyModalTab, setHistoryModalTab] = useState<StatementModalTab>("statement");
     const [isPaymentOpen, setIsPaymentOpen] = useState<boolean>(false);
 
     // Fetch Wallet Overview from API
@@ -207,11 +208,38 @@ export const FundsPage: React.FC = () => {
                             <span className="hidden sm:inline">Refresh</span>
                         </button>
 
+                        {/* View Topup History Button */}
+                        <button
+                            type="button"
+                            id="openTopupHistoryBtn"
+                            onClick={() => {
+                                setHistoryModalTab("topup_history");
+                                setIsStatementOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-dash-text-muted hover:text-dash-text transition-colors cursor-pointer"
+                            title="View Top-up Orders & Gateway History"
+                        >
+                            <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                            >
+                                <rect width="20" height="14" x="2" y="5" rx="2" />
+                                <line x1="2" x2="22" y1="10" />
+                            </svg>
+                            <span className="hidden sm:inline">Top-up History</span>
+                        </button>
+
                         {/* View Statement Button */}
                         <button
                             type="button"
                             id="openStatementBtn"
-                            onClick={() => setIsStatementOpen(true)}
+                            onClick={() => {
+                                setHistoryModalTab("statement");
+                                setIsStatementOpen(true);
+                            }}
                             className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-green hover:text-primary-green-hover transition-colors cursor-pointer"
                         >
                             <svg
@@ -469,6 +497,7 @@ export const FundsPage: React.FC = () => {
                 onClose={() => setIsStatementOpen(false)}
                 overview={overview}
                 formatINR={formatINR}
+                initialTab={historyModalTab}
             />
 
             {/* Payment Checkout Modal (Razorpay) */}

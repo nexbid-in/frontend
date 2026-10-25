@@ -60,6 +60,7 @@ export const API_ROUTES = {
         CREATE_ORDER: '/wallet/create-order',
         VERIFY_PAYMENT: '/wallet/verify-payment',
         FAIL_PAYMENT: '/wallet/fail-payment',
+        TOPUP_HISTORY: '/wallet/topup-history',
     },
     ADMIN: {
         USERS: '/admin/users',

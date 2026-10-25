@@ -299,6 +299,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             <div className="flex-1">
                                 <p className="font-semibold text-rose-200">Payment Unsuccessful</p>
                                 <p className="text-[11px] text-rose-300/90 mt-0.5 leading-relaxed">{errorMessage}</p>
+                                <p className="text-[10px] text-dash-text-muted mt-1.5">
+                                    Track this attempt, Order ID, and status anytime in <strong className="text-dash-text">Top-up History</strong>.
+                                </p>
                             </div>
                         </div>
                     )}
