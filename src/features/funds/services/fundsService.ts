@@ -7,6 +7,8 @@ import type {
     CreateTopupOrderResponseDTO,
     VerifyTopupPaymentRequestDTO,
     VerifyTopupPaymentResponseDTO,
+    FailTopupPaymentRequestDTO,
+    FailTopupPaymentResponseDTO,
 } from "../types";
 
 export const fundsService = {
@@ -69,6 +71,15 @@ export const fundsService = {
             message: string;
             data: VerifyTopupPaymentResponseDTO;
         }>(API_ROUTES.WALLET.VERIFY_PAYMENT, data);
+        return response.data.data;
+    },
+
+    failTopupPayment: async (data: FailTopupPaymentRequestDTO): Promise<FailTopupPaymentResponseDTO> => {
+        const response = await apiClient.post<{
+            success: boolean;
+            message: string;
+            data: FailTopupPaymentResponseDTO;
+        }>(API_ROUTES.WALLET.FAIL_PAYMENT, data);
         return response.data.data;
     },
 };

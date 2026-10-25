@@ -73,6 +73,18 @@ export interface VerifyTopupPaymentResponseDTO {
     virtualAmountAdded: number;
 }
 
+export interface FailTopupPaymentRequestDTO {
+    orderId: string;
+    paymentId?: string | null;
+    reason?: string | null;
+}
+
+export interface FailTopupPaymentResponseDTO {
+    success: boolean;
+    orderId: string;
+    status: 'FAILED';
+}
+
 export interface RazorpaySuccessHandlerArgs {
     razorpay_payment_id: string;
     razorpay_order_id: string;

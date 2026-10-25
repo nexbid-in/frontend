@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { showToast } from "@/store/uiSlice";
 import { fundsService } from "../services/fundsService";
 import { loadRazorpayScript } from "../utils/loadRazorpay";
 import type { RazorpayOptions } from "@/types/razorpay";
@@ -25,16 +26,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     onPaymentSuccess,
     formatINR,
 }) => {
+    const dispatch = useAppDispatch();
     const authUser = useAppSelector((state) => state.auth.user);
     const [step, setStep] = useState<PaymentStep>("idle");
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const modalRef = useRef<HTMLDivElement>(null);
+
+    // Track active order and outcome to manage modal dismissals & failure transitions
+    const currentOrderIdRef = useRef<string | null>(null);
+    const hasFailedRef = useRef<boolean>(false);
+    const hasSucceededRef = useRef<boolean>(false);
 
     // Reset state when modal is opened or closed
     useEffect(() => {
         if (isOpen) {
             setStep("idle");
             setErrorMessage(null);
+            currentOrderIdRef.current = null;
+            hasFailedRef.current = false;
+            hasSucceededRef.current = false;
         }
     }, [isOpen]);
 
@@ -63,6 +73,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         try {
             setStep("creating_order");
             setErrorMessage(null);
+            hasFailedRef.current = false;
+            hasSucceededRef.current = false;
 
             // 1. Ensure Razorpay SDK script is loaded
             const isLoaded = await loadRazorpayScript();
@@ -72,6 +84,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
             // 2. Call backend to create Razorpay Order & internal PaymentOrder
             const order = await fundsService.createTopupOrder(Math.round(realAmount));
+            currentOrderIdRef.current = order.orderId;
 
             // 3. Prepare Razorpay Checkout Options
             const options: RazorpayOptions = {
@@ -90,13 +103,48 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     backdrop_color: "rgba(0, 0, 0, 0.75)",
                 },
                 modal: {
-                    ondismiss: () => {
+                    ondismiss: async () => {
+                        // If already succeeded or verifying, ignore modal dismissal
+                        if (hasSucceededRef.current || step === "verifying" || step === "success") {
+                            return;
+                        }
+
+                        // If payment already failed explicitly, KEEP the error state active so user can retry!
+                        if (hasFailedRef.current) {
+                            setStep("error");
+                            return;
+                        }
+
+                        // If user closed/dismissed Razorpay before completing or failing payment:
+                        const activeOrderId = currentOrderIdRef.current;
+                        if (activeOrderId) {
+                            try {
+                                await fundsService.failTopupPayment({
+                                    orderId: activeOrderId,
+                                    reason: "Payment window closed by user",
+                                });
+                            } catch (e) {
+                                console.error("Failed to notify server of payment cancellation:", e);
+                            }
+                        }
+
+                        dispatch(
+                            showToast({
+                                type: "error",
+                                title: "Payment Cancelled",
+                                message: "Transaction was closed without completing payment.",
+                                duration: 4000,
+                            })
+                        );
+
                         setStep("idle");
                     },
                 },
                 handler: async (response) => {
                     try {
+                        hasSucceededRef.current = true;
                         setStep("verifying");
+
                         // 4. Verify payment signature with backend
                         const verification = await fundsService.verifyTopupPayment({
                             orderId: response.razorpay_order_id,
@@ -113,9 +161,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             throw new Error("Payment verification failed on server");
                         }
                     } catch (err: unknown) {
+                        hasSucceededRef.current = false;
+                        hasFailedRef.current = true;
                         const message = err instanceof Error ? err.message : "Payment verification failed";
                         setErrorMessage(message);
                         setStep("error");
+                        dispatch(
+                            showToast({
+                                type: "error",
+                                title: "Payment Verification Failed",
+                                message,
+                                duration: 6000,
+                            })
+                        );
                     }
                 },
             };
@@ -123,14 +181,43 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             // 4. Instantiate and launch Razorpay Checkout modal
             const rzp = new window.Razorpay(options);
 
-            rzp.on("payment.failed", (failure: unknown) => {
+            // Handle bank failure or payment decline event from Razorpay
+            rzp.on("payment.failed", async (failure: any) => {
                 console.error("Razorpay Payment Failure:", failure);
+                hasFailedRef.current = true;
+
                 const desc =
-                    typeof failure === "object" && failure !== null && "error" in failure
-                        ? (failure as { error?: { description?: string } }).error?.description
-                        : "Payment was declined by bank or cancelled.";
-                setErrorMessage(desc || "Payment failed");
+                    failure?.error?.description ||
+                    failure?.error?.reason ||
+                    "Payment was declined by bank or cancelled.";
+                const failedOrderId = failure?.error?.metadata?.order_id || currentOrderIdRef.current;
+                const failedPaymentId = failure?.error?.metadata?.payment_id || null;
+
+                setErrorMessage(desc);
                 setStep("error");
+
+                // Dispatch toast immediately for real-time user feedback
+                dispatch(
+                    showToast({
+                        type: "error",
+                        title: "Payment Failed",
+                        message: desc,
+                        duration: 6000,
+                    })
+                );
+
+                // Notify backend immediately so status in DB transitions to FAILED
+                if (failedOrderId) {
+                    try {
+                        await fundsService.failTopupPayment({
+                            orderId: failedOrderId,
+                            paymentId: failedPaymentId,
+                            reason: desc,
+                        });
+                    } catch (e) {
+                        console.error("Failed to notify backend of payment failure:", e);
+                    }
+                }
             });
 
             setStep("awaiting_payment");
@@ -202,15 +289,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <div className="p-5 space-y-4">
                     {/* Error State Banner */}
                     {step === "error" && errorMessage && (
-                        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2.5">
-                            <svg className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
+                        <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2.5 animate-in fade-in duration-200">
+                            <div className="w-6 h-6 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </div>
                             <div className="flex-1">
-                                <p className="font-medium text-rose-200">Payment Unsuccessful</p>
-                                <p className="text-[11px] text-rose-300 mt-0.5">{errorMessage}</p>
+                                <p className="font-semibold text-rose-200">Payment Unsuccessful</p>
+                                <p className="text-[11px] text-rose-300/90 mt-0.5 leading-relaxed">{errorMessage}</p>
                             </div>
                         </div>
                     )}
@@ -288,39 +376,61 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                 {/* Footer Action */}
                 <div className="p-5 pt-0">
-                    <button
-                        type="button"
-                        disabled={isBusy || step === "success"}
-                        onClick={handleInitiatePayment}
-                        className="w-full py-2.5 bg-primary-green text-white text-xs font-semibold rounded hover:bg-primary-green-hover transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow"
-                    >
-                        {step === "creating_order" ? (
-                            <>
-                                <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    {step === "error" ? (
+                        <div className="flex gap-2.5">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="flex-1 py-2.5 border border-dash-border text-dash-text text-xs font-semibold rounded hover:bg-dash-card transition-colors cursor-pointer"
+                            >
+                                Close
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleInitiatePayment}
+                                className="flex-1 py-2.5 bg-primary-green text-white text-xs font-semibold rounded hover:bg-primary-green-hover transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:shadow"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
                                 </svg>
-                                <span>Opening Razorpay Checkout...</span>
-                            </>
-                        ) : step === "verifying" ? (
-                            <>
-                                <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                                <span>Verifying Payment...</span>
-                            </>
-                        ) : step === "success" ? (
-                            <span>Success!</span>
-                        ) : (
-                            <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-6.75 4.5h16.5a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5H3.75A2.25 2.25 0 0 0 1.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                </svg>
-                                <span>{step === "error" ? "Retry Payment" : `Pay ${formatINR(realAmount)} via Razorpay`}</span>
-                            </>
-                        )}
-                    </button>
+                                <span>Retry Payment</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            disabled={isBusy || step === "success"}
+                            onClick={handleInitiatePayment}
+                            className="w-full py-2.5 bg-primary-green text-white text-xs font-semibold rounded hover:bg-primary-green-hover transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow"
+                        >
+                            {step === "creating_order" ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Opening Razorpay Checkout...</span>
+                                </>
+                            ) : step === "verifying" ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Verifying Payment...</span>
+                                </>
+                            ) : step === "success" ? (
+                                <span>Success!</span>
+                            ) : (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-6.75 4.5h16.5a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5H3.75A2.25 2.25 0 0 0 1.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                    </svg>
+                                    <span>Pay {formatINR(realAmount)} via Razorpay</span>
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
