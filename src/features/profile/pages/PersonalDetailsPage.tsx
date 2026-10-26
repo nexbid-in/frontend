@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setTheme } from "@/store/uiSlice";
 import { profileService, type UserProfileDTO } from "../services/profileService";
 import { EditProfileModal } from "../components/EditProfileModal";
+import { ChangePasswordModal } from "../components/ChangePasswordModal";
 
 interface InfoTooltipProps {
     text: string;
@@ -41,6 +42,7 @@ export function PersonalDetailsPage() {
     const [profile, setProfile] = useState<UserProfileDTO | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -262,6 +264,31 @@ export function PersonalDetailsPage() {
                             </label>
                         </div>
                     </div>
+
+                    {hasPassword && !isLoading && (
+                        <div className="flex items-center gap-8">
+                            <label className="text-dash-text-muted text-sm min-w-[80px]">Password</label>
+                            <button
+                                type="button"
+                                onClick={() => setIsChangePasswordModalOpen(true)}
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors cursor-pointer"
+                            >
+                                <svg
+                                    className="w-3.5 h-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                                <span>Change password</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -271,6 +298,12 @@ export function PersonalDetailsPage() {
                 onClose={() => setIsEditModalOpen(false)}
                 currentProfile={profile}
                 onProfileUpdated={(updated) => setProfile(updated)}
+            />
+
+            {/* Change Password Modal */}
+            <ChangePasswordModal
+                isOpen={isChangePasswordModalOpen}
+                onClose={() => setIsChangePasswordModalOpen(false)}
             />
         </div>
     );

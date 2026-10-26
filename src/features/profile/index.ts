@@ -1,5 +1,6 @@
 export * from "./components/ProfileLayout";
 export * from "./components/EditProfileModal";
+export * from "./components/ChangePasswordModal";
 
 export * from "./pages/PersonalDetailsPage";
 export * from "./pages/PnLStatementPage";

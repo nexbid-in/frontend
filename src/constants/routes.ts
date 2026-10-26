@@ -53,6 +53,7 @@ export const API_ROUTES = {
     USER: {
         PROFILE: '/users/profile',
         UPLOAD_SIGNATURE: '/users/profile/upload-signature',
+        CHANGE_PASSWORD: '/users/profile/change-password',
     },
     WALLET: {
         OVERVIEW: '/wallet/overview',
