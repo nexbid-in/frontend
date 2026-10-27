@@ -563,22 +563,26 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                                     type="button"
                                     disabled={currentPage <= 1 || isLoading}
                                     onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                                    className="px-2.5 py-1 text-xs rounded border border-dash-border text-dash-text hover:bg-dash-card transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                                    className="p-1.5 rounded-lg border border-dash-border bg-dash-card text-dash-text-muted hover:text-dash-text disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                     aria-label="Previous page"
                                 >
-                                    Previous
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                                    </svg>
                                 </button>
-                                <span className="text-xs text-dash-text-muted px-2">
+                                <span className="px-2 font-medium text-xs text-dash-text">
                                     Page {pagination.page} of {pagination.totalPages}
                                 </span>
                                 <button
                                     type="button"
                                     disabled={currentPage >= pagination.totalPages || isLoading}
                                     onClick={() => setCurrentPage((p) => Math.min(p + 1, pagination.totalPages))}
-                                    className="px-2.5 py-1 text-xs rounded border border-dash-border text-dash-text hover:bg-dash-card transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                                    className="p-1.5 rounded-lg border border-dash-border bg-dash-card text-dash-text-muted hover:text-dash-text disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                     aria-label="Next page"
                                 >
-                                    Next
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </button>
                             </div>
                         )}
