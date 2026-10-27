@@ -36,6 +36,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const currentOrderIdRef = useRef<string | null>(null);
     const hasFailedRef = useRef<boolean>(false);
     const hasSucceededRef = useRef<boolean>(false);
+    const latestFailureAttemptRef = useRef<{ paymentId?: string | null; reason: string } | null>(null);
 
     // Reset state when modal is opened or closed
     useEffect(() => {
@@ -45,6 +46,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             currentOrderIdRef.current = null;
             hasFailedRef.current = false;
             hasSucceededRef.current = false;
+            latestFailureAttemptRef.current = null;
         }
     }, [isOpen]);
 
@@ -75,6 +77,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             setErrorMessage(null);
             hasFailedRef.current = false;
             hasSucceededRef.current = false;
+            latestFailureAttemptRef.current = null;
 
             // 1. Ensure Razorpay SDK script is loaded
             const isLoaded = await loadRazorpayScript();
@@ -109,35 +112,51 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             return;
                         }
 
-                        // If payment already failed explicitly, KEEP the error state active so user can retry!
-                        if (hasFailedRef.current) {
-                            setStep("error");
-                            return;
-                        }
-
-                        // If user closed/dismissed Razorpay before completing or failing payment:
                         const activeOrderId = currentOrderIdRef.current;
+                        const failedAttempt = latestFailureAttemptRef.current;
+
+                        // 1. Notify backend so the PENDING order is transitioned to FAILED in DB
                         if (activeOrderId) {
+                            const reason = failedAttempt?.reason || "Payment window closed by user";
+                            const paymentId = failedAttempt?.paymentId || null;
+
                             try {
                                 await fundsService.failTopupPayment({
                                     orderId: activeOrderId,
-                                    reason: "Payment window closed by user",
+                                    paymentId,
+                                    reason,
                                 });
                             } catch (e) {
                                 console.error("Failed to notify server of payment cancellation:", e);
                             }
                         }
 
-                        dispatch(
-                            showToast({
-                                type: "error",
-                                title: "Payment Cancelled",
-                                message: "Transaction was closed without completing payment.",
-                                duration: 4000,
-                            })
-                        );
-
-                        setStep("idle");
+                        // 2. Transition frontend UI
+                        if (failedAttempt) {
+                            // User experienced a bank/card decline in the gateway and closed the modal
+                            hasFailedRef.current = true;
+                            setErrorMessage(failedAttempt.reason);
+                            setStep("error");
+                            dispatch(
+                                showToast({
+                                    type: "error",
+                                    title: "Payment Incomplete",
+                                    message: failedAttempt.reason,
+                                    duration: 5000,
+                                })
+                            );
+                        } else {
+                            // User closed the gateway before attempting payment
+                            dispatch(
+                                showToast({
+                                    type: "info",
+                                    title: "Payment Cancelled",
+                                    message: "Top-up was cancelled before completing payment.",
+                                    duration: 4000,
+                                })
+                            );
+                            setStep("idle");
+                        }
                     },
                 },
                 handler: async (response) => {
@@ -181,43 +200,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             // 4. Instantiate and launch Razorpay Checkout modal
             const rzp = new window.Razorpay(options);
 
-            // Handle bank failure or payment decline event from Razorpay
-            rzp.on("payment.failed", async (failure: RazorpayFailureResponse) => {
-                console.error("Razorpay Payment Failure:", failure);
-                hasFailedRef.current = true;
+            // Handle individual payment attempt decline/failure inside Razorpay.
+            // In industry-standard gateways, an attempt failure does NOT terminate the Order.
+            // Razorpay keeps the modal open to let the user retry with another method.
+            // We record the latest failure details and only finalize the failure if the user exits (ondismiss).
+            rzp.on("payment.failed", (failure: RazorpayFailureResponse) => {
+                console.warn("Razorpay payment attempt declined/failed (retry available in modal):", failure);
 
                 const desc =
                     failure?.error?.description ||
                     failure?.error?.reason ||
                     "Payment was declined by bank or cancelled.";
-                const failedOrderId = failure?.error?.metadata?.order_id || currentOrderIdRef.current;
                 const failedPaymentId = failure?.error?.metadata?.payment_id || null;
 
-                setErrorMessage(desc);
-                setStep("error");
-
-                // Dispatch toast immediately for real-time user feedback
-                dispatch(
-                    showToast({
-                        type: "error",
-                        title: "Payment Failed",
-                        message: desc,
-                        duration: 6000,
-                    })
-                );
-
-                // Notify backend immediately so status in DB transitions to FAILED
-                if (failedOrderId) {
-                    try {
-                        await fundsService.failTopupPayment({
-                            orderId: failedOrderId,
-                            paymentId: failedPaymentId,
-                            reason: desc,
-                        });
-                    } catch (e) {
-                        console.error("Failed to notify backend of payment failure:", e);
-                    }
-                }
+                latestFailureAttemptRef.current = {
+                    paymentId: failedPaymentId,
+                    reason: desc,
+                };
             });
 
             setStep("awaiting_payment");
