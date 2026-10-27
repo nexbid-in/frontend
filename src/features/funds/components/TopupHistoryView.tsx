@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { fundsService } from "../services/fundsService";
-import type {
-    TopupHistoryItemDTO,
-    TopupHistoryPagination,
-    PaymentOrderStatus,
-} from "../types";
+import { QUERY_KEYS } from "@/constants/queryKeys";
+import type { PaymentOrderStatus } from "../types";
 
 interface TopupHistoryViewProps {
     formatINR: (num: number) => string;
@@ -47,48 +45,40 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
     const [activeSearch, setActiveSearch] = useState<string>("");
     const [currentPage, setCurrentPage] = useState<number>(1);
 
-    // Data States
-    const [orders, setOrders] = useState<TopupHistoryItemDTO[]>([]);
-    const [pagination, setPagination] = useState<TopupHistoryPagination>({
+    // Clipboard copy feedback
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    // TanStack Query: Top-up Orders History Query with auto-caching
+    const {
+        data: historyData,
+        isLoading,
+        isFetching,
+        error: queryError,
+        refetch,
+    } = useQuery({
+        queryKey: QUERY_KEYS.wallet.topupHistory({
+            page: currentPage,
+            limit: 10,
+            status: selectedStatus,
+            search: activeSearch,
+        }),
+        queryFn: () =>
+            fundsService.getTopupHistory({
+                page: currentPage,
+                limit: 10,
+                status: selectedStatus,
+                search: activeSearch.trim() || undefined,
+            }),
+    });
+
+    const orders = historyData?.orders ?? [];
+    const pagination = historyData?.pagination ?? {
         page: 1,
         limit: 10,
         totalOrders: 0,
         totalPages: 1,
-    });
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Clipboard copy feedback
-    const [copiedId, setCopiedId] = useState<string | null>(null);
-
-    // Fetch topup orders from backend API
-    const fetchOrders = useCallback(
-        async (page: number, status: PaymentOrderStatus | "ALL", search: string) => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                const response = await fundsService.getTopupHistory({
-                    page,
-                    limit: 10,
-                    status,
-                    search: search.trim() || undefined,
-                });
-                setOrders(response.orders || []);
-                setPagination(response.pagination);
-            } catch (err: unknown) {
-                const message = err instanceof Error ? err.message : "Failed to load topup history";
-                setError(message);
-            } finally {
-                setIsLoading(false);
-            }
-        },
-        []
-    );
-
-    // Re-fetch when dependencies change
-    useEffect(() => {
-        fetchOrders(currentPage, selectedStatus, activeSearch);
-    }, [currentPage, selectedStatus, activeSearch, fetchOrders]);
+    };
+    const error = queryError instanceof Error ? queryError.message : null;
 
     const handleStatusChange = (status: PaymentOrderStatus | "ALL") => {
         setSelectedStatus(status);
@@ -108,7 +98,7 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
     };
 
     const handleRefresh = () => {
-        fetchOrders(currentPage, selectedStatus, activeSearch);
+        refetch();
     };
 
     const handleCopy = (text: string, id: string) => {
@@ -217,12 +207,12 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                     <button
                         type="button"
                         onClick={handleRefresh}
-                        disabled={isLoading}
+                        disabled={isFetching}
                         className="p-1.5 rounded-md text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors cursor-pointer disabled:opacity-50 border border-dash-border bg-dash-card outline-none focus:outline-none"
                         title="Refresh Top-up Orders"
                     >
                         <svg
-                            className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-primary-green" : ""}`}
+                            className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-primary-green" : ""}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"

@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { fundsService } from "../services/fundsService";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 import type {
     WalletOverviewDTO,
-    WalletStatementItemDTO,
-    WalletStatementPagination,
     WalletTransactionType,
 } from "../types";
 
@@ -58,15 +58,22 @@ export const StatementModal: React.FC<StatementModalProps> = ({
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
-    // Active View Tab State
+    // Active View Tab State with render-phase prop synchronization
     const [activeTab, setActiveTab] = useState<StatementModalTab>(initialTab);
+    const [prevInitialTab, setPrevInitialTab] = useState<StatementModalTab>(initialTab);
+    const [prevIsOpen, setPrevIsOpen] = useState<boolean>(isOpen);
 
-    // Sync active tab whenever modal opens with a specific initialTab
-    useEffect(() => {
-        if (isOpen && initialTab) {
-            setActiveTab(initialTab);
-        }
-    }, [isOpen, initialTab]);
+    if (isOpen && !prevIsOpen) {
+        setPrevIsOpen(true);
+        setActiveTab(initialTab);
+    } else if (!isOpen && prevIsOpen) {
+        setPrevIsOpen(false);
+    }
+
+    if (initialTab !== prevInitialTab) {
+        setPrevInitialTab(initialTab);
+        setActiveTab(initialTab);
+    }
 
     // Filter & Query States
     const [selectedType, setSelectedType] = useState<WalletTransactionType | "ALL">("ALL");
@@ -74,44 +81,37 @@ export const StatementModal: React.FC<StatementModalProps> = ({
     const [activeSearch, setActiveSearch] = useState<string>("");
     const [currentPage, setCurrentPage] = useState<number>(1);
 
-    // Data States
-    const [transactions, setTransactions] = useState<WalletStatementItemDTO[]>([]);
-    const [pagination, setPagination] = useState<WalletStatementPagination>({
+    // TanStack Query: Wallet Statement Query with auto-caching
+    const {
+        data: statementData,
+        isLoading,
+        error: queryError,
+        refetch,
+    } = useQuery({
+        queryKey: QUERY_KEYS.wallet.statement({
+            page: currentPage,
+            limit: 10,
+            type: selectedType,
+            search: activeSearch,
+        }),
+        queryFn: () =>
+            fundsService.getStatement({
+                page: currentPage,
+                limit: 10,
+                type: selectedType,
+                search: activeSearch.trim() || undefined,
+            }),
+        enabled: isOpen,
+    });
+
+    const transactions = statementData?.transactions ?? [];
+    const pagination = statementData?.pagination ?? {
         page: 1,
         limit: 10,
         totalTransactions: 0,
         totalPages: 1,
-    });
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Fetch transactions from backend API
-    const fetchStatement = useCallback(async (page: number, type: WalletTransactionType | "ALL", search: string) => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            const response = await fundsService.getStatement({
-                page,
-                limit: 10,
-                type,
-                search: search.trim() || undefined,
-            });
-            setTransactions(response.transactions || []);
-            setPagination(response.pagination);
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Failed to load statement records";
-            setError(message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    // Load data when modal opens or query params change
-    useEffect(() => {
-        if (isOpen) {
-            fetchStatement(currentPage, selectedType, activeSearch);
-        }
-    }, [isOpen, currentPage, selectedType, activeSearch, fetchStatement]);
+    };
+    const error = queryError instanceof Error ? queryError.message : null;
 
     // Reset pagination when filter or search changes
     const handleTypeChange = (type: WalletTransactionType | "ALL") => {
@@ -132,7 +132,7 @@ export const StatementModal: React.FC<StatementModalProps> = ({
     };
 
     const handleRefresh = () => {
-        fetchStatement(currentPage, selectedType, activeSearch);
+        refetch();
     };
 
     // Close on Escape & prevent body scroll
@@ -219,7 +219,7 @@ export const StatementModal: React.FC<StatementModalProps> = ({
             >
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-dash-border shrink-0 bg-dash-panel-2/50 gap-3">
-                    <div className="min-w-0 pr-4">
+                    <div className="min-w-0 pr-4 min-h-[46px] flex flex-col justify-center">
                         <div className="flex items-center gap-2">
                             <svg
                                 className="w-4 h-4 text-primary-green"
@@ -330,12 +330,15 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </div>
                 )}
 
-                {activeTab === "topup_history" ? (
+                {/* Top-up Orders Tab View (Keep-Alive container) */}
+                <div className={`flex flex-col flex-1 overflow-hidden ${activeTab === "topup_history" ? "flex" : "hidden"}`}>
                     <TopupHistoryView formatINR={formatINR} onClose={onClose} />
-                ) : (
-                    <>
-                        {/* Controls Bar: Type Filters & Search */}
-                        <div className="px-6 py-3 border-b border-dash-border bg-dash-panel-2/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+                </div>
+
+                {/* Statement Tab View (Keep-Alive container) */}
+                <div className={`flex flex-col flex-1 overflow-hidden ${activeTab === "statement" ? "flex" : "hidden"}`}>
+                    {/* Controls Bar: Type Filters & Search */}
+                    <div className="px-6 py-3 border-b border-dash-border bg-dash-panel-2/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
                     {/* Filter Pills */}
                     <div className="flex flex-wrap items-center gap-1.5">
                         {FILTER_TYPES.map((filter) => {
@@ -589,9 +592,8 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                         </button>
                     </div>
                 </div>
-            </>
-        )}
+            </div>
+        </div>
     </div>
-</div>
     );
 };

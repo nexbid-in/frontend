@@ -7,6 +7,8 @@ import { profileService, type UserProfileDTO, type UpdateProfileDTO } from "../s
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCredentials } from "@/features/auth/store/authSlice";
 import { showToast } from "@/store/uiSlice";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 
 const editProfileSchema = z.object({
     firstName: z
@@ -45,6 +47,7 @@ export function EditProfileModal({
     onProfileUpdated,
 }: EditProfileModalProps) {
     const dispatch = useAppDispatch();
+    const queryClient = useQueryClient();
     const authUser = useAppSelector((state) => state.auth.user);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
@@ -184,6 +187,7 @@ export function EditProfileModal({
                 })
             );
 
+            void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.profile.details() });
             onProfileUpdated(updatedProfile);
             onClose();
         } catch (error: unknown) {

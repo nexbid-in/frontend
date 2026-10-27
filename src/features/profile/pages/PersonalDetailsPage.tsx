@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setTheme } from "@/store/uiSlice";
-import { profileService, type UserProfileDTO } from "../services/profileService";
+import { profileService } from "../services/profileService";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 import { EditProfileModal } from "../components/EditProfileModal";
 import { ChangePasswordModal } from "../components/ChangePasswordModal";
 
@@ -37,38 +39,17 @@ function InfoTooltip({ text }: InfoTooltipProps) {
 
 export function PersonalDetailsPage() {
     const dispatch = useAppDispatch();
+    const queryClient = useQueryClient();
     const authUser = useAppSelector((state) => state.auth.user);
     const theme = useAppSelector((state) => state.ui.theme);
-    const [profile, setProfile] = useState<UserProfileDTO | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchProfile = async () => {
-            try {
-                setIsLoading(true);
-                const data = await profileService.getProfile();
-                if (isMounted) {
-                    setProfile(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch user profile:", error);
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        fetchProfile();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
+    // TanStack Query: Profile Details Query with auto-caching
+    const { data: profile = null, isLoading } = useQuery({
+        queryKey: QUERY_KEYS.profile.details(),
+        queryFn: profileService.getProfile,
+    });
 
     const displayName = profile?.firstName || authUser?.firstName || "";
     const lastName = profile?.lastName || (authUser?.lastName && authUser.lastName !== "undefined" ? authUser.lastName.trim() : "");
@@ -297,7 +278,9 @@ export function PersonalDetailsPage() {
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 currentProfile={profile}
-                onProfileUpdated={(updated) => setProfile(updated)}
+                onProfileUpdated={(updated) => {
+                    queryClient.setQueryData(QUERY_KEYS.profile.details(), updated);
+                }}
             />
 
             {/* Change Password Modal */}

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch } from "@/store/hooks";
 import { showToast } from "@/store/uiSlice";
 import { fundsService } from "../services/fundsService";
-import type { WalletOverviewDTO } from "../types";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 import { StatementModal, type StatementModalTab } from "../components/StatementModal";
 import { PaymentModal } from "../components/PaymentModal";
 
@@ -21,11 +22,21 @@ const formatINR = (number: number) => {
 
 export const FundsPage: React.FC = () => {
     const dispatch = useAppDispatch();
+    const queryClient = useQueryClient();
 
-    // Backend Wallet Overview State
-    const [overview, setOverview] = useState<WalletOverviewDTO | null>(null);
-    const [isLoadingOverview, setIsLoadingOverview] = useState<boolean>(true);
-    const [overviewError, setOverviewError] = useState<string | null>(null);
+    // Backend Wallet Overview Query via TanStack Query
+    const {
+        data: overview = null,
+        isLoading: isLoadingOverview,
+        isFetching: isFetchingOverview,
+        error: queryError,
+        refetch: refetchOverview,
+    } = useQuery({
+        queryKey: QUERY_KEYS.wallet.overview(),
+        queryFn: fundsService.getOverview,
+    });
+
+    const overviewError = queryError instanceof Error ? queryError.message : null;
 
     // Deposit Input State
     const [depositAmount, setDepositAmount] = useState<string>("1000");
@@ -35,32 +46,6 @@ export const FundsPage: React.FC = () => {
     const [isStatementOpen, setIsStatementOpen] = useState<boolean>(false);
     const [historyModalTab, setHistoryModalTab] = useState<StatementModalTab>("statement");
     const [isPaymentOpen, setIsPaymentOpen] = useState<boolean>(false);
-
-    // Fetch Wallet Overview from API
-    const fetchOverview = useCallback(async () => {
-        try {
-            setIsLoadingOverview(true);
-            setOverviewError(null);
-            const data = await fundsService.getOverview();
-            setOverview(data);
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Failed to load wallet overview";
-            setOverviewError(message);
-            dispatch(
-                showToast({
-                    type: "error",
-                    title: "Funds Error",
-                    message,
-                })
-            );
-        } finally {
-            setIsLoadingOverview(false);
-        }
-    }, [dispatch]);
-
-    useEffect(() => {
-        fetchOverview();
-    }, [fetchOverview]);
 
     // Live Calculations
     const conversionRate = overview?.exchangeRate?.ratio ?? 10;
@@ -120,18 +105,11 @@ export const FundsPage: React.FC = () => {
         setIsPaymentOpen(true);
     };
 
-    const handlePaymentSuccess = (virtualAmountAdded: number, newBalance: number) => {
-        // Optimistically update local view with verified data from server
-        if (overview) {
-            setOverview({
-                ...overview,
-                balance: newBalance,
-                totalVirtualMoneyBought: overview.totalVirtualMoneyBought + virtualAmountAdded,
-                totalRealMoneyUsed: overview.totalRealMoneyUsed + numericReal,
-            });
-        }
-
+    const handlePaymentSuccess = (virtualAmountAdded: number) => {
         setIsPaymentOpen(false);
+
+        // Invalidate all wallet queries to trigger automatic background revalidation
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
 
         dispatch(
             showToast({
@@ -141,9 +119,6 @@ export const FundsPage: React.FC = () => {
                 duration: 5000,
             })
         );
-
-        // Re-fetch overview from backend
-        fetchOverview();
     };
 
     const renderTradingStatus = (status: string | undefined) => {
@@ -187,13 +162,13 @@ export const FundsPage: React.FC = () => {
                         {/* Refresh Button */}
                         <button
                             type="button"
-                            onClick={fetchOverview}
-                            disabled={isLoadingOverview}
+                            onClick={() => void refetchOverview()}
+                            disabled={isFetchingOverview}
                             className="inline-flex items-center gap-1.5 text-xs text-dash-text-muted hover:text-dash-text transition-colors cursor-pointer disabled:opacity-50"
                             title="Refresh overview"
                         >
                             <svg
-                                className={`w-3.5 h-3.5 ${isLoadingOverview ? "animate-spin text-primary-green" : ""}`}
+                                className={`w-3.5 h-3.5 ${isFetchingOverview ? "animate-spin text-primary-green" : ""}`}
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -267,7 +242,7 @@ export const FundsPage: React.FC = () => {
                         <span>Failed to sync wallet data: {overviewError}</span>
                         <button
                             type="button"
-                            onClick={fetchOverview}
+                            onClick={() => void refetchOverview()}
                             className="text-xs font-medium underline text-rose-300 hover:text-rose-200 cursor-pointer"
                         >
                             Retry
