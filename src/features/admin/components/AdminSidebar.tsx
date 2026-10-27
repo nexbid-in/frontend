@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
+import { queryClient } from "@/config/queryClient";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/constants/routes";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -20,6 +21,7 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
     const handleLogoutConfirm = async () => {
         try {
             await authService.logout();
+            queryClient.clear();
             dispatch(logout());
             setIsLogoutModalOpen(false);
             navigate(APP_ROUTES.ADMIN.SIGN_IN);

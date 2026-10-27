@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
+import { queryClient } from "@/config/queryClient";
 import { APP_ROUTES } from "@/constants/routes";
 import { ConfirmModal, UserAvatar } from "@/components/ui";
 
@@ -73,6 +74,7 @@ export function ProfileLayout() {
     const handleSignOut = async () => {
         try {
             await authService.logout();
+            queryClient.clear();
             dispatch(logout());
             navigate(APP_ROUTES.USER.SIGN_IN);
         } catch (error) {

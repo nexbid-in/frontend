@@ -8,6 +8,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "../store/authSlice";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/constants/routes";
+import { queryClient } from "@/config/queryClient";
 
 export default function AdminSignInPage() {
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignInFormData>({
@@ -22,6 +23,7 @@ export default function AdminSignInPage() {
         setApiError(null);
         try {
             const response = await authService.login(data, "ADMIN");
+            queryClient.clear();
             dispatch(setCredentials({ user: response.data.user }));
             navigate(APP_ROUTES.ADMIN.DASHBOARD); 
         } catch (error: unknown) {

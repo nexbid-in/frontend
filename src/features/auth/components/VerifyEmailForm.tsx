@@ -6,6 +6,7 @@ import { authService } from "../services/authService";
 import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "../store/authSlice";
 import { showToast } from "@/store/uiSlice";
+import { queryClient } from "@/config/queryClient";
 
 interface VerifyEmailFormProps {
     email: string;
@@ -65,6 +66,7 @@ export function VerifyEmailForm({ email, onChangeEmail }: VerifyEmailFormProps) 
             }));
 
             // Save credentials and navigate
+            queryClient.clear();
             dispatch(setCredentials({ user: response.data.user }));
             navigate(APP_ROUTES.USER.DASHBOARD);
         } catch (error: unknown) {
