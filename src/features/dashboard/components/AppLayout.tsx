@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
+import { queryClient } from "@/config/queryClient";
 
 import { hideToast, showToast } from "@/store/uiSlice";
 import { Toast, ConfirmModal, UserAvatar } from "@/components/ui";
@@ -17,12 +18,20 @@ export function AppLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [prevPathname, setPrevPathname] = useState(location.pathname);
     const [showSignOutModal, setShowSignOutModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown on route changes
+    if (prevPathname !== location.pathname) {
+        setPrevPathname(location.pathname);
+        setIsDropdownOpen(false);
+    }
 
     const handleSignOut = async () => {
         try {
             await authService.logout();
+            queryClient.clear();
             dispatch(logout());
             navigate(APP_ROUTES.USER.SIGN_IN);
         } catch (error) {
@@ -62,15 +71,11 @@ export function AppLayout() {
         };
     }, [isDropdownOpen]);
 
-    // Close dropdown on route changes
-    useEffect(() => {
-        setIsDropdownOpen(false);
-    }, [location.pathname]);
-
     const fullName = user
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
     const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
+    const isFundsActive = location.pathname === APP_ROUTES.USER.FUNDS;
 
     return (
         <div className="dashboard-root flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans" data-theme={theme}>
@@ -103,7 +108,16 @@ export function AppLayout() {
                     <Link to={APP_ROUTES.USER.WATCHLIST} className="text-dash-text-muted hover:text-dash-text transition-colors">Watchlist</Link>
                     <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-dash-text-muted hover:text-dash-text transition-colors">Portfolio</Link>
                     <Link to={APP_ROUTES.USER.ORDERS} className="text-dash-text-muted hover:text-dash-text transition-colors">Orders</Link>
-                    <Link to={APP_ROUTES.USER.FUNDS} className="text-dash-text-muted hover:text-dash-text transition-colors">Funds</Link>
+                    <Link
+                        to={APP_ROUTES.USER.FUNDS}
+                        className={`${
+                            isFundsActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-3 py-1.5 rounded-md transition-colors`}
+                    >
+                        Funds
+                    </Link>
                 </div>
 
                 <div className="flex items-center gap-5 text-sm">
@@ -112,9 +126,12 @@ export function AppLayout() {
                         <span className="font-medium text-dash-text">₹3757.30</span>
                     </div>
 
-                    <button className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text px-3 py-1.5 rounded-md transition-colors cursor-pointer">
+                    <Link
+                        to={APP_ROUTES.USER.FUNDS}
+                        className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text-muted hover:bg-dash-panel-2 px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer"
+                    >
                         Add Funds
-                    </button>
+                    </Link>
 
                     {/* Dynamic User Profile Avatar & Dropdown */}
                     <div className="relative" ref={dropdownRef}>

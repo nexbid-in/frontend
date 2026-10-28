@@ -1,49 +1,64 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminService, type AdminUserListItemDTO } from "../services/adminService";
 import { ConfirmModal, UserAvatar } from "@/components/ui";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 
 export function AdminUsersPage() {
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
-    
-    const [users, setUsers] = useState<AdminUserListItemDTO[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalUsers, setTotalUsers] = useState(0);
-    const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean, userId: string, isBlocked: boolean }>({ isOpen: false, userId: "", isBlocked: false });
+    const [errorMessage, setErrorMessage] = useState("");
+    const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; userId: string; isBlocked: boolean }>({
+        isOpen: false,
+        userId: "",
+        isBlocked: false,
+    });
     const limit = 6;
 
+    // Debounce search query by 300ms
     useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            fetchUsers();
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPage(1);
         }, 300);
-        return () => clearTimeout(timeoutId);
-    }, [page, searchQuery, statusFilter]);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
-    useEffect(() => {
-        setPage(1);
-    }, [searchQuery, statusFilter]);
 
-    const fetchUsers = async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const response = await adminService.getUsers(page, limit, searchQuery, statusFilter);
-            setUsers(response.users || []);
-            setTotalPages(response.pagination?.totalPages || 1);
-            setTotalUsers(response.pagination?.totalUsers || 0);
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message || "Failed to fetch users");
-            } else {
-                setError("Failed to fetch users");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+
+    // TanStack Query: Admin users list with auto-caching
+    const {
+        data,
+        isLoading: loading,
+        error: queryError,
+    } = useQuery({
+        queryKey: QUERY_KEYS.admin.users({
+            page,
+            limit,
+            search: debouncedSearch,
+            status: statusFilter,
+        }),
+        queryFn: () => adminService.getUsers(page, limit, debouncedSearch, statusFilter),
+    });
+
+    const users = data?.users ?? [];
+    const totalPages = data?.pagination?.totalPages ?? 1;
+    const totalUsers = data?.pagination?.totalUsers ?? 0;
+    const error = errorMessage || (queryError instanceof Error ? queryError.message : "");
+
+    // TanStack Mutation: Update user blocked status
+    const toggleStatusMutation = useMutation({
+        mutationFn: (userId: string) => adminService.updateUserStatus(userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.admin.all });
+        },
+        onError: (err: unknown) => {
+            setErrorMessage(err instanceof Error ? err.message : "Failed to update user status");
+        },
+    });
 
     const openConfirmModal = (user: AdminUserListItemDTO) => {
         setConfirmModalState({ isOpen: true, userId: user.id, isBlocked: user.isBlocked });
@@ -61,20 +76,9 @@ export function AdminUsersPage() {
         setConfirmModalState({ isOpen: false, userId: "", isBlocked: false });
     };
 
-    const handleUpdateStatus = async (userId: string) => {
-        try {
-            setUsers(prevUsers => prevUsers.map(u => 
-                u.id === userId ? { ...u, isBlocked: !u.isBlocked } : u
-            ));
-            await adminService.updateUserStatus(userId);
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message || "Failed to update user status");
-            } else {
-                setError("Failed to update user status");
-            }
-            fetchUsers(); 
-        }
+    const handleUpdateStatus = (userId: string) => {
+        setErrorMessage("");
+        toggleStatusMutation.mutate(userId);
     };
 
 
@@ -162,7 +166,10 @@ export function AdminUsersPage() {
                         <div>
                             <select
                                 value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
+                                onChange={(e) => {
+                                    setStatusFilter(e.target.value);
+                                    setPage(1);
+                                }}
                                 className="w-full bg-panel-2 border border-border-muted rounded-lg px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-green transition-colors"
                             >
                                 <option value="all">All Statuses</option>

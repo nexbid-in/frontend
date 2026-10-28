@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl";
 
@@ -28,11 +28,13 @@ export function UserAvatar({
     className = "",
     fallbackClassName = "bg-muted text-green",
 }: UserAvatarProps) {
+    const [prevSrc, setPrevSrc] = useState(src);
     const [hasError, setHasError] = useState(false);
 
-    useEffect(() => {
+    if (prevSrc !== src) {
+        setPrevSrc(src);
         setHasError(false);
-    }, [src]);
+    }
 
     const { container, text } = SIZE_MAP[size];
 

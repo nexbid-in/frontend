@@ -4,6 +4,7 @@ import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, Marketi
 import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage, AccountSuspendedPage } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { AdminDashboardPage, AdminUsersPage, AdminLayout } from "@/features/admin";
+import { FundsPage } from "@/features/funds";
 
 import { PrivateRoute, PublicRoute, AdminRoute } from "@/features/auth";
 import { AppLayout } from "@/features/dashboard/components/AppLayout";
@@ -18,7 +19,7 @@ import {
 
 import { APP_ROUTES } from "@/constants/routes";
 
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
     // ------------------------------------
     // PUBLIC ROUTES (Guests Only)
     // ------------------------------------
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
                 element: <AppLayout />,
                 children: [
                     { index: true, element: <DashboardPage /> },
+                    { path: "funds", element: <FundsPage /> },
                     {
                         path: "profile",
                         element: <ProfileLayout />,

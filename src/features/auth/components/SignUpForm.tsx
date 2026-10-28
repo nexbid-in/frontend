@@ -25,8 +25,12 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
         setIsLoading(true);
         setApiError(null);
         try {
-            const { confirmPassword, ...registerData } = data;
-            await authService.register(registerData);
+            await authService.register({
+                firstName: data.firstName,
+                lastName: data.lastName,
+                email: data.email,
+                password: data.password,
+            });
 
             onSuccess(data.email);
         } catch (error: unknown) {

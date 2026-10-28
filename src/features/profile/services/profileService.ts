@@ -28,6 +28,11 @@ export interface UpdateProfileDTO {
     profileImage?: string | null;
 }
 
+export interface ChangePasswordDTO {
+    currentPassword: string;
+    newPassword: string;
+}
+
 export const profileService = {
     getProfile: async (): Promise<UserProfileDTO> => {
         const response = await apiClient.get<{ success: boolean; message: string; data: UserProfileDTO }>(
@@ -73,5 +78,12 @@ export const profileService = {
             data
         );
         return response.data.data;
+    },
+    changePassword: async (data: ChangePasswordDTO): Promise<string> => {
+        const response = await apiClient.patch<{ success: boolean; message: string }>(
+            API_ROUTES.USER.CHANGE_PASSWORD,
+            data
+        );
+        return response.data.message;
     },
 };

@@ -7,6 +7,7 @@ import { authService } from "../services/authService";
 import { APP_ROUTES } from "@/constants/routes";
 import { useState } from "react";
 import { store } from "@/store/store";
+import { queryClient } from "@/config/queryClient";
 
 interface SocialAuthProps {
     actionText: string;
@@ -50,6 +51,7 @@ export function SocialAuth({ actionText, buttonText = "Continue with Google", on
             }
 
             // Save credentials and navigate
+            queryClient.clear();
             dispatch(setCredentials({ user: response.data.user }));
             navigate(APP_ROUTES.USER.DASHBOARD);
         } catch (err: unknown) {

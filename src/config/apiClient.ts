@@ -2,6 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { store } from "@/store/store";
 import { logout, setAccountBlocked } from "@/features/auth/store/authSlice";
 import { API_ROUTES } from "@/constants/routes";
+import { queryClient } from "./queryClient";
 import { env } from "./env";
 
 export const apiClient = axios.create({
@@ -69,6 +70,7 @@ apiClient.interceptors.response.use(
 
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthRoute) {
             if (originalRequest.url?.includes(API_ROUTES.AUTH.REFRESH)) {
+                queryClient.clear();
                 store.dispatch(logout());
                 return Promise.reject(new Error(message));
             }
@@ -90,6 +92,7 @@ apiClient.interceptors.response.use(
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError);
+                queryClient.clear();
                 store.dispatch(logout());
                 return Promise.reject(new Error(message));
             } finally {

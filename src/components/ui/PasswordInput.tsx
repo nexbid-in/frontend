@@ -4,7 +4,12 @@ import { Input, type InputProps } from './Input';
 export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputProps, 'type'>>(
     (props, ref) => {
         const [show, setShow] = useState(false);
-        const iconColor = props.variant === 'dark' ? 'text-slate-500 hover:text-white' : 'text-gray-400 hover:text-gray-600';
+        const iconColor =
+            props.variant === 'dash'
+                ? 'text-dash-text-muted hover:text-dash-text'
+                : props.variant === 'dark'
+                ? 'text-slate-500 hover:text-white'
+                : 'text-gray-400 hover:text-gray-600';
 
         return (
             <div className="relative">

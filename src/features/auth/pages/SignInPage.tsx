@@ -12,6 +12,7 @@ import { authService } from "../services/authService";
 import { useAppDispatch } from "@/store/hooks";
 import { setCredentials } from "../store/authSlice";
 import { store } from "@/store/store";
+import { queryClient } from "@/config/queryClient";
 
 export default function SignInPage() {
     const navigate = useNavigate();
@@ -31,6 +32,7 @@ export default function SignInPage() {
         try {
             const response = await authService.login(data);
 
+            queryClient.clear();
             dispatch(setCredentials({ user: response.data.user }));
             console.log("Login Successful!", response);
             navigate(APP_ROUTES.USER.DASHBOARD);

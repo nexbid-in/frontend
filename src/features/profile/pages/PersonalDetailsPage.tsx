@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setTheme } from "@/store/uiSlice";
-import { profileService, type UserProfileDTO } from "../services/profileService";
+import { profileService } from "../services/profileService";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 import { EditProfileModal } from "../components/EditProfileModal";
+import { ChangePasswordModal } from "../components/ChangePasswordModal";
 
 interface InfoTooltipProps {
     text: string;
@@ -36,37 +39,17 @@ function InfoTooltip({ text }: InfoTooltipProps) {
 
 export function PersonalDetailsPage() {
     const dispatch = useAppDispatch();
+    const queryClient = useQueryClient();
     const authUser = useAppSelector((state) => state.auth.user);
     const theme = useAppSelector((state) => state.ui.theme);
-    const [profile, setProfile] = useState<UserProfileDTO | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchProfile = async () => {
-            try {
-                setIsLoading(true);
-                const data = await profileService.getProfile();
-                if (isMounted) {
-                    setProfile(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch user profile:", error);
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        fetchProfile();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
+    // TanStack Query: Profile Details Query with auto-caching
+    const { data: profile = null, isLoading } = useQuery({
+        queryKey: QUERY_KEYS.profile.details(),
+        queryFn: profileService.getProfile,
+    });
 
     const displayName = profile?.firstName || authUser?.firstName || "";
     const lastName = profile?.lastName || (authUser?.lastName && authUser.lastName !== "undefined" ? authUser.lastName.trim() : "");
@@ -262,6 +245,31 @@ export function PersonalDetailsPage() {
                             </label>
                         </div>
                     </div>
+
+                    {hasPassword && !isLoading && (
+                        <div className="flex items-center gap-8">
+                            <label className="text-dash-text-muted text-sm min-w-[80px]">Password</label>
+                            <button
+                                type="button"
+                                onClick={() => setIsChangePasswordModalOpen(true)}
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors cursor-pointer"
+                            >
+                                <svg
+                                    className="w-3.5 h-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                                <span>Change password</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -270,7 +278,15 @@ export function PersonalDetailsPage() {
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 currentProfile={profile}
-                onProfileUpdated={(updated) => setProfile(updated)}
+                onProfileUpdated={(updated) => {
+                    queryClient.setQueryData(QUERY_KEYS.profile.details(), updated);
+                }}
+            />
+
+            {/* Change Password Modal */}
+            <ChangePasswordModal
+                isOpen={isChangePasswordModalOpen}
+                onClose={() => setIsChangePasswordModalOpen(false)}
             />
         </div>
     );
