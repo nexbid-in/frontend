@@ -85,14 +85,14 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                             <button
                                 type="button"
                                 onClick={() => onBuy(item)}
-                                className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors shadow-xs cursor-pointer"
+                                className="px-4 py-1.5 text-xs font-semibold text-white bg-[#00873e] hover:bg-[#009c48] rounded-lg transition-colors shadow-xs cursor-pointer"
                             >
                                 BUY
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onSell(item)}
-                                className="px-4 py-1.5 text-xs font-semibold text-white bg-[#ea580c] hover:bg-[#c2410c] rounded-lg transition-colors shadow-xs cursor-pointer"
+                                className="px-4 py-1.5 text-xs font-semibold text-white bg-[#c83200] hover:bg-[#df3d17] rounded-lg transition-colors shadow-xs cursor-pointer"
                             >
                                 SELL
                             </button>

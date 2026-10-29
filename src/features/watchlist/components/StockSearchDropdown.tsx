@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useStockSearchQuery } from "../hooks/useWatchlist";
 import type { StockItemDTO } from "../types";
+import { formatStockDisplayName } from "../utils/stockPriceHelper";
 
 interface StockSearchDropdownProps {
     watchlistStockIds: Set<string>;
@@ -175,7 +176,7 @@ export const StockSearchDropdown: React.FC<StockSearchDropdownProps> = ({
                                                 )}
                                             </div>
                                             <p className="text-[11px] text-dash-text-muted truncate mt-0.5">
-                                                {stock.name}
+                                                {formatStockDisplayName(stock.name, stock.symbol)}
                                                 {stock.sector ? ` • ${stock.sector}` : ""}
                                             </p>
                                         </div>

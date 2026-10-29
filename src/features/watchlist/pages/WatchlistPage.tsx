@@ -271,7 +271,7 @@ export function WatchlistPage() {
                                         <button
                                             type="button"
                                             onClick={() => handleBuy(activeItem)}
-                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#00873e] hover:bg-[#009c48] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
                                         >
                                             <span>BUY</span>
                                             <span className="font-mono text-[11px] opacity-90">
@@ -281,7 +281,7 @@ export function WatchlistPage() {
                                         <button
                                             type="button"
                                             onClick={() => handleSell(activeItem)}
-                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#ea580c] hover:bg-[#c2410c] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#c83200] hover:bg-[#df3d17] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
                                         >
                                             <span>SELL</span>
                                             <span className="font-mono text-[11px] opacity-90">
@@ -352,7 +352,7 @@ export function WatchlistPage() {
                             <div className="flex items-center gap-2">
                                 <span
                                     className={`px-2 py-0.5 text-xs font-bold text-white rounded ${
-                                        orderModal.type === "BUY" ? "bg-[#2563eb]" : "bg-[#ea580c]"
+                                        orderModal.type === "BUY" ? "bg-[#00873e]" : "bg-[#c83200]"
                                     }`}
                                 >
                                     {orderModal.type}
@@ -397,7 +397,7 @@ export function WatchlistPage() {
                                 type="button"
                                 onClick={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
                                 className={`px-4 py-1.5 text-xs font-semibold text-white rounded-md transition-colors cursor-pointer ${
-                                    orderModal.type === "BUY" ? "bg-[#2563eb] hover:bg-[#1d4ed8]" : "bg-[#ea580c] hover:bg-[#c2410c]"
+                                    orderModal.type === "BUY" ? "bg-[#00873e] hover:bg-[#009c48]" : "bg-[#c83200] hover:bg-[#df3d17]"
                                 }`}
                             >
                                 Close

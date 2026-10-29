@@ -80,6 +80,33 @@ export function formatINR(val: number): string {
     }).format(val);
 }
 
+/**
+ * Dynamically converts full legal company names into clean trading brand names (e.g. Zerodha Kite).
+ * Scalable for all existing database stocks and any new stocks added by admins.
+ * E.g., "Tata Motors Limited" -> "Tata Motors", "Infosys Limited" -> "Infosys"
+ */
+export function formatStockDisplayName(name: string, symbol?: string): string {
+    if (!name || typeof name !== "string") return symbol || "";
+
+    const cleaned = name
+        // 1. Remove parenthetical country/region tags like "(India)", "(I)"
+        .replace(/\s*\((India|I|IN)\)/gi, "")
+        // 2. Remove standard legal entity suffixes at word boundaries
+        .replace(
+            /\b(Private|Public)?\s*(Limited|Ltd\.?|Corporation|Corp\.?|Holdings?|Enterprise(s)?)\b/gi,
+            ""
+        )
+        // 3. Remove index benchmark descriptors (e.g. "Benchmark Index", "Benchmark")
+        .replace(/\b(Benchmark\s+Index|Benchmark)\b/gi, "")
+        // 4. Remove trailing symbols, dots, commas, dashes, or ampersands left after removal
+        .replace(/[\s,.-]+$/, "")
+        // 5. Collapse multiple spaces into one
+        .replace(/\s{2,}/g, " ")
+        .trim();
+
+    return cleaned || name || symbol || "";
+}
+
 export interface StockFundamentals {
     open: number;
     prevClose: number;
