@@ -1,0 +1,345 @@
+import { useState, useMemo, useCallback } from "react";
+import {
+    useWatchlistQuery,
+    useAddToWatchlistMutation,
+    useRemoveFromWatchlistMutation,
+} from "../hooks/useWatchlist";
+import { WatchlistSidebar } from "../components/WatchlistSidebar";
+import { TradingViewChart } from "../components/TradingViewChart";
+import { StockOverviewPanel } from "../components/StockOverviewPanel";
+import type { WatchlistItemDTO } from "../types";
+import { getStockMarketQuote, formatINR } from "../utils/stockPriceHelper";
+
+export function WatchlistPage() {
+    const { data: watchlistItems = [], isLoading } = useWatchlistQuery();
+    const addMutation = useAddToWatchlistMutation();
+    const removeMutation = useRemoveFromWatchlistMutation();
+
+    // Selected stock for chart / overview view
+    const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
+    const [activeViewMode, setActiveViewMode] = useState<"chart" | "overview">("chart");
+
+    // Real-time live tick stream state for active stock (keyed by stockId)
+    const [liveTick, setLiveTick] = useState<{
+        stockId: string;
+        price: number;
+        change: number;
+        changePercent: number;
+    } | null>(null);
+
+    // Order Execution Modal placeholder state
+    const [orderModal, setOrderModal] = useState<{
+        isOpen: boolean;
+        type: "BUY" | "SELL";
+        item: WatchlistItemDTO | null;
+    }>({
+        isOpen: false,
+        type: "BUY",
+        item: null,
+    });
+
+    // Auto-select first stock when watchlist loads if none currently selected
+    const activeItem = useMemo(() => {
+        if (watchlistItems.length === 0) return null;
+        if (!selectedStockId) return watchlistItems[0];
+        const found = watchlistItems.find((item) => item.stock.id === selectedStockId);
+        return found ?? watchlistItems[0];
+    }, [watchlistItems, selectedStockId]);
+
+    const activeQuote = useMemo(() => {
+        if (!activeItem) return null;
+        return getStockMarketQuote(activeItem.stock.symbol);
+    }, [activeItem]);
+
+    const handlePriceTick = useCallback((price: number, change: number, changePercent: number) => {
+        if (!activeItem) return;
+        setLiveTick({
+            stockId: activeItem.stock.id,
+            price,
+            change,
+            changePercent,
+        });
+    }, [activeItem]);
+
+    const isCurrentTick = liveTick !== null && activeItem !== null && liveTick.stockId === activeItem.stock.id;
+    const currentPrice = isCurrentTick ? liveTick.price : (activeQuote?.price ?? 0);
+    const currentChange = isCurrentTick ? liveTick.change : (activeQuote?.change ?? 0);
+    const currentChangePercent = isCurrentTick ? liveTick.changePercent : (activeQuote?.changePercent ?? 0);
+    const isPositive = currentChange >= 0;
+
+    const handleSelectStock = (item: WatchlistItemDTO) => {
+        setSelectedStockId(item.stock.id);
+    };
+
+    const handleOpenChart = (item: WatchlistItemDTO) => {
+        setSelectedStockId(item.stock.id);
+        setActiveViewMode("chart");
+    };
+
+    const handleOpenOverview = (item: WatchlistItemDTO) => {
+        setSelectedStockId(item.stock.id);
+        setActiveViewMode("overview");
+    };
+
+    const handleBuy = (item: WatchlistItemDTO) => {
+        setOrderModal({
+            isOpen: true,
+            type: "BUY",
+            item,
+        });
+    };
+
+    const handleSell = (item: WatchlistItemDTO) => {
+        setOrderModal({
+            isOpen: true,
+            type: "SELL",
+            item,
+        });
+    };
+
+    const handleAddStock = async (stockId: string) => {
+        const added = await addMutation.mutateAsync(stockId);
+        setSelectedStockId(added.stockId);
+    };
+
+    const handleDeleteStock = (stockId: string) => {
+        removeMutation.mutate(stockId);
+    };
+
+    return (
+        <div className="flex flex-col lg:flex-row h-full p-4 gap-4 overflow-hidden">
+            {/* Left Column: Watchlist Sidebar (~380px fixed width on desktop) */}
+            <WatchlistSidebar
+                items={watchlistItems}
+                isLoading={isLoading}
+                selectedStockId={activeItem ? activeItem.stock.id : null}
+                onSelectStock={handleSelectStock}
+                onOpenChart={handleOpenChart}
+                onOpenOverview={handleOpenOverview}
+                onBuy={handleBuy}
+                onSell={handleSell}
+                onAddStock={handleAddStock}
+                onDeleteStock={handleDeleteStock}
+                isAdding={addMutation.isPending}
+                isDeleting={removeMutation.isPending}
+            />
+
+            {/* Right Column: Dynamic Main View (Chart or Stock Overview) */}
+            <main className="flex-1 bg-dash-panel border border-dash-border rounded-xl flex flex-col h-full overflow-hidden">
+                {activeItem && activeQuote ? (
+                    <>
+                        {/* Top Stock Control Header */}
+                        <div className="px-6 py-3.5 border-b border-dash-border bg-dash-panel-2/30 flex flex-wrap items-center justify-between gap-4 shrink-0">
+                            {/* Stock Identity & Live Price */}
+                            <div className="flex items-center gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h1 className="text-base font-bold text-dash-text tracking-tight">
+                                            {activeItem.stock.symbol}
+                                        </h1>
+                                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border border-dash-border text-dash-text-muted bg-dash-card">
+                                            {activeItem.stock.exchange}
+                                        </span>
+                                        {activeItem.stock.type === "INDEX" && (
+                                            <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
+                                                Index
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-dash-text-muted mt-0.5 truncate max-w-xs">
+                                        {activeItem.stock.name}
+                                    </p>
+                                </div>
+
+                                <div className="h-8 w-px bg-dash-border hidden sm:block" />
+
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-lg font-mono font-bold text-dash-text transition-colors">
+                                        ₹{formatINR(currentPrice)}
+                                    </span>
+                                    <span
+                                        className={`text-xs font-mono font-semibold transition-colors ${
+                                            isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                                        }`}
+                                    >
+                                        {isPositive
+                                            ? `+${currentChange.toFixed(2)}`
+                                            : currentChange.toFixed(2)}{" "}
+                                        (
+                                        {isPositive
+                                            ? `+${currentChangePercent.toFixed(2)}%`
+                                            : `${currentChangePercent.toFixed(2)}%`}
+                                        )
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* View Switcher & Quick Order Buttons */}
+                            <div className="flex items-center gap-3">
+                                {/* View Mode Toggle Pills */}
+                                <div className="flex items-center bg-dash-card p-0.5 rounded-lg border border-dash-border">
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveViewMode("chart")}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                            activeViewMode === "chart"
+                                                ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border font-semibold"
+                                                : "text-dash-text-muted hover:text-dash-text"
+                                        }`}
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                            <line x1="18" y1="20" x2="18" y2="10" />
+                                            <line x1="12" y1="20" x2="12" y2="4" />
+                                            <line x1="6" y1="20" x2="6" y2="14" />
+                                        </svg>
+                                        <span>Chart</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveViewMode("overview")}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                            activeViewMode === "overview"
+                                                ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border font-semibold"
+                                                : "text-dash-text-muted hover:text-dash-text"
+                                        }`}
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="12" y1="16" x2="12" y2="12" />
+                                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                                        </svg>
+                                        <span>Overview</span>
+                                    </button>
+                                </div>
+
+                                {/* Quick Buy/Sell Buttons (Like Zerodha / Kite Header) */}
+                                {activeItem.stock.type !== "INDEX" && activeItem.stock.isTradable && (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleBuy(activeItem)}
+                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                                        >
+                                            <span>BUY</span>
+                                            <span className="font-mono text-[11px] opacity-90">
+                                                @ {formatINR(currentPrice)}
+                                            </span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSell(activeItem)}
+                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#ea580c] hover:bg-[#c2410c] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                                        >
+                                            <span>SELL</span>
+                                            <span className="font-mono text-[11px] opacity-90">
+                                                @ {formatINR(currentPrice)}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Dynamic Main View Area */}
+                        <div className="flex-1 overflow-hidden relative">
+                            {activeViewMode === "chart" ? (
+                                <TradingViewChart
+                                    symbol={activeItem.stock.symbol}
+                                    exchange={activeItem.stock.exchange}
+                                    stockName={activeItem.stock.name}
+                                    onPriceTick={handlePriceTick}
+                                />
+                            ) : (
+                                <StockOverviewPanel
+                                    item={activeItem}
+                                    onOpenChart={handleOpenChart}
+                                    onBuy={handleBuy}
+                                    onSell={handleSell}
+                                />
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-dash-text-muted space-y-3">
+                        <div className="w-14 h-14 rounded-full bg-dash-card flex items-center justify-center text-dash-text-muted border border-dash-border">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M8 12h8" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-dash-text">No Stock Selected</h3>
+                            <p className="text-xs text-dash-text-muted mt-1 max-w-sm">
+                                Search and add Indian stocks to your watchlist on the left to start viewing live charts and placing trades.
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </main>
+
+            {/* Simple Order Modal Feedback Placeholder for Phase 5 */}
+            {orderModal.isOpen && orderModal.item && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="w-full max-w-md bg-dash-panel border border-dash-border rounded-xl shadow-2xl p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b border-dash-border pb-3">
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className={`px-2 py-0.5 text-xs font-bold text-white rounded ${
+                                        orderModal.type === "BUY" ? "bg-[#2563eb]" : "bg-[#ea580c]"
+                                    }`}
+                                >
+                                    {orderModal.type}
+                                </span>
+                                <span className="text-sm font-semibold text-dash-text">
+                                    {orderModal.item.stock.symbol}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
+                                className="text-dash-text-muted hover:text-dash-text transition-colors cursor-pointer"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="text-xs text-dash-text-muted space-y-2">
+                            <p>
+                                <strong className="text-dash-text">{orderModal.item.stock.name}</strong> ({orderModal.item.stock.exchange})
+                            </p>
+                            <p>
+                                Market Price: <span className="font-mono text-dash-text font-semibold">₹{formatINR(getStockMarketQuote(orderModal.item.stock.symbol).price)}</span>
+                            </p>
+                            <div className="p-3 bg-dash-panel-2 rounded-lg border border-dash-border text-xs text-dash-text-muted">
+                                Full Order Execution Form (Intraday MIS / Longterm CNC, Quantity, Limit vs Market) will be connected here.
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
+                                className="px-4 py-1.5 text-xs rounded-md border border-dash-border text-dash-text hover:bg-dash-card transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
+                                className={`px-4 py-1.5 text-xs font-semibold text-white rounded-md transition-colors cursor-pointer ${
+                                    orderModal.type === "BUY" ? "bg-[#2563eb] hover:bg-[#1d4ed8]" : "bg-[#ea580c] hover:bg-[#c2410c]"
+                                }`}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

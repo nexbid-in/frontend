@@ -49,7 +49,11 @@ export function AppLayout() {
     // Close dropdown on click outside or Escape key
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (
+                dropdownRef.current &&
+                event.target instanceof Node &&
+                !dropdownRef.current.contains(event.target)
+            ) {
                 setIsDropdownOpen(false);
             }
         };
@@ -75,6 +79,7 @@ export function AppLayout() {
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
     const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
+    const isWatchlistActive = location.pathname.startsWith(APP_ROUTES.USER.WATCHLIST);
     const isFundsActive = location.pathname === APP_ROUTES.USER.FUNDS;
 
     return (
@@ -105,7 +110,16 @@ export function AppLayout() {
                     >
                         Markets
                     </Link>
-                    <Link to={APP_ROUTES.USER.WATCHLIST} className="text-dash-text-muted hover:text-dash-text transition-colors">Watchlist</Link>
+                    <Link
+                        to={APP_ROUTES.USER.WATCHLIST}
+                        className={`${
+                            isWatchlistActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-3 py-1.5 rounded-md transition-colors`}
+                    >
+                        Watchlist
+                    </Link>
                     <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-dash-text-muted hover:text-dash-text transition-colors">Portfolio</Link>
                     <Link to={APP_ROUTES.USER.ORDERS} className="text-dash-text-muted hover:text-dash-text transition-colors">Orders</Link>
                     <Link

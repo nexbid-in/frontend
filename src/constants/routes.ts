@@ -66,5 +66,12 @@ export const API_ROUTES = {
     ADMIN: {
         USERS: '/admin/users',
         USER_STATUS: (userId: string) => `/admin/users/${userId}/status`,
-    }
+    },
+    STOCKS: {
+        SEARCH: '/stocks/search',
+    },
+    WATCHLIST: {
+        ROOT: '/watchlist',
+        ITEM: (stockId: string) => `/watchlist/${stockId}`,
+    },
 } as const;

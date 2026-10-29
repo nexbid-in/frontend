@@ -24,4 +24,12 @@ export const QUERY_KEYS = {
     profile: {
         details: () => ["profile"],
     },
+    watchlist: {
+        all: ["watchlist"],
+        user: () => ["watchlist", "user"],
+    },
+    stocks: {
+        all: ["stocks"],
+        search: (query: string) => ["stocks", "search", query],
+    },
 };
