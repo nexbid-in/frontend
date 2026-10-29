@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import { KLineChartPro, type Period } from "@klinecharts/pro";
 import "@klinecharts/pro/dist/klinecharts-pro.css";
-import { init as initKLineChart, type Chart, type OverlayCreate, ActionType, YAxisType } from "klinecharts";
+import { init as initKLineChart, type Chart, type OverlayCreate, type OverlayRemove, ActionType, YAxisType } from "klinecharts";
 import { useAppSelector } from "@/store/hooks";
 import { NexbidRealtimeDatafeed } from "../services/klineDatafeed";
 import type { TickListener } from "../services/klineDatafeed";
@@ -104,6 +104,7 @@ function getActiveOverlays(chart: Chart | null): OverlayCreate[] {
                 mode: ins.mode,
                 visible: ins.visible,
                 extendData: ins.extendData,
+                groupId: "drawing_tools",
             }));
     } catch {
         return [];
@@ -266,6 +267,17 @@ export const StockChart: React.FC<StockChartProps> = ({
                 underlyingChartRef.current = chartImp;
 
                 if (chartImp) {
+                    // Intercept removeOverlay so that toolbar remove requests clear ALL overlays unconditionally
+                    const origRemoveOverlay = chartImp.removeOverlay.bind(chartImp);
+                    chartImp.removeOverlay = (remove?: unknown) => {
+                        if (!remove || (typeof remove === "object" && (remove as { groupId?: string }).groupId === "drawing_tools")) {
+                            origRemoveOverlay();
+                            saveSymbolDrawings(storageKeyRef.current, currentSymbolRef.current, []);
+                            return;
+                        }
+                        origRemoveOverlay(remove as OverlayRemove);
+                    };
+
                     // Auto-fit Y-axis and scroll to real time ONLY on symbol switch or initial data arrival
                     chartImp.subscribeAction(ActionType.OnDataReady, () => {
                         if (shouldCenterOnDataRef.current) {
@@ -289,7 +301,16 @@ export const StockChart: React.FC<StockChartProps> = ({
                     if (initialDrawings && initialDrawings.length > 0) {
                         initialDrawings.forEach((ov) => {
                             try {
-                                chartImp.createOverlay(ov);
+                                chartImp.createOverlay({
+                                    name: ov.name,
+                                    points: ov.points,
+                                    styles: ov.styles,
+                                    lock: ov.lock,
+                                    mode: ov.mode,
+                                    visible: ov.visible,
+                                    extendData: ov.extendData,
+                                    groupId: "drawing_tools",
+                                });
                             } catch (err) {
                                 console.warn("[StockChart] Failed to restore overlay:", err);
                             }
@@ -313,15 +334,33 @@ export const StockChart: React.FC<StockChartProps> = ({
         if (!container) return;
 
         let debounceTimer: number | null = null;
-        const triggerPersist = () => {
+        const triggerPersist = (event?: MouseEvent) => {
             if (debounceTimer) window.clearTimeout(debounceTimer);
+            const target = event?.target as HTMLElement | null;
+            const isToolbarAction = target?.closest?.(".klinecharts-pro-drawing-bar") !== null;
+            // Immediate persist (50ms) for toolbar button clicks (e.g. Delete, Lock, Visibility); 250ms for canvas clicks
+            const delay = isToolbarAction ? 50 : 250;
             debounceTimer = window.setTimeout(() => {
                 persistSettings();
-            }, 400);
+            }, delay);
         };
 
         container.addEventListener("click", triggerPersist);
         document.addEventListener("click", triggerPersist);
+
+        // Capture clicks on the drawing bar trash icon to force immediate canvas clear & localStorage sync
+        const handleTrashClick = (event: MouseEvent) => {
+            const target = event.target as HTMLElement | null;
+            const trashBtn = target?.closest?.(".klinecharts-pro-drawing-bar .item:last-child");
+            if (trashBtn) {
+                const chartImp = underlyingChartRef.current;
+                if (chartImp) {
+                    chartImp.removeOverlay();
+                }
+                saveSymbolDrawings(storageKeyRef.current, currentSymbolRef.current, []);
+            }
+        };
+        container.addEventListener("click", handleTrashClick, true);
 
         const handleBeforeUnload = () => {
             persistSettings();
@@ -330,6 +369,7 @@ export const StockChart: React.FC<StockChartProps> = ({
 
         return () => {
             if (debounceTimer) window.clearTimeout(debounceTimer);
+            container.removeEventListener("click", handleTrashClick, true);
             container.removeEventListener("click", triggerPersist);
             document.removeEventListener("click", triggerPersist);
             window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -378,7 +418,16 @@ export const StockChart: React.FC<StockChartProps> = ({
             if (savedDrawings && savedDrawings.length > 0) {
                 savedDrawings.forEach((ov) => {
                     try {
-                        chartImp.createOverlay(ov);
+                        chartImp.createOverlay({
+                            name: ov.name,
+                            points: ov.points,
+                            styles: ov.styles,
+                            lock: ov.lock,
+                            mode: ov.mode,
+                            visible: ov.visible,
+                            extendData: ov.extendData,
+                            groupId: "drawing_tools",
+                        });
                     } catch (err) {
                         console.warn("[StockChart] Failed to restore overlay for", symbol, err);
                     }
