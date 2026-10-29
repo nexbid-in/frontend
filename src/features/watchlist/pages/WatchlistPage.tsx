@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
     useWatchlistQuery,
     useAddToWatchlistMutation,
@@ -9,14 +9,26 @@ import { StockChart } from "../components/StockChart";
 import { StockOverviewPanel } from "../components/StockOverviewPanel";
 import type { WatchlistItemDTO } from "../types";
 import { getStockMarketQuote, formatINR } from "../utils/stockPriceHelper";
+import { useAppSelector } from "@/store/hooks";
 
 export function WatchlistPage() {
     const { data: watchlistItems = [], isLoading } = useWatchlistQuery();
     const addMutation = useAddToWatchlistMutation();
     const removeMutation = useRemoveFromWatchlistMutation();
 
-    // Selected stock for chart / overview view
-    const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
+    const userId = useAppSelector((state) => state.auth.user?.id);
+    const lastStockStorageKey = userId ? `nexbid_last_stock_${userId}` : "nexbid_last_stock_guest";
+
+    // Initialize from localStorage if available
+    const [selectedStockId, setSelectedStockId] = useState<string | null>(() => {
+        if (typeof window === "undefined") return null;
+        try {
+            return localStorage.getItem(lastStockStorageKey);
+        } catch {
+            return null;
+        }
+    });
+
     const [activeViewMode, setActiveViewMode] = useState<"chart" | "overview">("chart");
 
     // Real-time live tick stream state for active stock (keyed by stockId)
@@ -38,21 +50,35 @@ export function WatchlistPage() {
         item: null,
     });
 
-    // Auto-select first stock when watchlist loads if none currently selected
+    // Resolve active stock: prioritize saved/selected stock, fallback to first in list
     const activeItem = useMemo(() => {
         if (watchlistItems.length === 0) return null;
-        if (!selectedStockId) return watchlistItems[0];
-        const found = watchlistItems.find((item) => item.stock.id === selectedStockId);
+        const targetId = selectedStockId || (typeof window !== "undefined" ? localStorage.getItem(lastStockStorageKey) : null);
+        if (!targetId) return watchlistItems[0];
+        const found = watchlistItems.find((item) => item.stock.id === targetId || item.stock.symbol === targetId);
         return found ?? watchlistItems[0];
-    }, [watchlistItems, selectedStockId]);
+    }, [watchlistItems, selectedStockId, lastStockStorageKey]);
+
+    // Keep localStorage in sync with activeItem so refreshes always reopen the exact visited stock
+    useEffect(() => {
+        if (activeItem && typeof window !== "undefined") {
+            try {
+                localStorage.setItem(lastStockStorageKey, activeItem.stock.id);
+            } catch (err) {
+                console.warn("Failed to persist active stock:", err);
+            }
+        }
+    }, [activeItem, lastStockStorageKey]);
 
     const activeQuote = useMemo(() => {
         if (!activeItem) return null;
         return getStockMarketQuote(activeItem.stock.symbol);
     }, [activeItem]);
 
-    const handlePriceTick = useCallback((price: number, change: number, changePercent: number) => {
+    const handlePriceTick = useCallback((price: number, change: number, changePercent: number, ticker?: string) => {
         if (!activeItem) return;
+        // Ignore stale ticks from the previous stock if ticker is specified and doesn't match
+        if (ticker && ticker !== activeItem.stock.symbol) return;
         setLiveTick({
             stockId: activeItem.stock.id,
             price,
@@ -68,17 +94,35 @@ export function WatchlistPage() {
     const isPositive = currentChange >= 0;
 
     const handleSelectStock = (item: WatchlistItemDTO) => {
+        setLiveTick(null);
         setSelectedStockId(item.stock.id);
+        try {
+            localStorage.setItem(lastStockStorageKey, item.stock.id);
+        } catch (err) {
+            console.warn("Failed to save last visited stock:", err);
+        }
     };
 
     const handleOpenChart = (item: WatchlistItemDTO) => {
+        setLiveTick(null);
         setSelectedStockId(item.stock.id);
         setActiveViewMode("chart");
+        try {
+            localStorage.setItem(lastStockStorageKey, item.stock.id);
+        } catch (err) {
+            console.warn("Failed to save last visited stock:", err);
+        }
     };
 
     const handleOpenOverview = (item: WatchlistItemDTO) => {
+        setLiveTick(null);
         setSelectedStockId(item.stock.id);
         setActiveViewMode("overview");
+        try {
+            localStorage.setItem(lastStockStorageKey, item.stock.id);
+        } catch (err) {
+            console.warn("Failed to save last visited stock:", err);
+        }
     };
 
     const handleBuy = (item: WatchlistItemDTO) => {
@@ -98,11 +142,24 @@ export function WatchlistPage() {
     };
 
     const handleAddStock = async (stockId: string) => {
+        setLiveTick(null);
         const added = await addMutation.mutateAsync(stockId);
         setSelectedStockId(added.stockId);
+        try {
+            localStorage.setItem(lastStockStorageKey, added.stockId);
+        } catch (err) {
+            console.warn("Failed to save last visited stock:", err);
+        }
     };
 
     const handleDeleteStock = (stockId: string) => {
+        if (selectedStockId === stockId && typeof window !== "undefined") {
+            try {
+                localStorage.removeItem(lastStockStorageKey);
+            } catch (err) {
+                console.warn("Failed to clear deleted stock from storage:", err);
+            }
+        }
         removeMutation.mutate(stockId);
     };
 

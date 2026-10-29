@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback, useState } from "react";
 import { KLineChartPro, type Period } from "@klinecharts/pro";
 import "@klinecharts/pro/dist/klinecharts-pro.css";
-import { init as initKLineChart, type Chart } from "klinecharts";
+import { init as initKLineChart, type Chart, type OverlayCreate, ActionType, YAxisType } from "klinecharts";
 import { useAppSelector } from "@/store/hooks";
 import { NexbidRealtimeDatafeed } from "../services/klineDatafeed";
 import type { TickListener } from "../services/klineDatafeed";
@@ -45,6 +45,68 @@ function saveChartSettings(key: string, settings: SavedChartSettings) {
         localStorage.setItem(key, JSON.stringify(settings));
     } catch (err) {
         console.warn("[StockChart] Failed to save settings to localStorage:", err);
+    }
+}
+
+function getSymbolDrawingsKey(baseKey: string): string {
+    return `${baseKey}_drawings`;
+}
+
+function loadSymbolDrawings(baseKey: string, symbol: string): OverlayCreate[] {
+    if (typeof window === "undefined" || !symbol) return [];
+    try {
+        const raw = localStorage.getItem(getSymbolDrawingsKey(baseKey));
+        if (raw) {
+            const allDrawings = JSON.parse(raw) as Record<string, OverlayCreate[]>;
+            return Array.isArray(allDrawings[symbol]) ? allDrawings[symbol] : [];
+        }
+    } catch (err) {
+        console.warn("[StockChart] Failed to load drawings for", symbol, err);
+    }
+    return [];
+}
+
+function saveSymbolDrawings(baseKey: string, symbol: string, overlays: OverlayCreate[]) {
+    if (typeof window === "undefined" || !symbol) return;
+    try {
+        const drawingsKey = getSymbolDrawingsKey(baseKey);
+        const raw = localStorage.getItem(drawingsKey);
+        const allDrawings: Record<string, OverlayCreate[]> = raw ? (JSON.parse(raw) as Record<string, OverlayCreate[]>) : {};
+        allDrawings[symbol] = overlays;
+        localStorage.setItem(drawingsKey, JSON.stringify(allDrawings));
+    } catch (err) {
+        console.warn("[StockChart] Failed to save drawings for", symbol, err);
+    }
+}
+
+interface InternalChartStore {
+    _chartStore?: {
+        getOverlayStore?: () => {
+            getInstances?: () => OverlayCreate[];
+        };
+    };
+}
+
+function getActiveOverlays(chart: Chart | null): OverlayCreate[] {
+    if (!chart) return [];
+    try {
+        const internalChart = chart as unknown as InternalChartStore;
+        const overlayStore = internalChart._chartStore?.getOverlayStore?.();
+        if (!overlayStore || typeof overlayStore.getInstances !== "function") return [];
+        const instances = overlayStore.getInstances();
+        return (instances || [])
+            .filter((ins) => ins && ins.name && Array.isArray(ins.points) && ins.points.length > 0)
+            .map((ins) => ({
+                name: ins.name,
+                points: ins.points,
+                styles: ins.styles,
+                lock: ins.lock,
+                mode: ins.mode,
+                visible: ins.visible,
+                extendData: ins.extendData,
+            }));
+    } catch {
+        return [];
     }
 }
 
@@ -92,6 +154,12 @@ export const StockChart: React.FC<StockChartProps> = ({
     const chartInstanceRef = useRef<KLineChartPro | null>(null);
     const underlyingChartRef = useRef<Chart | null>(null);
 
+    // Guard flag: only auto-fit Y-axis and scroll to real-time once when switching symbols or mounting
+    const shouldCenterOnDataRef = useRef<boolean>(true);
+
+    // TradingView-style state: track whether the user is scrolled away inspecting historical data
+    const [isScrolledToHistory, setIsScrolledToHistory] = useState<boolean>(false);
+
     // Scoped storage key by authenticated user ID (or guest)
     const userId = useAppSelector((state) => state.auth.user?.id);
     const storageKey = userId ? `nexbid_chart_settings_${userId}` : "nexbid_chart_settings_guest";
@@ -112,7 +180,7 @@ export const StockChart: React.FC<StockChartProps> = ({
     // Track the active symbol to avoid redundant updates on mount
     const currentSymbolRef = useRef(symbol);
 
-    // Persist active settings to localStorage
+    // Persist active settings and symbol drawings to localStorage
     const persistSettings = useCallback(() => {
         const chartPro = chartInstanceRef.current;
         const chartImp = underlyingChartRef.current;
@@ -130,6 +198,12 @@ export const StockChart: React.FC<StockChartProps> = ({
         };
 
         saveChartSettings(storageKeyRef.current, currentSettings);
+
+        // Also persist drawings for the currently active stock
+        if (chartImp && currentSymbolRef.current) {
+            const overlays = getActiveOverlays(chartImp);
+            saveSymbolDrawings(storageKeyRef.current, currentSymbolRef.current, overlays);
+        }
     }, []);
 
     // 1. Mount and initialize KLineChartPro once on component mount with saved settings
@@ -142,8 +216,8 @@ export const StockChart: React.FC<StockChartProps> = ({
         // Read saved preferences from localStorage (or sensible clean defaults)
         const initialSettings = loadSavedSettings(storageKeyRef.current);
 
-        const datafeed = new NexbidRealtimeDatafeed((price, change, changePercent) => {
-            onPriceTickRef.current?.(price, change, changePercent);
+        const datafeed = new NexbidRealtimeDatafeed((price, change, changePercent, ticker) => {
+            onPriceTickRef.current?.(price, change, changePercent, ticker);
         });
 
         const chart = new KLineChartPro({
@@ -180,14 +254,48 @@ export const StockChart: React.FC<StockChartProps> = ({
 
         chartInstanceRef.current = chart;
         currentSymbolRef.current = symbol;
+        shouldCenterOnDataRef.current = true;
 
-        // Retrieve underlying Chart instance for indicator inspection
+        // Retrieve underlying Chart instance for indicator & drawing inspection
         const widget = container.querySelector<HTMLElement>("[k-line-chart-id]");
         if (widget) {
             const chartId = widget.getAttribute("k-line-chart-id");
             if (chartId) {
                 widget.id = chartId;
-                underlyingChartRef.current = initKLineChart(widget);
+                const chartImp = initKLineChart(widget);
+                underlyingChartRef.current = chartImp;
+
+                if (chartImp) {
+                    // Auto-fit Y-axis and scroll to real time ONLY on symbol switch or initial data arrival
+                    chartImp.subscribeAction(ActionType.OnDataReady, () => {
+                        if (shouldCenterOnDataRef.current) {
+                            shouldCenterOnDataRef.current = false;
+                            chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
+                            chartImp.scrollToRealTime();
+                        }
+                    });
+
+                    // Track whether user has scrolled into history to display the "Jump to Live" button
+                    chartImp.subscribeAction(ActionType.OnVisibleRangeChange, (data: unknown) => {
+                        const range = data as { to?: number };
+                        const dataList = chartImp.getDataList();
+                        if (!dataList || dataList.length === 0 || typeof range?.to !== "number") return;
+                        const isAtRightEdge = range.to >= dataList.length - 3;
+                        setIsScrolledToHistory(!isAtRightEdge);
+                    });
+
+                    // Restore initial drawings for this symbol
+                    const initialDrawings = loadSymbolDrawings(storageKeyRef.current, symbol);
+                    if (initialDrawings && initialDrawings.length > 0) {
+                        initialDrawings.forEach((ov) => {
+                            try {
+                                chartImp.createOverlay(ov);
+                            } catch (err) {
+                                console.warn("[StockChart] Failed to restore overlay:", err);
+                            }
+                        });
+                    }
+                }
             }
         }
 
@@ -199,7 +307,7 @@ export const StockChart: React.FC<StockChartProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // 2. Debounced persistence on user interaction (adding/removing indicators, timeframe click)
+    // 2. Debounced persistence on user interaction (adding/removing indicators, timeframe click, drawings)
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -229,11 +337,28 @@ export const StockChart: React.FC<StockChartProps> = ({
         };
     }, [persistSettings]);
 
-    // 3. Switch symbol dynamically without destroying the chart or resetting user indicators
+    // 3. Switch symbol dynamically with overlay isolation, Y-axis auto-fit, and real-time centering (ONCE per switch)
     useEffect(() => {
         if (!chartInstanceRef.current) return;
         if (currentSymbolRef.current === symbol) return;
 
+        const prevSymbol = currentSymbolRef.current;
+        const chartImp = underlyingChartRef.current;
+
+        // 1. Save previous symbol's drawings before leaving
+        if (chartImp && prevSymbol) {
+            const activeOverlays = getActiveOverlays(chartImp);
+            saveSymbolDrawings(storageKeyRef.current, prevSymbol, activeOverlays);
+        }
+
+        // 2. Clear canvas overlays so previous stock's lines do not bleed or distort Y-axis scaling
+        chartImp?.removeOverlay();
+
+        // 3. Request auto-center for the new symbol's initial history payload
+        shouldCenterOnDataRef.current = true;
+        setIsScrolledToHistory(false);
+
+        // 4. Switch the symbol on KLineChartPro
         currentSymbolRef.current = symbol;
         chartInstanceRef.current.setSymbol({
             ticker: symbol,
@@ -246,6 +371,33 @@ export const StockChart: React.FC<StockChartProps> = ({
             priceCurrency: "INR",
             type: "stock",
         });
+
+        // 5. Restore saved drawings for the newly active symbol (if any exist)
+        if (chartImp) {
+            const savedDrawings = loadSymbolDrawings(storageKeyRef.current, symbol);
+            if (savedDrawings && savedDrawings.length > 0) {
+                savedDrawings.forEach((ov) => {
+                    try {
+                        chartImp.createOverlay(ov);
+                    } catch (err) {
+                        console.warn("[StockChart] Failed to restore overlay for", symbol, err);
+                    }
+                });
+            }
+
+            // Fallback timeout in case OnDataReady executed synchronously before listener check
+            const fallbackTimer = window.setTimeout(() => {
+                if (shouldCenterOnDataRef.current) {
+                    shouldCenterOnDataRef.current = false;
+                    chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
+                    chartImp.scrollToRealTime();
+                }
+            }, 120);
+
+            return () => {
+                window.clearTimeout(fallbackTimer);
+            };
+        }
     }, [symbol, exchange, stockName]);
 
     // 4. Update theme dynamically without tearing down chart state
@@ -254,6 +406,14 @@ export const StockChart: React.FC<StockChartProps> = ({
         chartInstanceRef.current.setTheme(isDark ? "dark" : "light");
     }, [isDark]);
 
+    const handleJumpToLive = () => {
+        const chartImp = underlyingChartRef.current;
+        if (!chartImp) return;
+        chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
+        chartImp.scrollToRealTime();
+        setIsScrolledToHistory(false);
+    };
+
     return (
         <div className="w-full h-full flex flex-col bg-dash-panel relative overflow-hidden select-none">
             <div
@@ -261,6 +421,21 @@ export const StockChart: React.FC<StockChartProps> = ({
                 className="w-full h-full flex-1"
                 style={{ width: "100%", height: "100%" }}
             />
+
+            {/* TradingView-style Floating 'Jump to Live Price' pill button when scrolled back in time */}
+            {isScrolledToHistory && (
+                <button
+                    type="button"
+                    onClick={handleJumpToLive}
+                    className="absolute bottom-9 right-16 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#181a20]/95 hover:bg-[#22252d] border border-dash-border text-xs font-medium text-dash-text hover:text-primary-green shadow-xl backdrop-blur-xs transition-all cursor-pointer animate-in fade-in zoom-in-95 duration-200"
+                    title="Jump to latest live price"
+                >
+                    <span className="text-[11px] font-semibold tracking-wide">Live Price</span>
+                    <svg className="w-3.5 h-3.5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </button>
+            )}
         </div>
     );
 };

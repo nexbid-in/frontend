@@ -19,7 +19,7 @@ function getPeriodMs(period: Period): number {
     }
 }
 
-export type TickListener = (price: number, change: number, changePercent: number) => void;
+export type TickListener = (price: number, change: number, changePercent: number, ticker?: string) => void;
 
 /**
  * High-performance realtime Datafeed for KLineChartPro.
@@ -193,7 +193,7 @@ export class NexbidRealtimeDatafeed implements Datafeed {
             if (this.onTickCallback) {
                 const totalChange = Math.round((newClose - prevClose) * 100) / 100;
                 const totalChangePercent = Math.round(((newClose - prevClose) / prevClose) * 10000) / 100;
-                this.onTickCallback(newClose, totalChange, totalChangePercent);
+                this.onTickCallback(newClose, totalChange, totalChangePercent, symbol.ticker);
             }
         }, 800);
     }
