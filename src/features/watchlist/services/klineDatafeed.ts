@@ -205,5 +205,6 @@ export class NexbidRealtimeDatafeed implements Datafeed {
             clearInterval(this.subscribeTimer);
             this.subscribeTimer = null;
         }
+        this.currentCandle = null;
     }
 }

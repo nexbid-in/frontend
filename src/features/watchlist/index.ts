@@ -6,6 +6,6 @@ export * from "./hooks/useWatchlist";
 export * from "./components/StockCard";
 export * from "./components/StockSearchDropdown";
 export * from "./components/WatchlistSidebar";
-export * from "./components/TradingViewChart";
+export * from "./components/StockChart";
 export * from "./components/StockOverviewPanel";
 export * from "./pages/WatchlistPage";

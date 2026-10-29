@@ -5,7 +5,7 @@ import {
     useRemoveFromWatchlistMutation,
 } from "../hooks/useWatchlist";
 import { WatchlistSidebar } from "../components/WatchlistSidebar";
-import { TradingViewChart } from "../components/TradingViewChart";
+import { StockChart } from "../components/StockChart";
 import { StockOverviewPanel } from "../components/StockOverviewPanel";
 import type { WatchlistItemDTO } from "../types";
 import { getStockMarketQuote, formatINR } from "../utils/stockPriceHelper";
@@ -244,7 +244,7 @@ export function WatchlistPage() {
                         {/* Dynamic Main View Area */}
                         <div className="flex-1 overflow-hidden relative">
                             {activeViewMode === "chart" ? (
-                                <TradingViewChart
+                                <StockChart
                                     symbol={activeItem.stock.symbol}
                                     exchange={activeItem.stock.exchange}
                                     stockName={activeItem.stock.name}
