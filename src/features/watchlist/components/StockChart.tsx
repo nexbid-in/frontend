@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import { KLineChartPro, type Period } from "@klinecharts/pro";
 import "@klinecharts/pro/dist/klinecharts-pro.css";
-import { init as initKLineChart, type Chart, type OverlayCreate, type OverlayRemove, ActionType, YAxisType } from "klinecharts";
+import "../services/klineLocales";
+import { init as initKLineChart, type Chart, type OverlayCreate, type OverlayRemove, type DeepPartial, type Styles, ActionType, CandleType, YAxisType } from "klinecharts";
 import { useAppSelector } from "@/store/hooks";
 import { NexbidRealtimeDatafeed } from "../services/klineDatafeed";
 import type { TickListener } from "../services/klineDatafeed";
@@ -11,13 +12,36 @@ interface SavedChartSettings {
     subIndicators: string[];
     period?: Period;
     timezone?: string;
+    styles?: DeepPartial<Styles>;
 }
+
+const DEFAULT_MODAL_STYLES: DeepPartial<Styles> = {
+    candle: {
+        type: CandleType.CandleSolid,
+        priceMark: {
+            last: { show: true },
+            high: { show: true },
+            low: { show: true },
+        },
+    },
+    indicator: {
+        lastValueMark: { show: false },
+    },
+    grid: {
+        show: true,
+    },
+    yAxis: {
+        type: YAxisType.Normal,
+        reverse: false,
+    },
+};
 
 const DEFAULT_CHART_SETTINGS: SavedChartSettings = {
     mainIndicators: [],
     subIndicators: ["VOL"],
     period: { multiplier: 15, timespan: "minute", text: "15m" },
     timezone: "Asia/Kolkata",
+    styles: DEFAULT_MODAL_STYLES,
 };
 
 function loadSavedSettings(key: string): SavedChartSettings {
@@ -31,6 +55,7 @@ function loadSavedSettings(key: string): SavedChartSettings {
                 subIndicators: Array.isArray(parsed.subIndicators) ? parsed.subIndicators : DEFAULT_CHART_SETTINGS.subIndicators,
                 period: parsed.period && typeof parsed.period === "object" ? parsed.period : DEFAULT_CHART_SETTINGS.period,
                 timezone: typeof parsed.timezone === "string" ? parsed.timezone : DEFAULT_CHART_SETTINGS.timezone,
+                styles: parsed.styles && typeof parsed.styles === "object" ? parsed.styles : DEFAULT_MODAL_STYLES,
             };
         }
     } catch (err) {
@@ -191,11 +216,37 @@ export const StockChart: React.FC<StockChartProps> = ({
         const period = chartPro.getPeriod();
         const timezone = chartPro.getTimezone();
 
+        let stylesToSave: DeepPartial<Styles> | undefined;
+        if (chartImp) {
+            const currentStyles = chartImp.getStyles();
+            stylesToSave = {
+                candle: {
+                    type: currentStyles.candle?.type,
+                    priceMark: {
+                        last: { show: currentStyles.candle?.priceMark?.last?.show },
+                        high: { show: currentStyles.candle?.priceMark?.high?.show },
+                        low: { show: currentStyles.candle?.priceMark?.low?.show },
+                    },
+                },
+                indicator: {
+                    lastValueMark: { show: currentStyles.indicator?.lastValueMark?.show },
+                },
+                grid: {
+                    show: currentStyles.grid?.show,
+                },
+                yAxis: {
+                    type: currentStyles.yAxis?.type,
+                    reverse: currentStyles.yAxis?.reverse,
+                },
+            };
+        }
+
         const currentSettings: SavedChartSettings = {
             mainIndicators: indicators?.mainIndicators ?? [],
             subIndicators: indicators?.subIndicators ?? ["VOL"],
             period,
             timezone,
+            styles: stylesToSave,
         };
 
         saveChartSettings(storageKeyRef.current, currentSettings);
@@ -226,6 +277,7 @@ export const StockChart: React.FC<StockChartProps> = ({
             watermark: "",
             theme: isDark ? "dark" : "light",
             locale: "en-US",
+            styles: initialSettings.styles,
             symbol: {
                 ticker: symbol,
                 name: stockName || symbol,
@@ -267,6 +319,10 @@ export const StockChart: React.FC<StockChartProps> = ({
                 underlyingChartRef.current = chartImp;
 
                 if (chartImp) {
+                    if (initialSettings.styles) {
+                        chartImp.setStyles(initialSettings.styles);
+                    }
+
                     // Intercept removeOverlay so that toolbar remove requests clear ALL overlays unconditionally
                     const origRemoveOverlay = chartImp.removeOverlay.bind(chartImp);
                     chartImp.removeOverlay = (remove?: unknown) => {
@@ -282,7 +338,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                     chartImp.subscribeAction(ActionType.OnDataReady, () => {
                         if (shouldCenterOnDataRef.current) {
                             shouldCenterOnDataRef.current = false;
-                            chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
                             chartImp.scrollToRealTime();
                         }
                     });
@@ -362,6 +417,45 @@ export const StockChart: React.FC<StockChartProps> = ({
         };
         container.addEventListener("click", handleTrashClick, true);
 
+        // Capture clicks on the chart settings modal "Reset to Default" button
+        const handleResetClick = (event: MouseEvent) => {
+            const target = event.target as HTMLElement | null;
+            const modal = target?.closest?.(".klinecharts-pro-modal");
+            const isSettingsModal = modal?.querySelector?.(".klinecharts-pro-setting-modal-content") !== null;
+            const resetBtn = target?.closest?.(".klinecharts-pro-button");
+
+            if (isSettingsModal && resetBtn) {
+                const chartImp = underlyingChartRef.current;
+                const chartPro = chartInstanceRef.current;
+                if (chartImp) {
+                    chartImp.setStyles(DEFAULT_MODAL_STYLES);
+                }
+                if (chartPro) {
+                    chartPro.setStyles(DEFAULT_MODAL_STYLES);
+                }
+                const saved = loadSavedSettings(storageKeyRef.current);
+                saveChartSettings(storageKeyRef.current, {
+                    ...saved,
+                    styles: DEFAULT_MODAL_STYLES,
+                });
+
+                // Also execute after the current event loop in case SolidJS onRestoreDefault attempted to apply undefined/stale styles
+                window.setTimeout(() => {
+                    const imp = underlyingChartRef.current;
+                    const pro = chartInstanceRef.current;
+                    if (imp) imp.setStyles(DEFAULT_MODAL_STYLES);
+                    if (pro) pro.setStyles(DEFAULT_MODAL_STYLES);
+                    const current = loadSavedSettings(storageKeyRef.current);
+                    saveChartSettings(storageKeyRef.current, {
+                        ...current,
+                        styles: DEFAULT_MODAL_STYLES,
+                    });
+                }, 40);
+            }
+        };
+        container.addEventListener("click", handleResetClick, true);
+        document.addEventListener("click", handleResetClick, true);
+
         const handleBeforeUnload = () => {
             persistSettings();
         };
@@ -370,6 +464,8 @@ export const StockChart: React.FC<StockChartProps> = ({
         return () => {
             if (debounceTimer) window.clearTimeout(debounceTimer);
             container.removeEventListener("click", handleTrashClick, true);
+            container.removeEventListener("click", handleResetClick, true);
+            document.removeEventListener("click", handleResetClick, true);
             container.removeEventListener("click", triggerPersist);
             document.removeEventListener("click", triggerPersist);
             window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -438,7 +534,6 @@ export const StockChart: React.FC<StockChartProps> = ({
             const fallbackTimer = window.setTimeout(() => {
                 if (shouldCenterOnDataRef.current) {
                     shouldCenterOnDataRef.current = false;
-                    chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
                     chartImp.scrollToRealTime();
                 }
             }, 120);
@@ -458,7 +553,6 @@ export const StockChart: React.FC<StockChartProps> = ({
     const handleJumpToLive = () => {
         const chartImp = underlyingChartRef.current;
         if (!chartImp) return;
-        chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
         chartImp.scrollToRealTime();
         setIsScrolledToHistory(false);
     };
