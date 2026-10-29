@@ -107,6 +107,9 @@ export function WatchlistPage() {
         setLiveTick(null);
         setSelectedStockId(item.stock.id);
         setActiveViewMode("chart");
+        requestAnimationFrame(() => {
+            window.dispatchEvent(new Event("resize"));
+        });
         try {
             localStorage.setItem(lastStockStorageKey, item.stock.id);
         } catch (err) {
@@ -122,6 +125,15 @@ export function WatchlistPage() {
             localStorage.setItem(lastStockStorageKey, item.stock.id);
         } catch (err) {
             console.warn("Failed to save last visited stock:", err);
+        }
+    };
+
+    const handleViewModeChange = (mode: "chart" | "overview") => {
+        setActiveViewMode(mode);
+        if (mode === "chart") {
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event("resize"));
+            });
         }
     };
 
@@ -186,29 +198,22 @@ export function WatchlistPage() {
                 {activeItem && activeQuote ? (
                     <>
                         {/* Top Stock Control Header */}
-                        <div className="px-6 py-3.5 border-b border-dash-border bg-dash-panel-2/30 flex flex-wrap items-center justify-between gap-4 shrink-0">
+                        <div className="px-6 py-2 border-b border-dash-border bg-dash-panel-2/30 flex flex-wrap items-center justify-between gap-4 shrink-0">
                             {/* Stock Identity & Live Price */}
-                            <div className="flex items-center gap-4">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h1 className="text-base font-bold text-dash-text tracking-tight">
-                                            {activeItem.stock.symbol}
-                                        </h1>
-                                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border border-dash-border text-dash-text-muted bg-dash-card">
-                                            {activeItem.stock.exchange}
+                            <div className="flex items-center gap-4 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-base font-bold text-dash-text tracking-tight">
+                                        {activeItem.stock.symbol}
+                                    </h1>
+                                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border border-dash-border text-dash-text-muted bg-dash-card">
+                                        {activeItem.stock.exchange}
+                                    </span>
+                                    {activeItem.stock.type === "INDEX" && (
+                                        <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
+                                            Index
                                         </span>
-                                        {activeItem.stock.type === "INDEX" && (
-                                            <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-                                                Index
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-dash-text-muted mt-0.5 truncate max-w-xs">
-                                        {activeItem.stock.name}
-                                    </p>
+                                    )}
                                 </div>
-
-                                <div className="h-8 w-px bg-dash-border hidden sm:block" />
 
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-lg font-mono font-bold text-dash-text transition-colors">
@@ -237,36 +242,26 @@ export function WatchlistPage() {
                                 <div className="flex items-center bg-dash-card p-0.5 rounded-lg border border-dash-border">
                                     <button
                                         type="button"
-                                        onClick={() => setActiveViewMode("chart")}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                        onClick={() => handleViewModeChange("chart")}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-150 cursor-pointer ${
                                             activeViewMode === "chart"
                                                 ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border font-semibold"
-                                                : "text-dash-text-muted hover:text-dash-text"
+                                                : "text-dash-text-muted hover:text-dash-text border border-transparent"
                                         }`}
                                     >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                            <line x1="18" y1="20" x2="18" y2="10" />
-                                            <line x1="12" y1="20" x2="12" y2="4" />
-                                            <line x1="6" y1="20" x2="6" y2="14" />
-                                        </svg>
-                                        <span>Chart</span>
+                                        Chart
                                     </button>
 
                                     <button
                                         type="button"
-                                        onClick={() => setActiveViewMode("overview")}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                        onClick={() => handleViewModeChange("overview")}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-150 cursor-pointer ${
                                             activeViewMode === "overview"
                                                 ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border font-semibold"
-                                                : "text-dash-text-muted hover:text-dash-text"
+                                                : "text-dash-text-muted hover:text-dash-text border border-transparent"
                                         }`}
                                     >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="12" y1="16" x2="12" y2="12" />
-                                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                                        </svg>
-                                        <span>Overview</span>
+                                        Overview
                                     </button>
                                 </div>
 
@@ -300,21 +295,35 @@ export function WatchlistPage() {
 
                         {/* Dynamic Main View Area */}
                         <div className="flex-1 overflow-hidden relative">
-                            {activeViewMode === "chart" ? (
+                            <div
+                                className={`w-full h-full transition-opacity duration-150 ${
+                                    activeViewMode === "chart"
+                                        ? "opacity-100 z-10"
+                                        : "opacity-0 z-0 pointer-events-none absolute inset-0"
+                                }`}
+                            >
                                 <StockChart
                                     symbol={activeItem.stock.symbol}
                                     exchange={activeItem.stock.exchange}
                                     stockName={activeItem.stock.name}
                                     onPriceTick={handlePriceTick}
                                 />
-                            ) : (
+                            </div>
+
+                            <div
+                                className={`w-full h-full transition-opacity duration-150 ${
+                                    activeViewMode === "overview"
+                                        ? "opacity-100 z-10"
+                                        : "opacity-0 z-0 pointer-events-none absolute inset-0"
+                                }`}
+                            >
                                 <StockOverviewPanel
                                     item={activeItem}
                                     onOpenChart={handleOpenChart}
                                     onBuy={handleBuy}
                                     onSell={handleSell}
                                 />
-                            )}
+                            </div>
                         </div>
                     </>
                 ) : (

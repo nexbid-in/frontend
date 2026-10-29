@@ -120,6 +120,18 @@ html:has(::view-transition-old(root)) * {
    KLineCharts Pro - Theme-Aware Modals (Light & Dark)
    ======================================================== */
 
+/* 0. Topbar Clean-up: Hide stock name and symbol search trigger */
+.klinecharts-pro-period-bar .symbol {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Hide symbol search modal completely */
+.klinecharts-pro-modal:has(.klinecharts-pro-symbol-search-modal-input),
+.klinecharts-pro-modal:has(.klinecharts-pro-symbol-search-modal-list) {
+  display: none !important;
+}
+
 /* 1. Modal Overlay (Completely transparent backdrop, no dimming or tint) */
 .klinecharts-pro-modal {
   position: absolute !important;
