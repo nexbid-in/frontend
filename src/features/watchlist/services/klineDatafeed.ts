@@ -1,6 +1,6 @@
 import type { Datafeed, SymbolInfo, Period, DatafeedSubscribeCallback } from "@klinecharts/pro";
 import type { KLineData } from "klinecharts";
-import { getStockMarketQuote, getStockFundamentals } from "../utils/stockPriceHelper";
+import { getStockMarketQuote } from "../utils/stockPriceHelper";
 
 function getPeriodMs(period: Period): number {
     switch (period.timespan) {
@@ -21,12 +21,63 @@ function getPeriodMs(period: Period): number {
 
 export type TickListener = (price: number, change: number, changePercent: number, ticker?: string) => void;
 
+function pseudoRandom(seed: number): number {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function getSymbolSeed(ticker: string): number {
+    let hash = 0;
+    for (let i = 0; i < ticker.length; i++) {
+        hash = (hash << 5) - hash + ticker.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
+function getPriceAtOffset(quotePrice: number, symSeed: number, offset: number): number {
+    if (offset === 0) return quotePrice;
+    const trend = Math.sin(offset * 0.05 + symSeed * 0.1) * 0.022;
+    const swing = Math.cos(offset * 0.15 + symSeed * 0.3) * 0.012;
+    const intraday = Math.sin(offset * 0.45 + symSeed * 0.7) * 0.005;
+    const noise = (pseudoRandom(symSeed + offset * 13) - 0.5) * 0.005;
+    const damp = Math.min(1, Math.abs(offset) / 4);
+    const totalFactor = 1 + (trend + swing + intraday + noise) * damp;
+    return Math.round(quotePrice * totalFactor * 100) / 100;
+}
+
+function generateCandle(quotePrice: number, symSeed: number, offset: number, timestamp: number): KLineData {
+    const close = getPriceAtOffset(quotePrice, symSeed, offset);
+    const prevClose = getPriceAtOffset(quotePrice, symSeed, offset - 1);
+    const gapNoise = (pseudoRandom(symSeed + offset * 29) - 0.5) * 0.0008 * quotePrice;
+    const open = Math.round((prevClose + gapNoise) * 100) / 100;
+
+    const maxOC = Math.max(open, close);
+    const minOC = Math.min(open, close);
+    const wickHigh = (pseudoRandom(symSeed + offset * 47) * 0.003 + 0.0005) * quotePrice;
+    const wickLow = (pseudoRandom(symSeed + offset * 53) * 0.003 + 0.0005) * quotePrice;
+
+    const high = Math.round((maxOC + wickHigh) * 100) / 100;
+    const low = Math.round((minOC - wickLow) * 100) / 100;
+    const volume = Math.round(25000 + pseudoRandom(symSeed + offset * 71) * 125000);
+
+    return {
+        timestamp,
+        open,
+        high,
+        low,
+        close,
+        volume,
+        turnover: Math.round(volume * close),
+    };
+}
+
 /**
  * High-performance realtime Datafeed for KLineChartPro.
  * Provides realistic intraday & daily candlestick history, and streams live tick-by-tick
  * updates simulating real Indian exchange (NSE) market volatility.
- * 
- * Architecture is designed to seamlessly plug in Fyers API v3 WebSocket credentials.
  */
 export class NexbidRealtimeDatafeed implements Datafeed {
     private subscribeTimer: number | null = null;
@@ -60,69 +111,39 @@ export class NexbidRealtimeDatafeed implements Datafeed {
         );
     }
 
-    async getHistoryKLineData(symbol: SymbolInfo, period: Period): Promise<KLineData[]> {
+    async getHistoryKLineData(symbol: SymbolInfo, period: Period, from?: number, to?: number): Promise<KLineData[]> {
         const quote = getStockMarketQuote(symbol.ticker);
-        const fundamentals = getStockFundamentals(symbol.ticker);
         const periodMs = getPeriodMs(period);
-
-        const count = 180;
         const now = Date.now();
         const alignedNow = Math.floor(now / periodMs) * periodMs;
-        const startTime = alignedNow - count * periodMs;
 
-        let hash = 0;
-        for (let i = 0; i < symbol.ticker.length; i++) {
-            hash = (hash << 5) - hash + symbol.ticker.charCodeAt(i);
-            hash |= 0;
-        }
-        const seed = Math.abs(hash) % 1000;
+        const targetTo = typeof to === "number" && to > 0 ? Math.min(to, alignedNow) : alignedNow;
+        const targetFrom = typeof from === "number" && from > 0 && from < targetTo
+            ? from
+            : targetTo - 180 * periodMs;
 
+        const symSeed = getSymbolSeed(symbol.ticker);
         const data: KLineData[] = [];
-        let runningPrice = quote.price * 0.92;
 
-        for (let i = 0; i < count; i++) {
-            const timestamp = startTime + i * periodMs;
-            const isLast = i === count - 1;
+        const startBarSlot = Math.floor(targetFrom / periodMs) * periodMs;
+        const endBarSlot = Math.floor(targetTo / periodMs) * periodMs;
 
-            if (isLast) {
-                const lastBar: KLineData = {
-                    timestamp,
-                    open: fundamentals.open,
-                    high: Math.max(fundamentals.dayHigh, quote.price),
-                    low: Math.min(fundamentals.dayLow, quote.price),
-                    close: quote.price,
-                    volume: fundamentals.volume,
-                    turnover: fundamentals.volume * quote.price,
-                };
-                data.push(lastBar);
-                this.currentCandle = { ...lastBar };
-                break;
+        for (let ts = startBarSlot; ts <= endBarSlot; ts += periodMs) {
+            const offset = Math.floor((ts - alignedNow) / periodMs);
+            if (offset > 0) continue;
+
+            const candle = generateCandle(quote.price, symSeed, offset, ts);
+            data.push(candle);
+
+            if (offset === 0) {
+                this.currentCandle = { ...candle };
             }
+        }
 
-            const wave = Math.sin((i + seed) * 0.12) * 0.015;
-            const noise = (((i * 5 + seed) % 9) - 4) * 0.004;
-            const dayFactor = 1 + wave + noise;
-
-            const open = Math.round(runningPrice * 100) / 100;
-            const close = Math.round(open * dayFactor * 100) / 100;
-            const highNoise = Math.abs(Math.sin(i * 2 + seed)) * 0.007 + 0.002;
-            const lowNoise = Math.abs(Math.cos(i * 3 + seed)) * 0.007 + 0.002;
-
-            const high = Math.round((Math.max(open, close) + open * highNoise) * 100) / 100;
-            const low = Math.round((Math.min(open, close) - open * lowNoise) * 100) / 100;
-            const volume = Math.round(50000 + Math.abs(Math.sin(i + seed) * 450000));
-
-            data.push({
-                timestamp,
-                open,
-                high,
-                low,
-                close,
-                volume,
-                turnover: volume * close,
-            });
-
-            runningPrice = close;
+        if (data.length === 0) {
+            const liveCandle = generateCandle(quote.price, symSeed, 0, alignedNow);
+            data.push(liveCandle);
+            this.currentCandle = { ...liveCandle };
         }
 
         return data;
@@ -134,20 +155,12 @@ export class NexbidRealtimeDatafeed implements Datafeed {
         const periodMs = getPeriodMs(period);
         const quote = getStockMarketQuote(symbol.ticker);
         const prevClose = quote.price - quote.change;
+        const symSeed = getSymbolSeed(symbol.ticker);
 
-        // Initialize last candle if not already loaded
         if (!this.currentCandle) {
             const now = Date.now();
             const timestamp = Math.floor(now / periodMs) * periodMs;
-            this.currentCandle = {
-                timestamp,
-                open: quote.price,
-                high: quote.price,
-                low: quote.price,
-                close: quote.price,
-                volume: 1000,
-                turnover: 1000 * quote.price,
-            };
+            this.currentCandle = generateCandle(quote.price, symSeed, 0, timestamp);
         }
 
         // Live Market Tick Engine: pulses price every 800ms
@@ -157,8 +170,8 @@ export class NexbidRealtimeDatafeed implements Datafeed {
             const now = Date.now();
             const candleSlot = Math.floor(now / periodMs) * periodMs;
 
-            // Micro-tick random fluctuation (between -0.15% to +0.15%)
-            const fluctuationPercent = (Math.random() - 0.49) * 0.003;
+            // Micro-tick random fluctuation (between -0.08% to +0.08%)
+            const fluctuationPercent = (Math.random() - 0.49) * 0.0016;
             const tickDelta = this.currentCandle.close * fluctuationPercent;
             const newClose = Math.round((this.currentCandle.close + tickDelta) * 100) / 100;
             const tickVol = Math.floor(Math.random() * 80) + 10;
@@ -167,9 +180,9 @@ export class NexbidRealtimeDatafeed implements Datafeed {
                 // New candle period begins (e.g. new minute rolled over)
                 this.currentCandle = {
                     timestamp: candleSlot,
-                    open: newClose,
-                    high: newClose,
-                    low: newClose,
+                    open: this.currentCandle.close,
+                    high: Math.max(this.currentCandle.close, newClose),
+                    low: Math.min(this.currentCandle.close, newClose),
                     close: newClose,
                     volume: tickVol,
                     turnover: tickVol * newClose,

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback, useState } from "react";
 import { KLineChartPro, type Period } from "@klinecharts/pro";
 import "@klinecharts/pro/dist/klinecharts-pro.css";
 import "../services/klineLocales";
-import { init as initKLineChart, type Chart, type OverlayCreate, type OverlayRemove, type DeepPartial, type Styles, ActionType, CandleType, YAxisType } from "klinecharts";
+import { init as initKLineChart, type Chart, type OverlayCreate, type DeepPartial, type Styles, ActionType, CandleType, YAxisType } from "klinecharts";
 import { useAppSelector } from "@/store/hooks";
 import { NexbidRealtimeDatafeed } from "../services/klineDatafeed";
 import type { TickListener } from "../services/klineDatafeed";
@@ -104,6 +104,43 @@ function saveSymbolDrawings(baseKey: string, symbol: string, overlays: OverlayCr
     }
 }
 
+interface SavedViewport {
+    barSpace: number;
+    offsetRightDistance: number;
+    isScrolledToHistory: boolean;
+}
+
+function getSymbolViewportKey(baseKey: string): string {
+    return `${baseKey}_viewports`;
+}
+
+function loadSymbolViewport(baseKey: string, symbol: string): SavedViewport | null {
+    if (typeof window === "undefined" || !symbol) return null;
+    try {
+        const raw = localStorage.getItem(getSymbolViewportKey(baseKey));
+        if (raw) {
+            const allViewports = JSON.parse(raw) as Record<string, SavedViewport>;
+            return allViewports[symbol] || null;
+        }
+    } catch (err) {
+        console.warn("[StockChart] Failed to load viewport for", symbol, err);
+    }
+    return null;
+}
+
+function saveSymbolViewport(baseKey: string, symbol: string, viewport: SavedViewport) {
+    if (typeof window === "undefined" || !symbol) return;
+    try {
+        const vpKey = getSymbolViewportKey(baseKey);
+        const raw = localStorage.getItem(vpKey);
+        const allViewports: Record<string, SavedViewport> = raw ? (JSON.parse(raw) as Record<string, SavedViewport>) : {};
+        allViewports[symbol] = viewport;
+        localStorage.setItem(vpKey, JSON.stringify(allViewports));
+    } catch (err) {
+        console.warn("[StockChart] Failed to save viewport for", symbol, err);
+    }
+}
+
 interface InternalChartStore {
     _chartStore?: {
         getOverlayStore?: () => {
@@ -119,18 +156,27 @@ function getActiveOverlays(chart: Chart | null): OverlayCreate[] {
         const overlayStore = internalChart._chartStore?.getOverlayStore?.();
         if (!overlayStore || typeof overlayStore.getInstances !== "function") return [];
         const instances = overlayStore.getInstances();
-        return (instances || [])
-            .filter((ins) => ins && ins.name && Array.isArray(ins.points) && ins.points.length > 0)
-            .map((ins) => ({
+        if (!Array.isArray(instances)) return [];
+
+        const results: OverlayCreate[] = [];
+        for (const ins of instances) {
+            if (!ins || !ins.name || !Array.isArray(ins.points) || ins.points.length === 0) continue;
+            results.push({
                 name: ins.name,
-                points: ins.points,
+                points: ins.points.map((pt) => ({
+                    timestamp: pt.timestamp,
+                    value: pt.value,
+                    dataIndex: pt.dataIndex,
+                })),
                 styles: ins.styles,
                 lock: ins.lock,
                 mode: ins.mode,
                 visible: ins.visible,
                 extendData: ins.extendData,
                 groupId: "drawing_tools",
-            }));
+            });
+        }
+        return results;
     } catch {
         return [];
     }
@@ -180,11 +226,15 @@ export const StockChart: React.FC<StockChartProps> = ({
     const chartInstanceRef = useRef<KLineChartPro | null>(null);
     const underlyingChartRef = useRef<Chart | null>(null);
 
-    // Guard flag: only auto-fit Y-axis and scroll to real-time once when switching symbols or mounting
+    // Guard flag: request auto-centering and drawing restoration whenever switching symbols or mounting
     const shouldCenterOnDataRef = useRef<boolean>(true);
 
     // TradingView-style state: track whether the user is scrolled away inspecting historical data
     const [isScrolledToHistory, setIsScrolledToHistory] = useState<boolean>(false);
+    const isScrolledToHistoryRef = useRef<boolean>(false);
+    useEffect(() => {
+        isScrolledToHistoryRef.current = isScrolledToHistory;
+    }, [isScrolledToHistory]);
 
     // Scoped storage key by authenticated user ID (or guest)
     const userId = useAppSelector((state) => state.auth.user?.id);
@@ -206,7 +256,7 @@ export const StockChart: React.FC<StockChartProps> = ({
     // Track the active symbol to avoid redundant updates on mount
     const currentSymbolRef = useRef(symbol);
 
-    // Persist active settings and symbol drawings to localStorage
+    // Persist active settings, symbol drawings, and viewport to localStorage
     const persistSettings = useCallback(() => {
         const chartPro = chartInstanceRef.current;
         const chartImp = underlyingChartRef.current;
@@ -251,10 +301,70 @@ export const StockChart: React.FC<StockChartProps> = ({
 
         saveChartSettings(storageKeyRef.current, currentSettings);
 
-        // Also persist drawings for the currently active stock
+        // Also persist drawings and viewport for the currently active stock
         if (chartImp && currentSymbolRef.current) {
             const overlays = getActiveOverlays(chartImp);
             saveSymbolDrawings(storageKeyRef.current, currentSymbolRef.current, overlays);
+
+            saveSymbolViewport(storageKeyRef.current, currentSymbolRef.current, {
+                barSpace: chartImp.getBarSpace(),
+                offsetRightDistance: chartImp.getOffsetRightDistance(),
+                isScrolledToHistory: isScrolledToHistoryRef.current,
+            });
+        }
+    }, []);
+
+    // Apply active symbol state (Y-axis auto-fit, viewport restore/realtime, and overlay injection)
+    const applyActiveSymbolState = useCallback(() => {
+        const chartImp = underlyingChartRef.current;
+        const activeSymbol = currentSymbolRef.current;
+        if (!chartImp || !activeSymbol) return;
+
+        // 1. Force Y-axis scale to Auto-scale (Normal) so the new stock's price range fits immediately
+        chartImp.setStyles({
+            yAxis: {
+                type: YAxisType.Normal,
+            },
+        });
+
+        // 2. Restore Viewport (or snap to live real-time position)
+        const savedVp = loadSymbolViewport(storageKeyRef.current, activeSymbol);
+        if (savedVp && savedVp.isScrolledToHistory) {
+            if (typeof savedVp.barSpace === "number" && savedVp.barSpace > 0) {
+                chartImp.setBarSpace(savedVp.barSpace);
+            }
+            if (typeof savedVp.offsetRightDistance === "number") {
+                chartImp.setOffsetRightDistance(savedVp.offsetRightDistance);
+            }
+            setIsScrolledToHistory(true);
+        } else {
+            if (savedVp && typeof savedVp.barSpace === "number" && savedVp.barSpace > 0) {
+                chartImp.setBarSpace(savedVp.barSpace);
+            }
+            chartImp.scrollToRealTime();
+            setIsScrolledToHistory(false);
+        }
+
+        // 3. Clear residual overlays on canvas and restore saved drawings for this specific stock
+        chartImp.removeOverlay();
+        const savedDrawings = loadSymbolDrawings(storageKeyRef.current, activeSymbol);
+        if (savedDrawings && savedDrawings.length > 0) {
+            savedDrawings.forEach((ov) => {
+                try {
+                    chartImp.createOverlay({
+                        name: ov.name,
+                        points: ov.points,
+                        styles: ov.styles,
+                        lock: ov.lock,
+                        mode: ov.mode,
+                        visible: ov.visible,
+                        extendData: ov.extendData,
+                        groupId: "drawing_tools",
+                    });
+                } catch (err) {
+                    console.warn("[StockChart] Failed to restore overlay for", activeSymbol, err);
+                }
+            });
         }
     }, []);
 
@@ -323,22 +433,11 @@ export const StockChart: React.FC<StockChartProps> = ({
                         chartImp.setStyles(initialSettings.styles);
                     }
 
-                    // Intercept removeOverlay so that toolbar remove requests clear ALL overlays unconditionally
-                    const origRemoveOverlay = chartImp.removeOverlay.bind(chartImp);
-                    chartImp.removeOverlay = (remove?: unknown) => {
-                        if (!remove || (typeof remove === "object" && (remove as { groupId?: string }).groupId === "drawing_tools")) {
-                            origRemoveOverlay();
-                            saveSymbolDrawings(storageKeyRef.current, currentSymbolRef.current, []);
-                            return;
-                        }
-                        origRemoveOverlay(remove as OverlayRemove);
-                    };
-
-                    // Auto-fit Y-axis and scroll to real time ONLY on symbol switch or initial data arrival
+                    // Auto-fit Y-axis, set viewport, and restore drawings when candle data is ready
                     chartImp.subscribeAction(ActionType.OnDataReady, () => {
                         if (shouldCenterOnDataRef.current) {
                             shouldCenterOnDataRef.current = false;
-                            chartImp.scrollToRealTime();
+                            applyActiveSymbolState();
                         }
                     });
 
@@ -347,29 +446,15 @@ export const StockChart: React.FC<StockChartProps> = ({
                         const range = data as { to?: number };
                         const dataList = chartImp.getDataList();
                         if (!dataList || dataList.length === 0 || typeof range?.to !== "number") return;
-                        const isAtRightEdge = range.to >= dataList.length - 3;
+                        const isAtRightEdge = range.to >= dataList.length - 2;
                         setIsScrolledToHistory(!isAtRightEdge);
                     });
 
-                    // Restore initial drawings for this symbol
-                    const initialDrawings = loadSymbolDrawings(storageKeyRef.current, symbol);
-                    if (initialDrawings && initialDrawings.length > 0) {
-                        initialDrawings.forEach((ov) => {
-                            try {
-                                chartImp.createOverlay({
-                                    name: ov.name,
-                                    points: ov.points,
-                                    styles: ov.styles,
-                                    lock: ov.lock,
-                                    mode: ov.mode,
-                                    visible: ov.visible,
-                                    extendData: ov.extendData,
-                                    groupId: "drawing_tools",
-                                });
-                            } catch (err) {
-                                console.warn("[StockChart] Failed to restore overlay:", err);
-                            }
-                        });
+                    // If data was already loaded before subscription, apply active state immediately
+                    const currentDataList = chartImp.getDataList();
+                    if (currentDataList && currentDataList.length > 0 && shouldCenterOnDataRef.current) {
+                        shouldCenterOnDataRef.current = false;
+                        applyActiveSymbolState();
                     }
                 }
             }
@@ -393,7 +478,7 @@ export const StockChart: React.FC<StockChartProps> = ({
             if (debounceTimer) window.clearTimeout(debounceTimer);
             const target = event?.target as HTMLElement | null;
             const isToolbarAction = target?.closest?.(".klinecharts-pro-drawing-bar") !== null;
-            // Immediate persist (50ms) for toolbar button clicks (e.g. Delete, Lock, Visibility); 250ms for canvas clicks
+            // Immediate persist (50ms) for toolbar button clicks; 250ms for canvas clicks
             const delay = isToolbarAction ? 50 : 250;
             debounceTimer = window.setTimeout(() => {
                 persistSettings();
@@ -417,6 +502,18 @@ export const StockChart: React.FC<StockChartProps> = ({
         };
         container.addEventListener("click", handleTrashClick, true);
 
+        // Double-click on price scale / canvas resets Y-axis auto-fit immediately (TradingView style)
+        const handleDblClick = (event: MouseEvent) => {
+            const target = event.target as HTMLElement | null;
+            const rect = container.getBoundingClientRect();
+            const isRightEdge = event.clientX >= rect.right - 85;
+            const isYAxis = isRightEdge || target?.closest?.(".y-axis") !== null;
+            if (isYAxis && underlyingChartRef.current) {
+                underlyingChartRef.current.setStyles({ yAxis: { type: YAxisType.Normal } });
+            }
+        };
+        container.addEventListener("dblclick", handleDblClick);
+
         // Capture clicks on the chart settings modal "Reset to Default" button
         const handleResetClick = (event: MouseEvent) => {
             const target = event.target as HTMLElement | null;
@@ -439,7 +536,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                     styles: DEFAULT_MODAL_STYLES,
                 });
 
-                // Also execute after the current event loop in case SolidJS onRestoreDefault attempted to apply undefined/stale styles
                 window.setTimeout(() => {
                     const imp = underlyingChartRef.current;
                     const pro = chartInstanceRef.current;
@@ -464,6 +560,7 @@ export const StockChart: React.FC<StockChartProps> = ({
         return () => {
             if (debounceTimer) window.clearTimeout(debounceTimer);
             container.removeEventListener("click", handleTrashClick, true);
+            container.removeEventListener("dblclick", handleDblClick);
             container.removeEventListener("click", handleResetClick, true);
             document.removeEventListener("click", handleResetClick, true);
             container.removeEventListener("click", triggerPersist);
@@ -473,7 +570,7 @@ export const StockChart: React.FC<StockChartProps> = ({
         };
     }, [persistSettings]);
 
-    // 3. Switch symbol dynamically with overlay isolation, Y-axis auto-fit, and real-time centering (ONCE per switch)
+    // 3. Switch symbol dynamically with overlay isolation, Y-axis auto-fit, and scoped state
     useEffect(() => {
         if (!chartInstanceRef.current) return;
         if (currentSymbolRef.current === symbol) return;
@@ -481,21 +578,38 @@ export const StockChart: React.FC<StockChartProps> = ({
         const prevSymbol = currentSymbolRef.current;
         const chartImp = underlyingChartRef.current;
 
-        // 1. Save previous symbol's drawings before leaving
+        // 1. Save previous symbol's drawings and viewport before switching away
         if (chartImp && prevSymbol) {
             const activeOverlays = getActiveOverlays(chartImp);
             saveSymbolDrawings(storageKeyRef.current, prevSymbol, activeOverlays);
+
+            saveSymbolViewport(storageKeyRef.current, prevSymbol, {
+                barSpace: chartImp.getBarSpace(),
+                offsetRightDistance: chartImp.getOffsetRightDistance(),
+                isScrolledToHistory: isScrolledToHistoryRef.current,
+            });
         }
 
         // 2. Clear canvas overlays so previous stock's lines do not bleed or distort Y-axis scaling
         chartImp?.removeOverlay();
 
-        // 3. Request auto-center for the new symbol's initial history payload
+        // 3. Request auto-fit and drawing restoration for the incoming symbol once its data arrives
         shouldCenterOnDataRef.current = true;
         setIsScrolledToHistory(false);
 
-        // 4. Switch the symbol on KLineChartPro
+        // 4. Force reset Y-axis scale to Normal immediately so previous stock's price range is discarded
+        if (chartImp) {
+            chartImp.setStyles({
+                yAxis: {
+                    type: YAxisType.Normal,
+                },
+            });
+        }
+
+        // 5. Update symbol tracking
         currentSymbolRef.current = symbol;
+
+        // 6. Switch the symbol on KLineChartPro (triggers async datafeed.getHistoryKLineData)
         chartInstanceRef.current.setSymbol({
             ticker: symbol,
             name: stockName || symbol,
@@ -508,41 +622,21 @@ export const StockChart: React.FC<StockChartProps> = ({
             type: "stock",
         });
 
-        // 5. Restore saved drawings for the newly active symbol (if any exist)
-        if (chartImp) {
-            const savedDrawings = loadSymbolDrawings(storageKeyRef.current, symbol);
-            if (savedDrawings && savedDrawings.length > 0) {
-                savedDrawings.forEach((ov) => {
-                    try {
-                        chartImp.createOverlay({
-                            name: ov.name,
-                            points: ov.points,
-                            styles: ov.styles,
-                            lock: ov.lock,
-                            mode: ov.mode,
-                            visible: ov.visible,
-                            extendData: ov.extendData,
-                            groupId: "drawing_tools",
-                        });
-                    } catch (err) {
-                        console.warn("[StockChart] Failed to restore overlay for", symbol, err);
-                    }
-                });
-            }
-
-            // Fallback timeout in case OnDataReady executed synchronously before listener check
-            const fallbackTimer = window.setTimeout(() => {
-                if (shouldCenterOnDataRef.current) {
+        // 7. Safety fallback: if data arrived very quickly or ActionType.OnDataReady was handled before listener check
+        const fallbackTimer = window.setTimeout(() => {
+            if (shouldCenterOnDataRef.current && underlyingChartRef.current) {
+                const dataList = underlyingChartRef.current.getDataList();
+                if (dataList && dataList.length > 0) {
                     shouldCenterOnDataRef.current = false;
-                    chartImp.scrollToRealTime();
+                    applyActiveSymbolState();
                 }
-            }, 120);
+            }
+        }, 350);
 
-            return () => {
-                window.clearTimeout(fallbackTimer);
-            };
-        }
-    }, [symbol, exchange, stockName]);
+        return () => {
+            window.clearTimeout(fallbackTimer);
+        };
+    }, [symbol, exchange, stockName, applyActiveSymbolState]);
 
     // 4. Update theme dynamically without tearing down chart state
     useEffect(() => {
@@ -553,8 +647,16 @@ export const StockChart: React.FC<StockChartProps> = ({
     const handleJumpToLive = () => {
         const chartImp = underlyingChartRef.current;
         if (!chartImp) return;
+        chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
         chartImp.scrollToRealTime();
         setIsScrolledToHistory(false);
+        if (currentSymbolRef.current) {
+            saveSymbolViewport(storageKeyRef.current, currentSymbolRef.current, {
+                barSpace: chartImp.getBarSpace(),
+                offsetRightDistance: chartImp.getOffsetRightDistance(),
+                isScrolledToHistory: false,
+            });
+        }
     };
 
     return (
@@ -582,3 +684,4 @@ export const StockChart: React.FC<StockChartProps> = ({
         </div>
     );
 };
+
