@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./services/stockService";
+export * from "./services/marketService";
 export * from "./services/watchlistService";
 export * from "./services/klineDatafeed";
 export * from "./hooks/useWatchlist";

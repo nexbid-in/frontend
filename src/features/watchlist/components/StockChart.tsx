@@ -225,6 +225,7 @@ export const StockChart: React.FC<StockChartProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const chartInstanceRef = useRef<KLineChartPro | null>(null);
     const underlyingChartRef = useRef<Chart | null>(null);
+    const datafeedRef = useRef<NexbidRealtimeDatafeed | null>(null);
 
     // Guard flag: request auto-centering and drawing restoration whenever switching symbols or mounting
     const shouldCenterOnDataRef = useRef<boolean>(true);
@@ -381,6 +382,7 @@ export const StockChart: React.FC<StockChartProps> = ({
         const datafeed = new NexbidRealtimeDatafeed((price, change, changePercent, ticker) => {
             onPriceTickRef.current?.(price, change, changePercent, ticker);
         });
+        datafeedRef.current = datafeed;
 
         const chart = new KLineChartPro({
             container,
@@ -567,6 +569,8 @@ export const StockChart: React.FC<StockChartProps> = ({
             document.removeEventListener("click", triggerPersist);
             window.removeEventListener("beforeunload", handleBeforeUnload);
             persistSettings();
+            datafeedRef.current?.destroy();
+            datafeedRef.current = null;
         };
     }, [persistSettings]);
 

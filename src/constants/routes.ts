@@ -74,4 +74,7 @@ export const API_ROUTES = {
         ROOT: '/watchlist',
         ITEM: (stockId: string) => `/watchlist/${stockId}`,
     },
+    MARKET: {
+        HISTORY: '/market/history',
+    },
 } as const;
