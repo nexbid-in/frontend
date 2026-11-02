@@ -117,6 +117,19 @@ export function WatchlistPage() {
         }
     };
 
+    const handleChartSymbolChange = useCallback(
+        (newSymbol: string) => {
+            const found = watchlistItems.find(
+                (item) => item.stock.symbol.toUpperCase() === newSymbol.toUpperCase()
+            );
+            if (found) {
+                setLiveTick(null);
+                setSelectedStockId(found.stock.id);
+            }
+        },
+        [watchlistItems]
+    );
+
     const handleOpenOverview = (item: WatchlistItemDTO) => {
         setLiveTick(null);
         setSelectedStockId(item.stock.id);
@@ -307,6 +320,7 @@ export function WatchlistPage() {
                                     exchange={activeItem.stock.exchange}
                                     stockName={activeItem.stock.name}
                                     onPriceTick={handlePriceTick}
+                                    onSymbolChange={handleChartSymbolChange}
                                 />
                             </div>
 
