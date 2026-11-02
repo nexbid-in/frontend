@@ -39,6 +39,30 @@ function getResolutionFromPeriod(period: Period): string {
     }
 }
 
+/**
+ * Resolution-aware historical horizon matching TradingView and professional brokers.
+ * Guarantees at least 2 full months (60 days) on 15m for technical analysis.
+ */
+function getHistoryLookbackMs(period: Period): number {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    switch (period.timespan) {
+        case "minute":
+            if (period.multiplier === 1) return 7 * DAY_MS;     // 1m  -> 7 days
+            if (period.multiplier === 5) return 30 * DAY_MS;    // 5m  -> 30 days
+            return 60 * DAY_MS;                                 // 15m -> 60 days (2 full months!)
+        case "hour":
+            return 180 * DAY_MS;                                // 1h  -> 180 days (6 months)
+        case "day":
+            return 365 * 2 * DAY_MS;                            // 1D  -> 2 years
+        case "week":
+            return 365 * 5 * DAY_MS;                            // 1W  -> 5 years
+        case "month":
+            return 365 * 10 * DAY_MS;                           // 1M  -> 10 years
+        default:
+            return 60 * DAY_MS;
+    }
+}
+
 export type TickListener = (price: number, change: number, changePercent: number, ticker?: string) => void;
 
 function createFallbackCandle(symbol: string, timestamp: number): KLineData {
@@ -230,13 +254,14 @@ export class NexbidRealtimeDatafeed implements Datafeed {
     async getHistoryKLineData(symbol: SymbolInfo, period: Period, from?: number, to?: number): Promise<KLineData[]> {
         const resolution = getResolutionFromPeriod(period);
         const periodMs = getPeriodMs(period);
+        const lookbackMs = getHistoryLookbackMs(period);
         const now = Date.now();
         const alignedNow = Math.floor(now / periodMs) * periodMs;
 
         const targetTo = typeof to === "number" && to > 0 ? Math.min(to, alignedNow) : alignedNow;
         const targetFrom = typeof from === "number" && from > 0 && from < targetTo
             ? from
-            : targetTo - 180 * periodMs;
+            : targetTo - lookbackMs;
 
         try {
             const candles = await marketService.getHistoricalCandles({

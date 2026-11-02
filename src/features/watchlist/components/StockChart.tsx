@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useCallback, useState } from "react";
 import { KLineChartPro, type Period } from "@klinecharts/pro";
 import "@klinecharts/pro/dist/klinecharts-pro.css";
 import "../services/klineLocales";
-import { init as initKLineChart, type Chart, type OverlayCreate, type DeepPartial, type Styles, ActionType, CandleType, YAxisType } from "klinecharts";
+import { init as initKLineChart, type Chart, type OverlayCreate, type DeepPartial, type Styles, ActionType, CandleType, YAxisType, LineType } from "klinecharts";
 import { useAppSelector } from "@/store/hooks";
 import { NexbidRealtimeDatafeed } from "../services/klineDatafeed";
 import type { TickListener } from "../services/klineDatafeed";
+import { tradingViewDateFormatter } from "../utils/chartDateFormatter";
 
 interface SavedChartSettings {
     mainIndicators: string[];
@@ -29,10 +30,82 @@ const DEFAULT_MODAL_STYLES: DeepPartial<Styles> = {
     },
     grid: {
         show: true,
+        horizontal: {
+            style: LineType.Dashed,
+            dashedValue: [4, 4],
+            color: "rgba(255, 255, 255, 0.05)",
+        },
+        vertical: {
+            style: LineType.Dashed,
+            dashedValue: [4, 4],
+            color: "rgba(255, 255, 255, 0.05)",
+        },
     },
     yAxis: {
         type: YAxisType.Normal,
         reverse: false,
+    },
+    crosshair: {
+        show: true,
+        horizontal: {
+            show: true,
+            line: {
+                style: LineType.Dashed,
+                dashedValue: [4, 4],
+                size: 1,
+                color: "rgba(255, 255, 255, 0.25)",
+            },
+            text: {
+                show: true,
+                color: "#ffffff",
+                size: 11,
+                family: "Inter, system-ui, -apple-system, sans-serif",
+                backgroundColor: "#1e222d",
+                borderColor: "#363a45",
+                borderSize: 1,
+                borderRadius: 3,
+                paddingLeft: 6,
+                paddingRight: 6,
+                paddingTop: 4,
+                paddingBottom: 4,
+            },
+        },
+        vertical: {
+            show: true,
+            line: {
+                style: LineType.Dashed,
+                dashedValue: [4, 4],
+                size: 1,
+                color: "rgba(255, 255, 255, 0.25)",
+            },
+            text: {
+                show: true,
+                color: "#ffffff",
+                size: 11,
+                family: "Inter, system-ui, -apple-system, sans-serif",
+                backgroundColor: "#1e222d",
+                borderColor: "#363a45",
+                borderSize: 1,
+                borderRadius: 3,
+                paddingLeft: 6,
+                paddingRight: 6,
+                paddingTop: 4,
+                paddingBottom: 4,
+            },
+        },
+    },
+    xAxis: {
+        tickText: {
+            size: 11,
+            color: "rgba(255, 255, 255, 0.55)",
+            family: "Inter, system-ui, -apple-system, sans-serif",
+        },
+        axisLine: {
+            color: "rgba(255, 255, 255, 0.1)",
+        },
+        tickLine: {
+            color: "rgba(255, 255, 255, 0.1)",
+        },
     },
 };
 
@@ -342,6 +415,7 @@ export const StockChart: React.FC<StockChartProps> = ({
             if (savedVp && typeof savedVp.barSpace === "number" && savedVp.barSpace > 0) {
                 chartImp.setBarSpace(savedVp.barSpace);
             }
+            chartImp.setOffsetRightDistance(90);
             chartImp.scrollToRealTime();
             setIsScrolledToHistory(false);
         }
@@ -431,6 +505,12 @@ export const StockChart: React.FC<StockChartProps> = ({
                 underlyingChartRef.current = chartImp;
 
                 if (chartImp) {
+                    chartImp.setCustomApi({
+                        formatDate: tradingViewDateFormatter,
+                    });
+                    chartImp.setOffsetRightDistance(90);
+                    chartImp.setMaxOffsetRightDistance(600);
+
                     if (initialSettings.styles) {
                         chartImp.setStyles(initialSettings.styles);
                     }
