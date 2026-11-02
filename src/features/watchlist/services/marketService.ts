@@ -1,6 +1,15 @@
 import { apiClient } from "@/config/apiClient";
 import { API_ROUTES } from "@/constants/routes";
-import type { KLineData } from "klinecharts";
+
+export interface HistoricalCandle {
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume?: number;
+    turnover?: number;
+}
 
 export interface GetHistoricalCandlesParams {
     symbol: string;
@@ -10,11 +19,11 @@ export interface GetHistoricalCandlesParams {
 }
 
 export const marketService = {
-    getHistoricalCandles: async (params: GetHistoricalCandlesParams): Promise<KLineData[]> => {
+    getHistoricalCandles: async (params: GetHistoricalCandlesParams): Promise<HistoricalCandle[]> => {
         const response = await apiClient.get<{
             success: boolean;
             message: string;
-            data?: KLineData[];
+            data?: HistoricalCandle[];
         }>(API_ROUTES.MARKET.HISTORY, {
             params: {
                 symbol: params.symbol,

@@ -1,288 +1,9 @@
-import React, { useEffect, useRef, useCallback, useState } from "react";
-import { KLineChartPro, type Period } from "@klinecharts/pro";
-import "@klinecharts/pro/dist/klinecharts-pro.css";
-import "../services/klineLocales";
-import { init as initKLineChart, type Chart, type OverlayCreate, type DeepPartial, type Styles, ActionType, CandleType, YAxisType, LineType } from "klinecharts";
+import React, { useEffect } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { NexbidRealtimeDatafeed } from "../services/klineDatafeed";
-import type { TickListener } from "../services/klineDatafeed";
-import { tradingViewDateFormatter } from "../utils/chartDateFormatter";
 
-interface SavedChartSettings {
-    mainIndicators: string[];
-    subIndicators: string[];
-    period?: Period;
-    timezone?: string;
-    styles?: DeepPartial<Styles>;
-}
+export type TickListener = (price: number, change: number, changePercent: number, ticker?: string) => void;
 
-const DEFAULT_MODAL_STYLES: DeepPartial<Styles> = {
-    candle: {
-        type: CandleType.CandleSolid,
-        priceMark: {
-            last: { show: true },
-            high: { show: true },
-            low: { show: true },
-        },
-    },
-    indicator: {
-        lastValueMark: { show: false },
-    },
-    grid: {
-        show: true,
-        horizontal: {
-            style: LineType.Dashed,
-            dashedValue: [4, 4],
-            color: "rgba(255, 255, 255, 0.05)",
-        },
-        vertical: {
-            style: LineType.Dashed,
-            dashedValue: [4, 4],
-            color: "rgba(255, 255, 255, 0.05)",
-        },
-    },
-    yAxis: {
-        type: YAxisType.Normal,
-        reverse: false,
-    },
-    crosshair: {
-        show: true,
-        horizontal: {
-            show: true,
-            line: {
-                style: LineType.Dashed,
-                dashedValue: [4, 4],
-                size: 1,
-                color: "rgba(255, 255, 255, 0.25)",
-            },
-            text: {
-                show: true,
-                color: "#ffffff",
-                size: 11,
-                family: "Inter, system-ui, -apple-system, sans-serif",
-                backgroundColor: "#1e222d",
-                borderColor: "#363a45",
-                borderSize: 1,
-                borderRadius: 3,
-                paddingLeft: 6,
-                paddingRight: 6,
-                paddingTop: 4,
-                paddingBottom: 4,
-            },
-        },
-        vertical: {
-            show: true,
-            line: {
-                style: LineType.Dashed,
-                dashedValue: [4, 4],
-                size: 1,
-                color: "rgba(255, 255, 255, 0.25)",
-            },
-            text: {
-                show: true,
-                color: "#ffffff",
-                size: 11,
-                family: "Inter, system-ui, -apple-system, sans-serif",
-                backgroundColor: "#1e222d",
-                borderColor: "#363a45",
-                borderSize: 1,
-                borderRadius: 3,
-                paddingLeft: 6,
-                paddingRight: 6,
-                paddingTop: 4,
-                paddingBottom: 4,
-            },
-        },
-    },
-    xAxis: {
-        tickText: {
-            size: 11,
-            color: "rgba(255, 255, 255, 0.55)",
-            family: "Inter, system-ui, -apple-system, sans-serif",
-        },
-        axisLine: {
-            color: "rgba(255, 255, 255, 0.1)",
-        },
-        tickLine: {
-            color: "rgba(255, 255, 255, 0.1)",
-        },
-    },
-};
-
-const DEFAULT_CHART_SETTINGS: SavedChartSettings = {
-    mainIndicators: [],
-    subIndicators: ["VOL"],
-    period: { multiplier: 15, timespan: "minute", text: "15m" },
-    timezone: "Asia/Kolkata",
-    styles: DEFAULT_MODAL_STYLES,
-};
-
-function loadSavedSettings(key: string): SavedChartSettings {
-    if (typeof window === "undefined") return DEFAULT_CHART_SETTINGS;
-    try {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-            const parsed = JSON.parse(raw);
-            return {
-                mainIndicators: Array.isArray(parsed.mainIndicators) ? parsed.mainIndicators : DEFAULT_CHART_SETTINGS.mainIndicators,
-                subIndicators: Array.isArray(parsed.subIndicators) ? parsed.subIndicators : DEFAULT_CHART_SETTINGS.subIndicators,
-                period: parsed.period && typeof parsed.period === "object" ? parsed.period : DEFAULT_CHART_SETTINGS.period,
-                timezone: typeof parsed.timezone === "string" ? parsed.timezone : DEFAULT_CHART_SETTINGS.timezone,
-                styles: parsed.styles && typeof parsed.styles === "object" ? parsed.styles : DEFAULT_MODAL_STYLES,
-            };
-        }
-    } catch (err) {
-        console.warn("[StockChart] Failed to load settings from localStorage:", err);
-    }
-    return DEFAULT_CHART_SETTINGS;
-}
-
-function saveChartSettings(key: string, settings: SavedChartSettings) {
-    if (typeof window === "undefined") return;
-    try {
-        localStorage.setItem(key, JSON.stringify(settings));
-    } catch (err) {
-        console.warn("[StockChart] Failed to save settings to localStorage:", err);
-    }
-}
-
-function getSymbolDrawingsKey(baseKey: string): string {
-    return `${baseKey}_drawings`;
-}
-
-function loadSymbolDrawings(baseKey: string, symbol: string): OverlayCreate[] {
-    if (typeof window === "undefined" || !symbol) return [];
-    try {
-        const raw = localStorage.getItem(getSymbolDrawingsKey(baseKey));
-        if (raw) {
-            const allDrawings = JSON.parse(raw) as Record<string, OverlayCreate[]>;
-            return Array.isArray(allDrawings[symbol]) ? allDrawings[symbol] : [];
-        }
-    } catch (err) {
-        console.warn("[StockChart] Failed to load drawings for", symbol, err);
-    }
-    return [];
-}
-
-function saveSymbolDrawings(baseKey: string, symbol: string, overlays: OverlayCreate[]) {
-    if (typeof window === "undefined" || !symbol) return;
-    try {
-        const drawingsKey = getSymbolDrawingsKey(baseKey);
-        const raw = localStorage.getItem(drawingsKey);
-        const allDrawings: Record<string, OverlayCreate[]> = raw ? (JSON.parse(raw) as Record<string, OverlayCreate[]>) : {};
-        allDrawings[symbol] = overlays;
-        localStorage.setItem(drawingsKey, JSON.stringify(allDrawings));
-    } catch (err) {
-        console.warn("[StockChart] Failed to save drawings for", symbol, err);
-    }
-}
-
-interface SavedViewport {
-    barSpace: number;
-    offsetRightDistance: number;
-    isScrolledToHistory: boolean;
-}
-
-function getSymbolViewportKey(baseKey: string): string {
-    return `${baseKey}_viewports`;
-}
-
-function loadSymbolViewport(baseKey: string, symbol: string): SavedViewport | null {
-    if (typeof window === "undefined" || !symbol) return null;
-    try {
-        const raw = localStorage.getItem(getSymbolViewportKey(baseKey));
-        if (raw) {
-            const allViewports = JSON.parse(raw) as Record<string, SavedViewport>;
-            return allViewports[symbol] || null;
-        }
-    } catch (err) {
-        console.warn("[StockChart] Failed to load viewport for", symbol, err);
-    }
-    return null;
-}
-
-function saveSymbolViewport(baseKey: string, symbol: string, viewport: SavedViewport) {
-    if (typeof window === "undefined" || !symbol) return;
-    try {
-        const vpKey = getSymbolViewportKey(baseKey);
-        const raw = localStorage.getItem(vpKey);
-        const allViewports: Record<string, SavedViewport> = raw ? (JSON.parse(raw) as Record<string, SavedViewport>) : {};
-        allViewports[symbol] = viewport;
-        localStorage.setItem(vpKey, JSON.stringify(allViewports));
-    } catch (err) {
-        console.warn("[StockChart] Failed to save viewport for", symbol, err);
-    }
-}
-
-interface InternalChartStore {
-    _chartStore?: {
-        getOverlayStore?: () => {
-            getInstances?: () => OverlayCreate[];
-        };
-    };
-}
-
-function getActiveOverlays(chart: Chart | null): OverlayCreate[] {
-    if (!chart) return [];
-    try {
-        const internalChart = chart as unknown as InternalChartStore;
-        const overlayStore = internalChart._chartStore?.getOverlayStore?.();
-        if (!overlayStore || typeof overlayStore.getInstances !== "function") return [];
-        const instances = overlayStore.getInstances();
-        if (!Array.isArray(instances)) return [];
-
-        const results: OverlayCreate[] = [];
-        for (const ins of instances) {
-            if (!ins || !ins.name || !Array.isArray(ins.points) || ins.points.length === 0) continue;
-            results.push({
-                name: ins.name,
-                points: ins.points.map((pt) => ({
-                    timestamp: pt.timestamp,
-                    value: pt.value,
-                    dataIndex: pt.dataIndex,
-                })),
-                styles: ins.styles,
-                lock: ins.lock,
-                mode: ins.mode,
-                visible: ins.visible,
-                extendData: ins.extendData,
-                groupId: "drawing_tools",
-            });
-        }
-        return results;
-    } catch {
-        return [];
-    }
-}
-
-function extractActiveIndicators(chartImp: Chart | null): { mainIndicators: string[]; subIndicators: string[] } | null {
-    if (!chartImp) return null;
-    try {
-        const allPanes = chartImp.getIndicatorByPaneId() as Map<string, Map<string, { name: string }>> | undefined;
-        if (!allPanes || typeof allPanes.forEach !== "function") return null;
-
-        const mainIndicators: string[] = [];
-        const subIndicators: string[] = [];
-
-        allPanes.forEach((indicatorsMap, paneId) => {
-            indicatorsMap.forEach((ind) => {
-                if (!ind || !ind.name) return;
-                if (paneId === "candle_pane") {
-                    if (!mainIndicators.includes(ind.name)) mainIndicators.push(ind.name);
-                } else {
-                    if (!subIndicators.includes(ind.name)) subIndicators.push(ind.name);
-                }
-            });
-        });
-
-        return { mainIndicators, subIndicators };
-    } catch (err) {
-        console.warn("[StockChart] Error reading active indicators:", err);
-        return null;
-    }
-}
-
-interface StockChartProps {
+export interface StockChartProps {
     symbol: string;
     exchange?: string;
     stockName?: string;
@@ -293,479 +14,85 @@ export const StockChart: React.FC<StockChartProps> = ({
     symbol,
     exchange = "NSE",
     stockName,
-    onPriceTick,
 }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const chartInstanceRef = useRef<KLineChartPro | null>(null);
-    const underlyingChartRef = useRef<Chart | null>(null);
-    const datafeedRef = useRef<NexbidRealtimeDatafeed | null>(null);
-
-    // Guard flag: request auto-centering and drawing restoration whenever switching symbols or mounting
-    const shouldCenterOnDataRef = useRef<boolean>(true);
-
-    // TradingView-style state: track whether the user is scrolled away inspecting historical data
-    const [isScrolledToHistory, setIsScrolledToHistory] = useState<boolean>(false);
-    const isScrolledToHistoryRef = useRef<boolean>(false);
-    useEffect(() => {
-        isScrolledToHistoryRef.current = isScrolledToHistory;
-    }, [isScrolledToHistory]);
-
-    // Scoped storage key by authenticated user ID (or guest)
-    const userId = useAppSelector((state) => state.auth.user?.id);
-    const storageKey = userId ? `nexbid_chart_settings_${userId}` : "nexbid_chart_settings_guest";
-    const storageKeyRef = useRef(storageKey);
-    useEffect(() => {
-        storageKeyRef.current = storageKey;
-    }, [storageKey]);
-
-    // Keep tick listener callback updated without recreating the datafeed or chart
-    const onPriceTickRef = useRef(onPriceTick);
-    useEffect(() => {
-        onPriceTickRef.current = onPriceTick;
-    }, [onPriceTick]);
-
     const theme = useAppSelector((state) => state.ui.theme);
     const isDark = theme !== "light";
 
-    // Track the active symbol to avoid redundant updates on mount
-    const currentSymbolRef = useRef(symbol);
-
-    // Persist active settings, symbol drawings, and viewport to localStorage
-    const persistSettings = useCallback(() => {
-        const chartPro = chartInstanceRef.current;
-        const chartImp = underlyingChartRef.current;
-        if (!chartPro) return;
-
-        const indicators = extractActiveIndicators(chartImp);
-        const period = chartPro.getPeriod();
-        const timezone = chartPro.getTimezone();
-
-        let stylesToSave: DeepPartial<Styles> | undefined;
-        if (chartImp) {
-            const currentStyles = chartImp.getStyles();
-            stylesToSave = {
-                candle: {
-                    type: currentStyles.candle?.type,
-                    priceMark: {
-                        last: { show: currentStyles.candle?.priceMark?.last?.show },
-                        high: { show: currentStyles.candle?.priceMark?.high?.show },
-                        low: { show: currentStyles.candle?.priceMark?.low?.show },
-                    },
-                },
-                indicator: {
-                    lastValueMark: { show: currentStyles.indicator?.lastValueMark?.show },
-                },
-                grid: {
-                    show: currentStyles.grid?.show,
-                },
-                yAxis: {
-                    type: currentStyles.yAxis?.type,
-                    reverse: currentStyles.yAxis?.reverse,
-                },
-            };
-        }
-
-        const currentSettings: SavedChartSettings = {
-            mainIndicators: indicators?.mainIndicators ?? [],
-            subIndicators: indicators?.subIndicators ?? ["VOL"],
-            period,
-            timezone,
-            styles: stylesToSave,
-        };
-
-        saveChartSettings(storageKeyRef.current, currentSettings);
-
-        // Also persist drawings and viewport for the currently active stock
-        if (chartImp && currentSymbolRef.current) {
-            const overlays = getActiveOverlays(chartImp);
-            saveSymbolDrawings(storageKeyRef.current, currentSymbolRef.current, overlays);
-
-            saveSymbolViewport(storageKeyRef.current, currentSymbolRef.current, {
-                barSpace: chartImp.getBarSpace(),
-                offsetRightDistance: chartImp.getOffsetRightDistance(),
-                isScrolledToHistory: isScrolledToHistoryRef.current,
-            });
-        }
-    }, []);
-
-    // Apply active symbol state (Y-axis auto-fit, viewport restore/realtime, and overlay injection)
-    const applyActiveSymbolState = useCallback(() => {
-        const chartImp = underlyingChartRef.current;
-        const activeSymbol = currentSymbolRef.current;
-        if (!chartImp || !activeSymbol) return;
-
-        // 1. Force Y-axis scale to Auto-scale (Normal) so the new stock's price range fits immediately
-        chartImp.setStyles({
-            yAxis: {
-                type: YAxisType.Normal,
-            },
-        });
-
-        // 2. Restore Viewport (or snap to live real-time position)
-        const savedVp = loadSymbolViewport(storageKeyRef.current, activeSymbol);
-        if (savedVp && savedVp.isScrolledToHistory) {
-            if (typeof savedVp.barSpace === "number" && savedVp.barSpace > 0) {
-                chartImp.setBarSpace(savedVp.barSpace);
-            }
-            if (typeof savedVp.offsetRightDistance === "number") {
-                chartImp.setOffsetRightDistance(savedVp.offsetRightDistance);
-            }
-            setIsScrolledToHistory(true);
-        } else {
-            if (savedVp && typeof savedVp.barSpace === "number" && savedVp.barSpace > 0) {
-                chartImp.setBarSpace(savedVp.barSpace);
-            }
-            chartImp.setOffsetRightDistance(90);
-            chartImp.scrollToRealTime();
-            setIsScrolledToHistory(false);
-        }
-
-        // 3. Clear residual overlays on canvas and restore saved drawings for this specific stock
-        chartImp.removeOverlay();
-        const savedDrawings = loadSymbolDrawings(storageKeyRef.current, activeSymbol);
-        if (savedDrawings && savedDrawings.length > 0) {
-            savedDrawings.forEach((ov) => {
-                try {
-                    chartImp.createOverlay({
-                        name: ov.name,
-                        points: ov.points,
-                        styles: ov.styles,
-                        lock: ov.lock,
-                        mode: ov.mode,
-                        visible: ov.visible,
-                        extendData: ov.extendData,
-                        groupId: "drawing_tools",
-                    });
-                } catch (err) {
-                    console.warn("[StockChart] Failed to restore overlay for", activeSymbol, err);
-                }
-            });
-        }
-    }, []);
-
-    // 1. Mount and initialize KLineChartPro once on component mount with saved settings
+    // One-time cleanup of legacy KLineCharts and related settings from localStorage
     useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        container.innerHTML = "";
-
-        // Read saved preferences from localStorage (or sensible clean defaults)
-        const initialSettings = loadSavedSettings(storageKeyRef.current);
-
-        const datafeed = new NexbidRealtimeDatafeed((price, change, changePercent, ticker) => {
-            onPriceTickRef.current?.(price, change, changePercent, ticker);
-        });
-        datafeedRef.current = datafeed;
-
-        const chart = new KLineChartPro({
-            container,
-            watermark: "",
-            theme: isDark ? "dark" : "light",
-            locale: "en-US",
-            styles: initialSettings.styles,
-            symbol: {
-                ticker: symbol,
-                name: stockName || symbol,
-                shortName: symbol,
-                exchange: exchange,
-                market: "stocks",
-                pricePrecision: 2,
-                volumePrecision: 0,
-                priceCurrency: "INR",
-                type: "stock",
-            },
-            period: initialSettings.period || DEFAULT_CHART_SETTINGS.period!,
-            periods: [
-                { multiplier: 1, timespan: "minute", text: "1m" },
-                { multiplier: 5, timespan: "minute", text: "5m" },
-                { multiplier: 15, timespan: "minute", text: "15m" },
-                { multiplier: 1, timespan: "hour", text: "1h" },
-                { multiplier: 1, timespan: "day", text: "1D" },
-                { multiplier: 1, timespan: "week", text: "1W" },
-            ],
-            drawingBarVisible: true,
-            timezone: initialSettings.timezone || "Asia/Kolkata",
-            mainIndicators: initialSettings.mainIndicators,
-            subIndicators: initialSettings.subIndicators,
-            datafeed,
-        });
-
-        chartInstanceRef.current = chart;
-        currentSymbolRef.current = symbol;
-        shouldCenterOnDataRef.current = true;
-
-        // Retrieve underlying Chart instance for indicator & drawing inspection
-        const widget = container.querySelector<HTMLElement>("[k-line-chart-id]");
-        if (widget) {
-            const chartId = widget.getAttribute("k-line-chart-id");
-            if (chartId) {
-                widget.id = chartId;
-                const chartImp = initKLineChart(widget);
-                underlyingChartRef.current = chartImp;
-
-                if (chartImp) {
-                    chartImp.setCustomApi({
-                        formatDate: tradingViewDateFormatter,
-                    });
-                    chartImp.setOffsetRightDistance(90);
-                    chartImp.setMaxOffsetRightDistance(600);
-
-                    if (initialSettings.styles) {
-                        chartImp.setStyles(initialSettings.styles);
-                    }
-
-                    // Auto-fit Y-axis, set viewport, and restore drawings when candle data is ready
-                    chartImp.subscribeAction(ActionType.OnDataReady, () => {
-                        if (shouldCenterOnDataRef.current) {
-                            shouldCenterOnDataRef.current = false;
-                            applyActiveSymbolState();
-                        }
-                    });
-
-                    // Track whether user has scrolled into history to display the "Jump to Live" button
-                    chartImp.subscribeAction(ActionType.OnVisibleRangeChange, (data: unknown) => {
-                        const range = data as { to?: number };
-                        const dataList = chartImp.getDataList();
-                        if (!dataList || dataList.length === 0 || typeof range?.to !== "number") return;
-                        const isAtRightEdge = range.to >= dataList.length - 2;
-                        setIsScrolledToHistory(!isAtRightEdge);
-                    });
-
-                    // If data was already loaded before subscription, apply active state immediately
-                    const currentDataList = chartImp.getDataList();
-                    if (currentDataList && currentDataList.length > 0 && shouldCenterOnDataRef.current) {
-                        shouldCenterOnDataRef.current = false;
-                        applyActiveSymbolState();
+        try {
+            if (typeof window !== "undefined") {
+                const keysToRemove: string[] = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith("nexbid_chart_settings") || key.toLowerCase().includes("kline"))) {
+                        keysToRemove.push(key);
                     }
                 }
-            }
-        }
-
-        return () => {
-            container.innerHTML = "";
-            chartInstanceRef.current = null;
-            underlyingChartRef.current = null;
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // 2. Debounced persistence on user interaction (adding/removing indicators, timeframe click, drawings)
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        let debounceTimer: number | null = null;
-        const triggerPersist = (event?: MouseEvent) => {
-            if (debounceTimer) window.clearTimeout(debounceTimer);
-            const target = event?.target as HTMLElement | null;
-            const isToolbarAction = target?.closest?.(".klinecharts-pro-drawing-bar") !== null;
-            // Immediate persist (50ms) for toolbar button clicks; 250ms for canvas clicks
-            const delay = isToolbarAction ? 50 : 250;
-            debounceTimer = window.setTimeout(() => {
-                persistSettings();
-            }, delay);
-        };
-
-        container.addEventListener("click", triggerPersist);
-        document.addEventListener("click", triggerPersist);
-
-        // Capture clicks on the drawing bar trash icon to force immediate canvas clear & localStorage sync
-        const handleTrashClick = (event: MouseEvent) => {
-            const target = event.target as HTMLElement | null;
-            const trashBtn = target?.closest?.(".klinecharts-pro-drawing-bar .item:last-child");
-            if (trashBtn) {
-                const chartImp = underlyingChartRef.current;
-                if (chartImp) {
-                    chartImp.removeOverlay();
-                }
-                saveSymbolDrawings(storageKeyRef.current, currentSymbolRef.current, []);
-            }
-        };
-        container.addEventListener("click", handleTrashClick, true);
-
-        // Double-click on price scale / canvas resets Y-axis auto-fit immediately (TradingView style)
-        const handleDblClick = (event: MouseEvent) => {
-            const target = event.target as HTMLElement | null;
-            const rect = container.getBoundingClientRect();
-            const isRightEdge = event.clientX >= rect.right - 85;
-            const isYAxis = isRightEdge || target?.closest?.(".y-axis") !== null;
-            if (isYAxis && underlyingChartRef.current) {
-                underlyingChartRef.current.setStyles({ yAxis: { type: YAxisType.Normal } });
-            }
-        };
-        container.addEventListener("dblclick", handleDblClick);
-
-        // Capture clicks on the chart settings modal "Reset to Default" button
-        const handleResetClick = (event: MouseEvent) => {
-            const target = event.target as HTMLElement | null;
-            const modal = target?.closest?.(".klinecharts-pro-modal");
-            const isSettingsModal = modal?.querySelector?.(".klinecharts-pro-setting-modal-content") !== null;
-            const resetBtn = target?.closest?.(".klinecharts-pro-button");
-
-            if (isSettingsModal && resetBtn) {
-                const chartImp = underlyingChartRef.current;
-                const chartPro = chartInstanceRef.current;
-                if (chartImp) {
-                    chartImp.setStyles(DEFAULT_MODAL_STYLES);
-                }
-                if (chartPro) {
-                    chartPro.setStyles(DEFAULT_MODAL_STYLES);
-                }
-                const saved = loadSavedSettings(storageKeyRef.current);
-                saveChartSettings(storageKeyRef.current, {
-                    ...saved,
-                    styles: DEFAULT_MODAL_STYLES,
+                keysToRemove.forEach((key) => {
+                    localStorage.removeItem(key);
                 });
-
-                window.setTimeout(() => {
-                    const imp = underlyingChartRef.current;
-                    const pro = chartInstanceRef.current;
-                    if (imp) imp.setStyles(DEFAULT_MODAL_STYLES);
-                    if (pro) pro.setStyles(DEFAULT_MODAL_STYLES);
-                    const current = loadSavedSettings(storageKeyRef.current);
-                    saveChartSettings(storageKeyRef.current, {
-                        ...current,
-                        styles: DEFAULT_MODAL_STYLES,
-                    });
-                }, 40);
             }
-        };
-        container.addEventListener("click", handleResetClick, true);
-        document.addEventListener("click", handleResetClick, true);
-
-        const handleBeforeUnload = () => {
-            persistSettings();
-        };
-        window.addEventListener("beforeunload", handleBeforeUnload);
-
-        return () => {
-            if (debounceTimer) window.clearTimeout(debounceTimer);
-            container.removeEventListener("click", handleTrashClick, true);
-            container.removeEventListener("dblclick", handleDblClick);
-            container.removeEventListener("click", handleResetClick, true);
-            document.removeEventListener("click", handleResetClick, true);
-            container.removeEventListener("click", triggerPersist);
-            document.removeEventListener("click", triggerPersist);
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-            persistSettings();
-            datafeedRef.current?.destroy();
-            datafeedRef.current = null;
-        };
-    }, [persistSettings]);
-
-    // 3. Switch symbol dynamically with overlay isolation, Y-axis auto-fit, and scoped state
-    useEffect(() => {
-        if (!chartInstanceRef.current) return;
-        if (currentSymbolRef.current === symbol) return;
-
-        const prevSymbol = currentSymbolRef.current;
-        const chartImp = underlyingChartRef.current;
-
-        // 1. Save previous symbol's drawings and viewport before switching away
-        if (chartImp && prevSymbol) {
-            const activeOverlays = getActiveOverlays(chartImp);
-            saveSymbolDrawings(storageKeyRef.current, prevSymbol, activeOverlays);
-
-            saveSymbolViewport(storageKeyRef.current, prevSymbol, {
-                barSpace: chartImp.getBarSpace(),
-                offsetRightDistance: chartImp.getOffsetRightDistance(),
-                isScrolledToHistory: isScrolledToHistoryRef.current,
-            });
+        } catch (err) {
+            console.warn("[StockChart] Failed to clean up legacy chart localStorage:", err);
         }
-
-        // 2. Clear canvas overlays so previous stock's lines do not bleed or distort Y-axis scaling
-        chartImp?.removeOverlay();
-
-        // 3. Request auto-fit and drawing restoration for the incoming symbol once its data arrives
-        shouldCenterOnDataRef.current = true;
-        setIsScrolledToHistory(false);
-
-        // 4. Force reset Y-axis scale to Normal immediately so previous stock's price range is discarded
-        if (chartImp) {
-            chartImp.setStyles({
-                yAxis: {
-                    type: YAxisType.Normal,
-                },
-            });
-        }
-
-        // 5. Update symbol tracking
-        currentSymbolRef.current = symbol;
-
-        // 6. Switch the symbol on KLineChartPro (triggers async datafeed.getHistoryKLineData)
-        chartInstanceRef.current.setSymbol({
-            ticker: symbol,
-            name: stockName || symbol,
-            shortName: symbol,
-            exchange: exchange,
-            market: "stocks",
-            pricePrecision: 2,
-            volumePrecision: 0,
-            priceCurrency: "INR",
-            type: "stock",
-        });
-
-        // 7. Safety fallback: if data arrived very quickly or ActionType.OnDataReady was handled before listener check
-        const fallbackTimer = window.setTimeout(() => {
-            if (shouldCenterOnDataRef.current && underlyingChartRef.current) {
-                const dataList = underlyingChartRef.current.getDataList();
-                if (dataList && dataList.length > 0) {
-                    shouldCenterOnDataRef.current = false;
-                    applyActiveSymbolState();
-                }
-            }
-        }, 350);
-
-        return () => {
-            window.clearTimeout(fallbackTimer);
-        };
-    }, [symbol, exchange, stockName, applyActiveSymbolState]);
-
-    // 4. Update theme dynamically without tearing down chart state
-    useEffect(() => {
-        if (!chartInstanceRef.current) return;
-        chartInstanceRef.current.setTheme(isDark ? "dark" : "light");
-    }, [isDark]);
-
-    const handleJumpToLive = () => {
-        const chartImp = underlyingChartRef.current;
-        if (!chartImp) return;
-        chartImp.setStyles({ yAxis: { type: YAxisType.Normal } });
-        chartImp.scrollToRealTime();
-        setIsScrolledToHistory(false);
-        if (currentSymbolRef.current) {
-            saveSymbolViewport(storageKeyRef.current, currentSymbolRef.current, {
-                barSpace: chartImp.getBarSpace(),
-                offsetRightDistance: chartImp.getOffsetRightDistance(),
-                isScrolledToHistory: false,
-            });
-        }
-    };
+    }, []);
 
     return (
-        <div className="w-full h-full flex flex-col bg-dash-panel relative overflow-hidden select-none">
+        <div
+            className={`w-full h-full flex flex-col items-center justify-center relative select-none rounded-lg border transition-colors ${
+                isDark
+                    ? "bg-[#131722] border-[#2a2e39] text-gray-300"
+                    : "bg-white border-gray-200 text-gray-700"
+            }`}
+        >
+            {/* Header info */}
             <div
-                ref={containerRef}
-                className="w-full h-full flex-1"
-                style={{ width: "100%", height: "100%" }}
-            />
+                className={`absolute top-4 left-4 flex items-center gap-2.5 px-3 py-1.5 rounded-md border backdrop-blur-sm ${
+                    isDark
+                        ? "bg-[#1e222d]/80 border-[#2a2e39]"
+                        : "bg-gray-100/80 border-gray-200"
+                }`}
+            >
+                <span className="font-bold text-sm tracking-wide text-blue-500">{symbol}</span>
+                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono">
+                    {exchange}
+                </span>
+                {stockName && (
+                    <span className="text-xs opacity-60 truncate max-w-[200px]">
+                        {stockName}
+                    </span>
+                )}
+            </div>
 
-            {/* TradingView-style Floating 'Jump to Live Price' pill button when scrolled back in time */}
-            {isScrolledToHistory && (
-                <button
-                    type="button"
-                    onClick={handleJumpToLive}
-                    className="absolute bottom-9 right-16 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#181a20]/95 hover:bg-[#22252d] border border-dash-border text-xs font-medium text-dash-text hover:text-primary-green shadow-xl backdrop-blur-xs transition-all cursor-pointer animate-in fade-in zoom-in-95 duration-200"
-                    title="Jump to latest live price"
+            {/* Central Placeholder State */}
+            <div className="flex flex-col items-center text-center max-w-sm px-6">
+                <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 border ${
+                        isDark
+                            ? "bg-[#1e222d] border-[#2a2e39] text-blue-400"
+                            : "bg-blue-50 border-blue-100 text-blue-600"
+                    }`}
                 >
-                    <span className="text-[11px] font-semibold tracking-wide">Live Price</span>
-                    <svg className="w-3.5 h-3.5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    <svg
+                        className="w-7 h-7"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
                     </svg>
-                </button>
-            )}
+                </div>
+                <h3 className="text-base font-semibold mb-1">Cleaned & Ready for Chart Integration</h3>
+                <p className="text-xs opacity-60 leading-relaxed">
+                    KLineCharts dependencies and legacy storage entries have been purged. Ready for OpenAlgo Charts integration.
+                </p>
+            </div>
         </div>
     );
 };
-
