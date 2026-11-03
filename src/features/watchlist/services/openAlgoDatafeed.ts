@@ -24,6 +24,7 @@ interface ActiveSubscription {
     intervalSec: number;
     onBar: (bar: Bar, meta?: LiveBarMeta) => void;
     currentBar: Bar | null;
+    startDayVolume?: number;
 }
 
 /**
@@ -57,6 +58,28 @@ export function intervalToSeconds(interval: string): number {
     if (norm === "1w" || norm === "w") return 86400 * 7;
     if (norm === "1mo" || norm === "m") return 86400 * 30;
     return 900;
+}
+
+/**
+ * Checks whether the Indian stock market (NSE/BSE) is currently in an active trading session.
+ * Regular trading session: Monday - Friday, 09:15 AM to 03:30 PM IST (UTC+5:30).
+ */
+export function isIndianMarketOpen(timestampMs: number = Date.now()): boolean {
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(timestampMs + IST_OFFSET_MS);
+
+    const day = istDate.getUTCDay(); // 0 is Sunday, 6 is Saturday
+    if (day === 0 || day === 6) {
+        return false;
+    }
+
+    const hours = istDate.getUTCHours();
+    const minutes = istDate.getUTCMinutes();
+    const minuteOfDay = hours * 60 + minutes;
+
+    // 09:15 AM IST is 9*60 + 15 = 555
+    // 03:30 PM IST is 15*60 + 30 = 930
+    return minuteOfDay >= 555 && minuteOfDay <= 930;
 }
 
 /**
@@ -272,7 +295,6 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
             high: quote.price,
             low: quote.price,
             close: quote.price,
-            volume: 1000,
         };
 
         return [fallbackBar];
@@ -432,7 +454,10 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                 const ltp = Number(payload.data?.ltp);
                 if (isNaN(ltp) || ltp <= 0) return;
 
-                const volume = Number(payload.data?.volume) || 10;
+                const tickVolume =
+                    typeof payload.data?.volume === "number" && !isNaN(payload.data.volume)
+                        ? Number(payload.data.volume)
+                        : undefined;
                 const rawTimestamp =
                     typeof payload.data?.timestamp === "number" && payload.data.timestamp > 0
                         ? payload.data.timestamp
@@ -440,30 +465,69 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                 const tickTimeSec =
                     rawTimestamp > 1e11 ? Math.floor(rawTimestamp / 1000) : rawTimestamp;
 
+                const marketOpen = isIndianMarketOpen(rawTimestamp);
+
                 // Deliver live bar updates to matching subscribers
                 for (const sub of this.subscribers.values()) {
                     if (sub.symbol === sym) {
                         const bucketStart =
                             Math.floor(tickTimeSec / sub.intervalSec) * sub.intervalSec;
 
+                        // 1. Off-market hours (night / weekend / before 9:15 or after 15:30):
+                        // Do NOT create ghost candles or overwrite historical candle volume with cumulative day volume.
+                        if (!marketOpen) {
+                            if (sub.currentBar) {
+                                sub.currentBar = {
+                                    ...sub.currentBar,
+                                    close: ltp,
+                                };
+                                sub.onBar({ ...sub.currentBar });
+                                this.onBarListener?.({ ...sub.currentBar });
+                            }
+                            continue;
+                        }
+
+                        // 2. Active market hours: handle real-time candle formation and delta volume
                         if (!sub.currentBar || bucketStart > sub.currentBar.time) {
-                            // Period rolled over or initial candle formation
+                            // Period rolled over or new candle formation
+                            let initialCandleVol: number | undefined;
+                            if (tickVolume !== undefined) {
+                                if (tickVolume > 10_000) {
+                                    // Fyers cumulative day volume: reset baseline for this new candle
+                                    sub.startDayVolume = tickVolume;
+                                    initialCandleVol = 0;
+                                } else {
+                                    initialCandleVol = tickVolume;
+                                }
+                            }
+
                             sub.currentBar = {
                                 time: bucketStart,
                                 open: sub.currentBar ? sub.currentBar.close : ltp,
                                 high: sub.currentBar ? Math.max(sub.currentBar.close, ltp) : ltp,
                                 low: sub.currentBar ? Math.min(sub.currentBar.close, ltp) : ltp,
                                 close: ltp,
-                                volume,
+                                volume: initialCandleVol,
                             };
                         } else {
-                            // Intra-candle live update
+                            // Intra-candle live update within active market hours
+                            let updatedVolume = sub.currentBar.volume;
+                            if (tickVolume !== undefined) {
+                                if (tickVolume > 10_000 && sub.startDayVolume !== undefined) {
+                                    // Subtract candle baseline so cumulative day volume doesn't inflate candle
+                                    updatedVolume = Math.max(0, tickVolume - sub.startDayVolume);
+                                } else if (tickVolume <= 10_000) {
+                                    // Incremental trade volume
+                                    updatedVolume = (sub.currentBar.volume ?? 0) + tickVolume;
+                                }
+                            }
+
                             sub.currentBar = {
                                 ...sub.currentBar,
                                 high: Math.max(sub.currentBar.high, ltp),
                                 low: Math.min(sub.currentBar.low, ltp),
                                 close: ltp,
-                                volume: (sub.currentBar.volume ?? 0) + volume,
+                                volume: updatedVolume,
                             };
                         }
 

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createWidget, type Widget } from "openalgo-charts/widget";
 import type { Bar } from "openalgo-charts";
+import { registeredIndicators } from "openalgo-charts";
 import "openalgo-charts/indicators";
 import "openalgo-charts/draw";
 import { useAppSelector } from "@/store/hooks";
@@ -15,6 +16,34 @@ import { registerCustomDrawingTools } from "../utils/customDrawingTools";
 
 // Register enhanced right-aligned horizontal line & ray price badges
 registerCustomDrawingTools();
+
+/**
+ * Format volume in standard Fyers / TradingView compact style:
+ * - >= 1 Billion: 1.25B
+ * - >= 1 Million: 27.74M
+ * - >= 1 Thousand: 520.15K
+ * - < 1000: 450
+ */
+function formatFyersVolume(val: number): string {
+    if (!Number.isFinite(val)) return "";
+    const abs = Math.abs(val);
+    if (abs >= 1e9) return (val / 1e9).toFixed(2) + "B";
+    if (abs >= 1e6) return (val / 1e6).toFixed(2) + "M";
+    if (abs >= 1e3) return (val / 1e3).toFixed(2) + "K";
+    return Math.round(val).toString();
+}
+
+// Patch built-in OpenAlgo Volume indicator descriptor so both the legend (e.g. "Volume 20 27.74M")
+// and the volume pane Y-axis use the compact Fyers / TradingView format
+const volumeIndicatorDef = registeredIndicators().find((ind) => ind.id === "volume");
+if (volumeIndicatorDef) {
+    volumeIndicatorDef.plots.forEach((plot) => {
+        plot.priceFormat = {
+            type: "custom",
+            formatter: formatFyersVolume,
+        };
+    });
+}
 
 export type { TickListener };
 
@@ -46,12 +75,56 @@ function standardPriceFormatter(price: number): string {
     return price.toFixed(2);
 }
 
-function formatVolume(vol?: number): string {
-    if (!vol || vol <= 0) return "0";
-    if (vol >= 10_000_000) return `${(vol / 10_000_000).toFixed(2)}Cr`;
-    if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(2)}M`;
-    if (vol >= 1_000) return `${(vol / 1_000).toFixed(2)}K`;
-    return vol.toLocaleString("en-IN");
+/**
+ * Enforce formatters on chart price scales:
+ * 1. Primary stock candle scale (Pane 0) strictly gets 2-decimal format (e.g. 23,810.85).
+ * 2. Volume indicator pane and its scales strictly get compact Fyers format (e.g. 27.74M).
+ */
+function enforceChartPriceFormatters(widget: Widget | null): void {
+    if (!widget || !widget.chart) return;
+    try {
+        const chartAny = widget.chart as unknown as {
+            panes?: () => Array<{
+                priceScale?: { setPriceFormatter: (fn: (v: number) => string) => void };
+                scales?: () => Array<{ setPriceFormatter: (fn: (v: number) => string) => void }>;
+            }>;
+            indicators?: () => Array<{ indicatorId?: string; paneIndex?: number }>;
+            primarySeries?: () => {
+                priceScale?: () => { setPriceFormatter: (fn: (v: number) => string) => void };
+            } | null;
+        };
+
+        const panes = chartAny.panes?.() || [];
+
+        // 1. Enforce 0.00 price format strictly on primary stock candle price scale (Pane 0)
+        if (panes[0]?.priceScale) {
+            panes[0].priceScale.setPriceFormatter(standardPriceFormatter);
+            if (panes[0].scales) {
+                for (const s of panes[0].scales()) {
+                    s.setPriceFormatter(standardPriceFormatter);
+                }
+            }
+        }
+        chartAny.primarySeries?.()?.priceScale?.()?.setPriceFormatter(standardPriceFormatter);
+
+        // 2. Enforce compact Fyers volume format on volume indicator pane and scales
+        const indicators = chartAny.indicators?.() || [];
+        for (const ind of indicators) {
+            if (ind.indicatorId === "volume" && typeof ind.paneIndex === "number") {
+                const volPane = panes[ind.paneIndex];
+                if (volPane) {
+                    volPane.priceScale?.setPriceFormatter(formatFyersVolume);
+                    if (volPane.scales) {
+                        for (const s of volPane.scales()) {
+                            s.setPriceFormatter(formatFyersVolume);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("[StockChart] Error enforcing chart price formatters:", e);
+    }
 }
 
 /**
@@ -96,7 +169,6 @@ export const StockChart: React.FC<StockChartProps> = ({
     const [hoverBar, setHoverBar] = useState<Bar | null>(null);
     const [latestBar, setLatestBar] = useState<Bar | null>(null);
     const [activeInterval, setActiveInterval] = useState<string>("15m");
-    const [isVolOpen, setIsVolOpen] = useState<boolean>(true);
 
     // Production loading & error state management (Zerodha / Fyers style)
     const [isChartLoading, setIsChartLoading] = useState<boolean>(true);
@@ -313,7 +385,7 @@ export const StockChart: React.FC<StockChartProps> = ({
         if (widgetRef.current) {
             try {
                 widgetRef.current.setSymbol(activeSymbolRef.current, activeExchangeRef.current);
-                widgetRef.current.chart.setPriceFormatter(standardPriceFormatter);
+                enforceChartPriceFormatters(widgetRef.current);
             } catch (err) {
                 console.warn("[StockChart] Error retrying chart load:", err);
             }
@@ -357,6 +429,9 @@ export const StockChart: React.FC<StockChartProps> = ({
                 if (status.symbol === activeSymbolRef.current) {
                     setIsChartLoading(status.isLoading);
                     setChartError(status.error);
+                    if (!status.isLoading && !status.error) {
+                        enforceChartPriceFormatters(widgetRef.current);
+                    }
                 }
             });
             datafeedRef.current = feed;
@@ -381,19 +456,15 @@ export const StockChart: React.FC<StockChartProps> = ({
                     panels: false, // Disable docked Objects and Data panels
                     indicators: true,
                     typingNavigation: false, // Disable keyboard jumping to symbol search
-                    priceFormatter: standardPriceFormatter,
+                    priceFormatter: standardPriceFormatter, // Enforce standard 0.00 format on initial load
                     priceScale: {
                         minPrecision: 2,
                         minMove: 0.05,
                     },
                 });
 
-                // Enforce 0.00 price format across price scales, crosshairs & badges
-                try {
-                    widget.chart.setPriceFormatter(standardPriceFormatter);
-                } catch (e) {
-                    console.warn("[StockChart] Error attaching price formatter:", e);
-                }
+                // Enforce 0.00 price format strictly on primary stock scale, and Fyers volume on volume pane
+                enforceChartPriceFormatters(widget);
 
                 widgetRef.current = widget;
 
@@ -427,11 +498,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                         setLatestBar(null);
                         setIsChartLoading(true);
                         setChartError(null);
-                        try {
-                            widget.chart.setPriceFormatter(standardPriceFormatter);
-                        } catch {
-                            // ignore
-                        }
+                        enforceChartPriceFormatters(widget);
                         onSymbolChangeRef.current?.(newSym, newExch);
                     }
                 });
@@ -499,7 +566,7 @@ export const StockChart: React.FC<StockChartProps> = ({
             activeExchangeRef.current = exch;
             try {
                 widgetRef.current.setSymbol(sym, exch);
-                widgetRef.current.chart.setPriceFormatter(standardPriceFormatter);
+                enforceChartPriceFormatters(widgetRef.current);
             } catch (err) {
                 console.warn("[StockChart] Error calling setSymbol on widget:", err);
             }
@@ -535,7 +602,6 @@ export const StockChart: React.FC<StockChartProps> = ({
     const highVal = activeBar ? activeBar.high : fallbackQuote.price;
     const lowVal = activeBar ? activeBar.low : fallbackQuote.price;
     const closeVal = activeBar ? activeBar.close : fallbackQuote.price;
-    const volumeVal = activeBar?.volume ?? 0;
 
     const diff = activeBar ? closeVal - openVal : fallbackQuote.change;
     const diffPercent = activeBar
@@ -791,45 +857,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                     </div>
                 )}
 
-                {/* 3. Volume Row (collapsible via chevron below) */}
-                {isVolOpen && (
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-[#787b86] mt-0.5">
-                        <span>
-                            Vol{" "}
-                            <span className="font-semibold text-[#089981]">
-                                {formatVolume(volumeVal)}
-                            </span>
-                        </span>
-                    </div>
-                )}
-
-                {/* 4. Collapse / Expand Volume Chevron (TradingView style below Vol) */}
-                <div className="flex items-center">
-                    <button
-                        type="button"
-                        onClick={() => setIsVolOpen((prev) => !prev)}
-                        className={`pointer-events-auto p-1 rounded border transition-colors cursor-pointer ${
-                            isDark
-                                ? "bg-[#1e222d] border-[#363a45] text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]"
-                                : "bg-[#f0f3fa] border-[#e0e3eb] text-[#787b86] hover:text-[#131722] hover:bg-[#e0e3eb]"
-                        }`}
-                        title={isVolOpen ? "Hide Volume" : "Show Volume"}
-                    >
-                        <svg
-                            className={`w-3 h-3 transition-transform duration-200 ${
-                                isVolOpen ? "rotate-0" : "rotate-180"
-                            }`}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <polyline points="18 15 12 9 6 15" />
-                        </svg>
-                    </button>
-                </div>
             </div>
         </div>
     );
