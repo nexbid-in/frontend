@@ -8,6 +8,7 @@ import { useAppSelector } from "@/store/hooks";
 import {
     NexbidOpenAlgoDataFeed,
     type TickListener,
+    type DataFeedStatus,
 } from "../services/openAlgoDatafeed";
 import { formatINR, getStockMarketQuote } from "../utils/stockPriceHelper";
 import { registerCustomDrawingTools } from "../utils/customDrawingTools";
@@ -97,18 +98,24 @@ export const StockChart: React.FC<StockChartProps> = ({
     const [activeInterval, setActiveInterval] = useState<string>("15m");
     const [isVolOpen, setIsVolOpen] = useState<boolean>(true);
 
+    // Production loading & error state management (Zerodha / Fyers style)
+    const [isChartLoading, setIsChartLoading] = useState<boolean>(true);
+    const [chartError, setChartError] = useState<string | null>(null);
+
     // Fullscreen state management & topbar Portal target
     const [topbarElement, setTopbarElement] = useState<HTMLElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
     const [isFallbackMaximized, setIsFallbackMaximized] = useState<boolean>(false);
     const isMaximized = isFullscreen || isFallbackMaximized;
 
-    // Adjust bar states during render when symbol prop changes
+    // Adjust bar & loading states during render when symbol prop changes
     const [prevSymbol, setPrevSymbol] = useState(symbol);
     if (prevSymbol !== symbol) {
         setPrevSymbol(symbol);
         setHoverBar(null);
         setLatestBar(null);
+        setIsChartLoading(true);
+        setChartError(null);
     }
 
     // Keep callbacks updated on datafeed instance
@@ -285,6 +292,34 @@ export const StockChart: React.FC<StockChartProps> = ({
         };
     }, [toggleFullscreen]);
 
+    // Watchdog timeout: Show clean error with retry option if request hangs (>12s)
+    useEffect(() => {
+        if (!isChartLoading) return;
+        const timer = window.setTimeout(() => {
+            if (isChartLoading) {
+                setIsChartLoading(false);
+                setChartError(
+                    "Market data request timed out. Please check your connection and retry."
+                );
+            }
+        }, 12000);
+        return () => window.clearTimeout(timer);
+    }, [isChartLoading, symbol]);
+
+    // Retry callback for user to re-trigger chart loading on error or timeout
+    const handleRetry = useCallback(() => {
+        setIsChartLoading(true);
+        setChartError(null);
+        if (widgetRef.current) {
+            try {
+                widgetRef.current.setSymbol(activeSymbolRef.current, activeExchangeRef.current);
+                widgetRef.current.chart.setPriceFormatter(standardPriceFormatter);
+            } catch (err) {
+                console.warn("[StockChart] Error retrying chart load:", err);
+            }
+        }
+    }, []);
+
     // ==========================================
     // 1. Initialize Widget on Mount
     // ==========================================
@@ -317,6 +352,12 @@ export const StockChart: React.FC<StockChartProps> = ({
             const feed = new NexbidOpenAlgoDataFeed(onPriceTickRef.current);
             feed.setOnBarListener((bar) => {
                 setLatestBar(bar);
+            });
+            feed.setOnStatusListener((status: DataFeedStatus) => {
+                if (status.symbol === activeSymbolRef.current) {
+                    setIsChartLoading(status.isLoading);
+                    setChartError(status.error);
+                }
             });
             datafeedRef.current = feed;
 
@@ -383,6 +424,8 @@ export const StockChart: React.FC<StockChartProps> = ({
                         activeExchangeRef.current = newExch;
                         setHoverBar(null);
                         setLatestBar(null);
+                        setIsChartLoading(true);
+                        setChartError(null);
                         try {
                             widget.chart.setPriceFormatter(standardPriceFormatter);
                         } catch {
@@ -518,6 +561,72 @@ export const StockChart: React.FC<StockChartProps> = ({
                 className="w-full h-full"
                 style={{ width: "100%", height: "100%" }}
             />
+
+            {/* Zerodha & Fyers Production Loading / Error Fallback Overlay */}
+            {(isChartLoading || chartError) && (
+                <div
+                    className={`absolute inset-0 z-40 flex items-center justify-center select-none backdrop-blur-xs transition-all duration-200 ${
+                        isDark ? "bg-[#131722]/85" : "bg-white/85"
+                    }`}
+                >
+                    {isChartLoading ? (
+                        /* Minimalist clean spinner only (TradingView & Fyers style) */
+                        <div className="relative w-10 h-10 flex items-center justify-center animate-in fade-in duration-150">
+                            <div className="w-10 h-10 rounded-full border-3 border-emerald-500/20" />
+                            <div className="absolute inset-0 w-10 h-10 rounded-full border-3 border-transparent border-t-emerald-500 animate-spin" />
+                        </div>
+                    ) : (
+                        <div
+                            className={`flex flex-col items-center justify-center p-6 rounded-2xl border shadow-2xl max-w-sm w-full mx-4 text-center animate-in fade-in zoom-in-95 duration-150 ${
+                                isDark
+                                    ? "bg-[#1e222d]/95 border-white/10 text-white"
+                                    : "bg-white/95 border-gray-200 text-gray-900"
+                            }`}
+                        >
+                            {/* Alert/Warning Icon */}
+                            <div className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-3">
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            </div>
+
+                            <h3 className="text-sm font-semibold mb-1">Unable to Load Chart</h3>
+                            <p className="text-xs text-[#787b86] mb-4 leading-relaxed">
+                                {chartError || "Failed to retrieve market candles for this stock."}
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={handleRetry}
+                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all shadow-md cursor-pointer"
+                            >
+                                <svg
+                                    className="w-3.5 h-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                                </svg>
+                                <span>Retry Loading</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Topbar Fullscreen Button Portal (TradingView & Fyers layout) */}
             {topbarElement &&

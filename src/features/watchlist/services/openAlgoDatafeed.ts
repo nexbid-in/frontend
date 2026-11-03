@@ -89,12 +89,23 @@ const DEFAULT_POPULAR_SYMBOLS: SymbolMatch[] = [
 
 export type BarListener = (bar: Bar) => void;
 
+export interface DataFeedStatus {
+    isLoading: boolean;
+    symbol: string;
+    interval: string;
+    error: string | null;
+    barCount?: number;
+}
+
+export type StatusListener = (status: DataFeedStatus) => void;
+
 /**
  * Production-ready OpenAlgo Charts DataFeed implementation for Nexbid.
  * - Fetches historical OHLCV data from Nexbid Backend REST API
  * - Normalizes timestamps to UTC seconds integer standard
  * - Handles live tick streaming & candle forming over WebSocket
  * - Integrates native Symbol Search against Nexbid's stock database
+ * - Broadcasts loading and error lifecycle events for smooth UI fallback
  */
 export class NexbidOpenAlgoDataFeed implements DataFeed {
     private ws: WebSocket | null = null;
@@ -103,6 +114,8 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
     private subscribers = new Map<string, ActiveSubscription>();
     private onTickCallback?: TickListener;
     private onBarListener?: BarListener;
+    private onStatusListener?: StatusListener;
+    private activeRequestId = 0;
 
     constructor(onTick?: TickListener) {
         this.onTickCallback = onTick;
@@ -116,6 +129,10 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
         this.onBarListener = cb;
     }
 
+    public setOnStatusListener(cb?: StatusListener): void {
+        this.onStatusListener = cb;
+    }
+
     /**
      * Historical Bars Loader contract required by OpenAlgo Charts.
      */
@@ -124,6 +141,16 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
         const resolution = intervalToResolution(req.interval);
         const intervalSec = intervalToSeconds(req.interval);
         const lookbackMs = getHistoryLookbackMs(req.interval);
+
+        const requestId = ++this.activeRequestId;
+
+        // Broadcast loading state to show fallback spinner immediately
+        this.onStatusListener?.({
+            isLoading: true,
+            symbol,
+            interval: req.interval,
+            error: null,
+        });
 
         const nowMs = Date.now();
         const alignedNowMs = Math.floor(nowMs / (intervalSec * 1000)) * (intervalSec * 1000);
@@ -143,6 +170,11 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                 from: targetFromMs,
                 to: targetToMs,
             });
+
+            // Discard stale in-flight response if user switched to another stock
+            if (requestId !== this.activeRequestId) {
+                return [];
+            }
 
             if (rawCandles && rawCandles.length > 0) {
                 // Convert candles to OpenAlgo Bar format (time in UTC seconds)
@@ -179,11 +211,40 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                             sub.currentBar = { ...lastBar };
                         }
                     }
+
+                    // Loading complete successfully
+                    this.onStatusListener?.({
+                        isLoading: false,
+                        symbol,
+                        interval: req.interval,
+                        error: null,
+                        barCount: uniqueBars.length,
+                    });
+
                     return uniqueBars;
                 }
             }
+
+            // Backend returned empty candles array
+            this.onStatusListener?.({
+                isLoading: false,
+                symbol,
+                interval: req.interval,
+                error: null,
+                barCount: 0,
+            });
         } catch (err) {
-            console.warn(`[NexbidOpenAlgoDataFeed] Error fetching history for ${symbol}:`, err);
+            if (requestId === this.activeRequestId) {
+                console.warn(`[NexbidOpenAlgoDataFeed] Error fetching history for ${symbol}:`, err);
+                const errMsg = err instanceof Error ? err.message : "Failed to load market data";
+                this.onStatusListener?.({
+                    isLoading: false,
+                    symbol,
+                    interval: req.interval,
+                    error: errMsg,
+                    barCount: 0,
+                });
+            }
         }
 
         // Fallback baseline candle in case the backend returns empty data
