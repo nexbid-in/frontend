@@ -145,3 +145,20 @@ html:has(::view-transition-old(root)) * {
   letter-spacing: 0.3px !important;
   color: inherit !important;
 }
+
+/* OpenAlgo Charts: Industry-standard fullscreen backdrop & sizing */
+:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: #131722;
+}
+
+:fullscreen::backdrop {
+  background-color: #131722;
+}
+
+[data-theme="light"] :fullscreen,
+[data-theme="light"] :fullscreen::backdrop {
+  background-color: #ffffff;
+}
+

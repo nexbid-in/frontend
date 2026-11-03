@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createWidget, type Widget } from "openalgo-charts/widget";
 import type { Bar } from "openalgo-charts";
 import "openalgo-charts/indicators";
@@ -49,6 +50,7 @@ function formatVolume(vol?: number): string {
  * - Top-left TradingView-style interactive legend with dynamic OHLCV & real-time crosshair inspection
  * - On-chart quick Buy / Sell floating trading widget matching TradingView layout
  * - Bottom statusline disabled to keep the canvas clean and distraction-free
+ * - Fullscreen toggle button matching Fyers / TradingView topbar layout ([Settings] [Fullscreen] [Camera])
  * - Automatic IndexedDB layout & drawing persistence
  */
 export const StockChart: React.FC<StockChartProps> = ({
@@ -62,6 +64,7 @@ export const StockChart: React.FC<StockChartProps> = ({
     onBuy,
     onSell,
 }) => {
+    const outerContainerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetRef = useRef<Widget | null>(null);
     const datafeedRef = useRef<NexbidOpenAlgoDataFeed | null>(null);
@@ -85,6 +88,12 @@ export const StockChart: React.FC<StockChartProps> = ({
     const [activeInterval, setActiveInterval] = useState<string>("15m");
     const [isVolOpen, setIsVolOpen] = useState<boolean>(true);
 
+    // Fullscreen state management & topbar Portal target
+    const [topbarElement, setTopbarElement] = useState<HTMLElement | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    const [isFallbackMaximized, setIsFallbackMaximized] = useState<boolean>(false);
+    const isMaximized = isFullscreen || isFallbackMaximized;
+
     // Adjust bar states during render when symbol prop changes
     const [prevSymbol, setPrevSymbol] = useState(symbol);
     if (prevSymbol !== symbol) {
@@ -106,6 +115,166 @@ export const StockChart: React.FC<StockChartProps> = ({
     useEffect(() => {
         onSymbolChangeRef.current = onSymbolChange;
     }, [onSymbolChange]);
+
+    // ==========================================
+    // Fullscreen Toggle & Event Synchronization
+    // ==========================================
+    const getFullscreenElement = (): Element | null => {
+        const doc = document as unknown as {
+            fullscreenElement?: Element | null;
+            webkitFullscreenElement?: Element | null;
+            mozFullScreenElement?: Element | null;
+            msFullscreenElement?: Element | null;
+        };
+        return (
+            doc.fullscreenElement ||
+            doc.webkitFullscreenElement ||
+            doc.mozFullScreenElement ||
+            doc.msFullscreenElement ||
+            null
+        );
+    };
+
+    const toggleFullscreen = useCallback(async () => {
+        const el = outerContainerRef.current;
+        if (!el) return;
+
+        // 1. If currently in CSS fallback maximization, exit fallback
+        if (isFallbackMaximized) {
+            setIsFallbackMaximized(false);
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event("resize"));
+            });
+            return;
+        }
+
+        // 2. If currently in native fullscreen, exit native fullscreen
+        const fsElement = getFullscreenElement();
+        if (fsElement) {
+            try {
+                const doc = document as unknown as {
+                    exitFullscreen?: () => Promise<void>;
+                    webkitExitFullscreen?: () => Promise<void>;
+                    mozCancelFullScreen?: () => Promise<void>;
+                    msExitFullscreen?: () => Promise<void>;
+                };
+                if (doc.exitFullscreen) {
+                    await doc.exitFullscreen();
+                } else if (doc.webkitExitFullscreen) {
+                    await doc.webkitExitFullscreen();
+                } else if (doc.mozCancelFullScreen) {
+                    await doc.mozCancelFullScreen();
+                } else if (doc.msExitFullscreen) {
+                    await doc.msExitFullscreen();
+                }
+            } catch (err) {
+                console.warn("[StockChart] Error exiting native fullscreen:", err);
+                setIsFullscreen(false);
+            }
+            return;
+        }
+
+        // 3. Otherwise enter fullscreen (try HTML5 Fullscreen API first, fallback to viewport maximization)
+        try {
+            const elWithPrefix = el as unknown as {
+                requestFullscreen?: () => Promise<void>;
+                webkitRequestFullscreen?: () => Promise<void>;
+                mozRequestFullScreen?: () => Promise<void>;
+                msRequestFullscreen?: () => Promise<void>;
+            };
+
+            if (elWithPrefix.requestFullscreen) {
+                await elWithPrefix.requestFullscreen();
+            } else if (elWithPrefix.webkitRequestFullscreen) {
+                await elWithPrefix.webkitRequestFullscreen();
+            } else if (elWithPrefix.mozRequestFullScreen) {
+                await elWithPrefix.mozRequestFullScreen();
+            } else if (elWithPrefix.msRequestFullscreen) {
+                await elWithPrefix.msRequestFullscreen();
+            } else {
+                setIsFallbackMaximized(true);
+            }
+        } catch (err) {
+            console.info("[StockChart] Native fullscreen unavailable/denied, falling back to viewport maximization:", err);
+            setIsFallbackMaximized(true);
+        }
+    }, [isFallbackMaximized]);
+
+    // Sync native fullscreen state changes (Esc key, browser back, F11, etc.)
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            const fsEl = getFullscreenElement();
+            const active = fsEl === outerContainerRef.current;
+            setIsFullscreen(active);
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event("resize"));
+                setTimeout(() => {
+                    window.dispatchEvent(new Event("resize"));
+                }, 150);
+            });
+        };
+
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+        document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+        document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+        return () => {
+            document.removeEventListener("fullscreenchange", handleFullscreenChange);
+            document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+            document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+            document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+        };
+    }, []);
+
+    // Handle fallback maximization: Escape key to exit & lock background body scroll
+    useEffect(() => {
+        if (!isFallbackMaximized) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setIsFallbackMaximized(false);
+                requestAnimationFrame(() => {
+                    window.dispatchEvent(new Event("resize"));
+                });
+            }
+        };
+
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        window.addEventListener("keydown", handleKeyDown);
+        requestAnimationFrame(() => {
+            window.dispatchEvent(new Event("resize"));
+        });
+
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            window.removeEventListener("keydown", handleKeyDown);
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event("resize"));
+            });
+        };
+    }, [isFallbackMaximized]);
+
+    // Keyboard shortcut: Alt+F or Shift+F to toggle fullscreen (matching TradingView)
+    useEffect(() => {
+        const handleGlobalShortcuts = (e: KeyboardEvent) => {
+            const isTargetEditable =
+                e.target instanceof HTMLInputElement ||
+                e.target instanceof HTMLTextAreaElement ||
+                (e.target instanceof HTMLElement && e.target.isContentEditable);
+
+            if (!isTargetEditable && (e.altKey || e.shiftKey) && (e.key === "f" || e.key === "F")) {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        };
+
+        window.addEventListener("keydown", handleGlobalShortcuts);
+        return () => {
+            window.removeEventListener("keydown", handleGlobalShortcuts);
+        };
+    }, [toggleFullscreen]);
 
     // ==========================================
     // 1. Initialize Widget on Mount
@@ -165,6 +334,25 @@ export const StockChart: React.FC<StockChartProps> = ({
 
                 widgetRef.current = widget;
 
+                // Capture .oac-topbar for React Portal fullscreen button mounting
+                const topbar = container.querySelector<HTMLElement>(".oac-topbar");
+                if (topbar) {
+                    // OpenAlgo native order: Camera is appended first, then Settings is appended.
+                    // In TradingView & Fyers: Settings -> Fullscreen -> Camera.
+                    // We visually order them with flex order: Settings (90), Fullscreen (91), Camera (92).
+                    const iconButtons = topbar.querySelectorAll<HTMLElement>(".oac-btn--icon");
+                    iconButtons.forEach((btn) => {
+                        const title = (btn.getAttribute("title") || btn.getAttribute("aria-label") || "").toLowerCase();
+                        const innerHTML = btn.innerHTML.toLowerCase();
+                        if (title.includes("settings") || innerHTML.includes("settings")) {
+                            btn.style.order = "90";
+                        } else if (title.includes("capture") || innerHTML.includes("camera") || innerHTML.includes("capture")) {
+                            btn.style.order = "92";
+                        }
+                    });
+                    setTopbarElement(topbar);
+                }
+
                 // Sync symbol if user picks a new symbol via widget topbar search
                 widget.on("symbol", (ev) => {
                     if (ev && typeof ev.symbol === "string") {
@@ -207,6 +395,8 @@ export const StockChart: React.FC<StockChartProps> = ({
             if (animationFrameId !== null) {
                 cancelAnimationFrame(animationFrameId);
             }
+
+            setTopbarElement(null);
 
             if (widgetRef.current) {
                 try {
@@ -283,9 +473,10 @@ export const StockChart: React.FC<StockChartProps> = ({
 
     return (
         <div
+            ref={outerContainerRef}
             className={`w-full h-full min-h-[450px] relative overflow-hidden select-none transition-colors ${
                 isDark ? "bg-[#131722]" : "bg-[#ffffff]"
-            }`}
+            } ${isFallbackMaximized ? "!fixed !inset-0 !z-[9999] !w-screen !h-screen !m-0 !p-0" : ""}`}
             style={{ width: "100%", height: "100%" }}
         >
             {/* Chart mount container strictly dedicated for OpenAlgo widget */}
@@ -294,6 +485,63 @@ export const StockChart: React.FC<StockChartProps> = ({
                 className="w-full h-full"
                 style={{ width: "100%", height: "100%" }}
             />
+
+            {/* Topbar Fullscreen Button Portal (TradingView & Fyers layout) */}
+            {topbarElement &&
+                createPortal(
+                    <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        className="oac-btn oac-btn--icon flex items-center justify-center cursor-pointer transition-colors"
+                        style={{ order: 91 }}
+                        title={
+                            isMaximized
+                                ? "Exit Fullscreen (Esc)"
+                                : "Fullscreen mode (Alt+F)"
+                        }
+                        aria-label={
+                            isMaximized ? "Exit Fullscreen" : "Fullscreen mode"
+                        }
+                    >
+                        <span
+                            className="oac-glyph oac-glyph--chrome flex items-center justify-center"
+                            aria-hidden="true"
+                        >
+                            {isMaximized ? (
+                                <svg
+                                    className="w-4 h-4"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                                    <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                                    <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                                    <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                                </svg>
+                            ) : (
+                                <svg
+                                    className="w-4 h-4"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M3 8V5a2 2 0 0 1 2-2h3" />
+                                    <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+                                    <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                                    <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                                </svg>
+                            )}
+                        </span>
+                    </button>,
+                    topbarElement
+                )}
 
             {/* ======================================================== */}
             {/* TradingView Top-Left Floating Info & Quick Trading Bar   */}
