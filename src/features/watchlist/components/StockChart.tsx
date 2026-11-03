@@ -9,6 +9,10 @@ import {
     type TickListener,
 } from "../services/openAlgoDatafeed";
 import { formatINR, getStockMarketQuote } from "../utils/stockPriceHelper";
+import { registerCustomDrawingTools } from "../utils/customDrawingTools";
+
+// Register enhanced right-aligned horizontal line & ray price badges
+registerCustomDrawingTools();
 
 export type { TickListener };
 
@@ -154,8 +158,9 @@ export const StockChart: React.FC<StockChartProps> = ({
                     rail: true,
                     bottombar: true,
                     statusline: false, // 👈 Disabled: removed bottom status line showing O, H, L, C, Vol
+                    panels: false, // Disable docked Objects and Data panels
                     indicators: true,
-                    symbolSearch: (query, ctx) => feed.searchSymbols({ query, signal: ctx?.signal }),
+                    typingNavigation: false, // Disable keyboard jumping to symbol search
                 });
 
                 widgetRef.current = widget;

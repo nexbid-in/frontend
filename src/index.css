@@ -115,3 +115,33 @@
 html:has(::view-transition-old(root)) * {
   transition: none !important;
 }
+
+/* OpenAlgo Charts: Hide unused topbar buttons */
+.oac-topbar__objects,
+.oac-topbar__data,
+.oac-topbar__theme {
+  display: none !important;
+}
+
+/* OpenAlgo Charts: Display symbol as plain text without search box */
+.oac-sym > .oac-glyph {
+  display: none !important;
+}
+
+.oac-sym > input.oac-sym__input {
+  field-sizing: content !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 160px !important;
+  padding: 0 4px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.3px !important;
+  color: inherit !important;
+}
