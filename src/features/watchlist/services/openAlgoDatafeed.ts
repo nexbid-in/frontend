@@ -87,6 +87,8 @@ const DEFAULT_POPULAR_SYMBOLS: SymbolMatch[] = [
     { symbol: "BANKNIFTY", exchange: "NSE", name: "Nifty Bank Index", assetClass: "Index" },
 ];
 
+export type BarListener = (bar: Bar) => void;
+
 /**
  * Production-ready OpenAlgo Charts DataFeed implementation for Nexbid.
  * - Fetches historical OHLCV data from Nexbid Backend REST API
@@ -100,6 +102,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
     private isDestroyed = false;
     private subscribers = new Map<string, ActiveSubscription>();
     private onTickCallback?: TickListener;
+    private onBarListener?: BarListener;
 
     constructor(onTick?: TickListener) {
         this.onTickCallback = onTick;
@@ -107,6 +110,10 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
 
     public setOnTickCallback(cb?: TickListener): void {
         this.onTickCallback = cb;
+    }
+
+    public setOnBarListener(cb?: BarListener): void {
+        this.onBarListener = cb;
     }
 
     /**
@@ -162,11 +169,14 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                 }
 
                 if (uniqueBars.length > 0) {
+                    const lastBar = uniqueBars[uniqueBars.length - 1];
+                    this.onBarListener?.({ ...lastBar });
+
                     // Seed the active subscription's forming bar if one exists
                     const subKeyPrefix = `${symbol}_`;
                     for (const [key, sub] of this.subscribers.entries()) {
                         if (key.startsWith(subKeyPrefix)) {
-                            sub.currentBar = { ...uniqueBars[uniqueBars.length - 1] };
+                            sub.currentBar = { ...lastBar };
                         }
                     }
                     return uniqueBars;
@@ -381,6 +391,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                         }
 
                         sub.onBar({ ...sub.currentBar });
+                        this.onBarListener?.({ ...sub.currentBar });
                     }
                 }
 
@@ -422,5 +433,6 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
 
         this.subscribers.clear();
         this.onTickCallback = undefined;
+        this.onBarListener = undefined;
     }
 }

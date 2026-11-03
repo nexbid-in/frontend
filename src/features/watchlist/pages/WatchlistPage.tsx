@@ -319,8 +319,12 @@ export function WatchlistPage() {
                                     symbol={activeItem.stock.symbol}
                                     exchange={activeItem.stock.exchange}
                                     stockName={activeItem.stock.name}
+                                    isTradable={activeItem.stock.isTradable}
+                                    stockType={activeItem.stock.type}
                                     onPriceTick={handlePriceTick}
                                     onSymbolChange={handleChartSymbolChange}
+                                    onBuy={() => handleBuy(activeItem)}
+                                    onSell={() => handleSell(activeItem)}
                                 />
                             </div>
 
