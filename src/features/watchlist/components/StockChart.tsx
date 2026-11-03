@@ -36,6 +36,15 @@ function formatPrice(num: number): string {
     });
 }
 
+/**
+ * Uniform 2-decimal price formatter (0.00 format) for OpenAlgo price scales,
+ * crosshairs, horizontal lines, and price badges (matching Fyers & TradingView).
+ */
+function standardPriceFormatter(price: number): string {
+    if (!Number.isFinite(price)) return "";
+    return price.toFixed(2);
+}
+
 function formatVolume(vol?: number): string {
     if (!vol || vol <= 0) return "0";
     if (vol >= 10_000_000) return `${(vol / 10_000_000).toFixed(2)}Cr`;
@@ -330,7 +339,19 @@ export const StockChart: React.FC<StockChartProps> = ({
                     panels: false, // Disable docked Objects and Data panels
                     indicators: true,
                     typingNavigation: false, // Disable keyboard jumping to symbol search
+                    priceFormatter: standardPriceFormatter,
+                    priceScale: {
+                        minPrecision: 2,
+                        minMove: 0.05,
+                    },
                 });
+
+                // Enforce 0.00 price format across price scales, crosshairs & badges
+                try {
+                    widget.chart.setPriceFormatter(standardPriceFormatter);
+                } catch (e) {
+                    console.warn("[StockChart] Error attaching price formatter:", e);
+                }
 
                 widgetRef.current = widget;
 
@@ -362,6 +383,11 @@ export const StockChart: React.FC<StockChartProps> = ({
                         activeExchangeRef.current = newExch;
                         setHoverBar(null);
                         setLatestBar(null);
+                        try {
+                            widget.chart.setPriceFormatter(standardPriceFormatter);
+                        } catch {
+                            // ignore
+                        }
                         onSymbolChangeRef.current?.(newSym, newExch);
                     }
                 });
@@ -429,6 +455,7 @@ export const StockChart: React.FC<StockChartProps> = ({
             activeExchangeRef.current = exch;
             try {
                 widgetRef.current.setSymbol(sym, exch);
+                widgetRef.current.chart.setPriceFormatter(standardPriceFormatter);
             } catch (err) {
                 console.warn("[StockChart] Error calling setSymbol on widget:", err);
             }
@@ -449,9 +476,15 @@ export const StockChart: React.FC<StockChartProps> = ({
     }, [isDark]);
 
     // ==========================================
-    // Calculate Active Candle Data for Overlay
+    // Calculate Active Candle Data for Overlay & Trade Buttons
     // ==========================================
     const fallbackQuote = getStockMarketQuote(symbol);
+
+    // Live market price / last traded price (LTP) strictly for BUY & SELL execution buttons.
+    // Must NEVER change when the user moves the crosshair over historical candles.
+    const currentMarketPrice = latestBar ? latestBar.close : fallbackQuote.price;
+
+    // Crosshair hover bar or latest bar for top-left OHLC historical inspection readout
     const activeBar = hoverBar || latestBar;
 
     const openVal = activeBar ? activeBar.open : fallbackQuote.price;
@@ -616,7 +649,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                             className="flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#c83200] bg-[#c83200]/10 hover:bg-[#c83200]/20 active:scale-95 transition-all cursor-pointer shadow-xs group"
                         >
                             <span className="font-mono text-xs font-bold text-[#c83200] group-hover:brightness-110">
-                                {formatINR(closeVal)}
+                                {formatINR(currentMarketPrice)}
                             </span>
                             <span className="text-[10px] font-bold text-[#c83200] tracking-wider">
                                 SELL
@@ -639,7 +672,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                             className="flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#00873e] bg-[#00873e]/10 hover:bg-[#00873e]/20 active:scale-95 transition-all cursor-pointer shadow-xs group"
                         >
                             <span className="font-mono text-xs font-bold text-[#00873e] group-hover:brightness-110">
-                                {formatINR(closeVal)}
+                                {formatINR(currentMarketPrice)}
                             </span>
                             <span className="text-[10px] font-bold text-[#00873e] tracking-wider">
                                 BUY
