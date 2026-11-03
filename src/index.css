@@ -123,27 +123,99 @@ html:has(::view-transition-old(root)) * {
   display: none !important;
 }
 
-/* OpenAlgo Charts: Display symbol as plain text without search box */
+/* OpenAlgo Charts: Pill-style Symbol Badge with Exchange Indicator (TradingView / Fyers aesthetic) */
+.oac-sym {
+  width: 148px !important;
+  min-width: 148px !important;
+  max-width: 148px !important;
+  flex: 0 0 148px !important;
+  height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  padding: 2px 3px 2px 10px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  transition: none !important;
+}
+
+[data-theme="light"] .oac-sym,
+.oac-widget[data-theme="light"] .oac-sym {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Remove hover effect on the capsule pill */
+.oac-sym:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="light"] .oac-sym:hover,
+.oac-widget[data-theme="light"] .oac-sym:hover {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
 .oac-sym > .oac-glyph {
   display: none !important;
 }
 
 .oac-sym > input.oac-sym__input {
-  field-sizing: content !important;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: 160px !important;
-  padding: 0 4px !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
   pointer-events: none !important;
   cursor: default !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   font-size: 13px !important;
   letter-spacing: 0.3px !important;
-  color: inherit !important;
+  color: var(--oac-tx, inherit) !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+[data-theme="light"] .oac-sym > input.oac-sym__input,
+.oac-widget[data-theme="light"] .oac-sym > input.oac-sym__input {
+  color: var(--oac-tx, inherit) !important;
+}
+
+.oac-sym > .oac-sym__ex {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 26px !important;
+  height: 22px !important;
+  padding: 0 4px !important;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  color: var(--oac-mut, #9598a1) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.4px !important;
+  flex-shrink: 0 !important;
+  margin-left: 6px !important;
+  box-sizing: border-box !important;
+}
+
+[data-theme="light"] .oac-sym > .oac-sym__ex,
+.oac-widget[data-theme="light"] .oac-sym > .oac-sym__ex {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: var(--oac-mut, #787b86) !important;
 }
 
 /* OpenAlgo Charts: Industry-standard fullscreen backdrop & sizing */
