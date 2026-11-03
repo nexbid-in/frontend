@@ -31,14 +31,6 @@ export function WatchlistPage() {
 
     const [activeViewMode, setActiveViewMode] = useState<"chart" | "overview">("chart");
 
-    // Real-time live tick stream state for active stock (keyed by stockId)
-    const [liveTick, setLiveTick] = useState<{
-        stockId: string;
-        price: number;
-        change: number;
-        changePercent: number;
-    } | null>(null);
-
     // Order Execution Modal placeholder state
     const [orderModal, setOrderModal] = useState<{
         isOpen: boolean;
@@ -70,31 +62,7 @@ export function WatchlistPage() {
         }
     }, [activeItem, lastStockStorageKey]);
 
-    const activeQuote = useMemo(() => {
-        if (!activeItem) return null;
-        return getStockMarketQuote(activeItem.stock.symbol);
-    }, [activeItem]);
-
-    const handlePriceTick = useCallback((price: number, change: number, changePercent: number, ticker?: string) => {
-        if (!activeItem) return;
-        // Ignore stale ticks from the previous stock if ticker is specified and doesn't match
-        if (ticker && ticker !== activeItem.stock.symbol) return;
-        setLiveTick({
-            stockId: activeItem.stock.id,
-            price,
-            change,
-            changePercent,
-        });
-    }, [activeItem]);
-
-    const isCurrentTick = liveTick !== null && activeItem !== null && liveTick.stockId === activeItem.stock.id;
-    const currentPrice = isCurrentTick ? liveTick.price : (activeQuote?.price ?? 0);
-    const currentChange = isCurrentTick ? liveTick.change : (activeQuote?.change ?? 0);
-    const currentChangePercent = isCurrentTick ? liveTick.changePercent : (activeQuote?.changePercent ?? 0);
-    const isPositive = currentChange >= 0;
-
     const handleSelectStock = (item: WatchlistItemDTO) => {
-        setLiveTick(null);
         setSelectedStockId(item.stock.id);
         try {
             localStorage.setItem(lastStockStorageKey, item.stock.id);
@@ -104,7 +72,6 @@ export function WatchlistPage() {
     };
 
     const handleOpenChart = (item: WatchlistItemDTO) => {
-        setLiveTick(null);
         setSelectedStockId(item.stock.id);
         setActiveViewMode("chart");
         requestAnimationFrame(() => {
@@ -123,7 +90,6 @@ export function WatchlistPage() {
                 (item) => item.stock.symbol.toUpperCase() === newSymbol.toUpperCase()
             );
             if (found) {
-                setLiveTick(null);
                 setSelectedStockId(found.stock.id);
             }
         },
@@ -131,22 +97,12 @@ export function WatchlistPage() {
     );
 
     const handleOpenOverview = (item: WatchlistItemDTO) => {
-        setLiveTick(null);
         setSelectedStockId(item.stock.id);
         setActiveViewMode("overview");
         try {
             localStorage.setItem(lastStockStorageKey, item.stock.id);
         } catch (err) {
             console.warn("Failed to save last visited stock:", err);
-        }
-    };
-
-    const handleViewModeChange = (mode: "chart" | "overview") => {
-        setActiveViewMode(mode);
-        if (mode === "chart") {
-            requestAnimationFrame(() => {
-                window.dispatchEvent(new Event("resize"));
-            });
         }
     };
 
@@ -167,7 +123,6 @@ export function WatchlistPage() {
     };
 
     const handleAddStock = async (stockId: string) => {
-        setLiveTick(null);
         const added = await addMutation.mutateAsync(stockId);
         setSelectedStockId(added.stockId);
         try {
@@ -208,142 +163,42 @@ export function WatchlistPage() {
 
             {/* Right Column: Dynamic Main View (Chart or Stock Overview) */}
             <main className="flex-1 bg-dash-panel border border-dash-border rounded-xl flex flex-col h-full overflow-hidden">
-                {activeItem && activeQuote ? (
-                    <>
-                        {/* Top Stock Control Header */}
-                        <div className="px-6 py-2 border-b border-dash-border bg-dash-panel-2/30 flex flex-wrap items-center justify-between gap-4 shrink-0">
-                            {/* Stock Identity & Live Price */}
-                            <div className="flex items-center gap-4 flex-wrap">
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-base font-bold text-dash-text tracking-tight">
-                                        {activeItem.stock.symbol}
-                                    </h1>
-                                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border border-dash-border text-dash-text-muted bg-dash-card">
-                                        {activeItem.stock.exchange}
-                                    </span>
-                                    {activeItem.stock.type === "INDEX" && (
-                                        <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-                                            Index
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-lg font-mono font-bold text-dash-text transition-colors">
-                                        ₹{formatINR(currentPrice)}
-                                    </span>
-                                    <span
-                                        className={`text-xs font-mono font-semibold transition-colors ${
-                                            isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                                        }`}
-                                    >
-                                        {isPositive
-                                            ? `+${currentChange.toFixed(2)}`
-                                            : currentChange.toFixed(2)}{" "}
-                                        (
-                                        {isPositive
-                                            ? `+${currentChangePercent.toFixed(2)}%`
-                                            : `${currentChangePercent.toFixed(2)}%`}
-                                        )
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* View Switcher & Quick Order Buttons */}
-                            <div className="flex items-center gap-3">
-                                {/* View Mode Toggle Pills */}
-                                <div className="flex items-center bg-dash-card p-0.5 rounded-lg border border-dash-border">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleViewModeChange("chart")}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-150 cursor-pointer ${
-                                            activeViewMode === "chart"
-                                                ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border font-semibold"
-                                                : "text-dash-text-muted hover:text-dash-text border border-transparent"
-                                        }`}
-                                    >
-                                        Chart
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => handleViewModeChange("overview")}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-150 cursor-pointer ${
-                                            activeViewMode === "overview"
-                                                ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border font-semibold"
-                                                : "text-dash-text-muted hover:text-dash-text border border-transparent"
-                                        }`}
-                                    >
-                                        Overview
-                                    </button>
-                                </div>
-
-                                {/* Quick Buy/Sell Buttons (Like Zerodha / Kite Header) */}
-                                {activeItem.stock.type !== "INDEX" && activeItem.stock.isTradable && (
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleBuy(activeItem)}
-                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#00873e] hover:bg-[#009c48] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
-                                        >
-                                            <span>BUY</span>
-                                            <span className="font-mono text-[11px] opacity-90">
-                                                @ {formatINR(currentPrice)}
-                                            </span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSell(activeItem)}
-                                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#c83200] hover:bg-[#df3d17] rounded-md transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
-                                        >
-                                            <span>SELL</span>
-                                            <span className="font-mono text-[11px] opacity-90">
-                                                @ {formatINR(currentPrice)}
-                                            </span>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                {activeItem ? (
+                    <div className="w-full h-full overflow-hidden relative">
+                        <div
+                            className={`w-full h-full transition-opacity duration-150 ${
+                                activeViewMode === "chart"
+                                    ? "opacity-100 z-10"
+                                    : "opacity-0 z-0 pointer-events-none absolute inset-0"
+                            }`}
+                        >
+                            <StockChart
+                                symbol={activeItem.stock.symbol}
+                                exchange={activeItem.stock.exchange}
+                                stockName={activeItem.stock.name}
+                                isTradable={activeItem.stock.isTradable}
+                                stockType={activeItem.stock.type}
+                                onSymbolChange={handleChartSymbolChange}
+                                onBuy={() => handleBuy(activeItem)}
+                                onSell={() => handleSell(activeItem)}
+                            />
                         </div>
 
-                        {/* Dynamic Main View Area */}
-                        <div className="flex-1 overflow-hidden relative">
-                            <div
-                                className={`w-full h-full transition-opacity duration-150 ${
-                                    activeViewMode === "chart"
-                                        ? "opacity-100 z-10"
-                                        : "opacity-0 z-0 pointer-events-none absolute inset-0"
-                                }`}
-                            >
-                                <StockChart
-                                    symbol={activeItem.stock.symbol}
-                                    exchange={activeItem.stock.exchange}
-                                    stockName={activeItem.stock.name}
-                                    isTradable={activeItem.stock.isTradable}
-                                    stockType={activeItem.stock.type}
-                                    onPriceTick={handlePriceTick}
-                                    onSymbolChange={handleChartSymbolChange}
-                                    onBuy={() => handleBuy(activeItem)}
-                                    onSell={() => handleSell(activeItem)}
-                                />
-                            </div>
-
-                            <div
-                                className={`w-full h-full transition-opacity duration-150 ${
-                                    activeViewMode === "overview"
-                                        ? "opacity-100 z-10"
-                                        : "opacity-0 z-0 pointer-events-none absolute inset-0"
-                                }`}
-                            >
-                                <StockOverviewPanel
-                                    item={activeItem}
-                                    onOpenChart={handleOpenChart}
-                                    onBuy={handleBuy}
-                                    onSell={handleSell}
-                                />
-                            </div>
+                        <div
+                            className={`w-full h-full transition-opacity duration-150 ${
+                                activeViewMode === "overview"
+                                    ? "opacity-100 z-10"
+                                    : "opacity-0 z-0 pointer-events-none absolute inset-0"
+                            }`}
+                        >
+                            <StockOverviewPanel
+                                item={activeItem}
+                                onOpenChart={handleOpenChart}
+                                onBuy={handleBuy}
+                                onSell={handleSell}
+                            />
                         </div>
-                    </>
+                    </div>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-dash-text-muted space-y-3">
                         <div className="w-14 h-14 rounded-full bg-dash-card flex items-center justify-center text-dash-text-muted border border-dash-border">

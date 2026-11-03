@@ -19,6 +19,7 @@ export const StockCard: React.FC<StockCardProps> = ({
     isSelected,
     onSelect,
     onOpenChart,
+    onOpenOverview,
     onBuy,
     onSell,
     onDelete,
@@ -105,6 +106,30 @@ export const StockCard: React.FC<StockCardProps> = ({
                         S
                     </button>
                 )}
+
+                {/* Overview Button (Stock Fundamentals & Performance Overview) */}
+                <button
+                    type="button"
+                    onClick={() => (onOpenOverview ? onOpenOverview(item) : onSelect(item))}
+                    className="w-7 h-7 rounded-[3px] border border-white/20 hover:border-white/40 bg-[#1e2024] hover:bg-[#282c34] text-white transition-colors cursor-pointer flex items-center justify-center"
+                    title="Stock Overview"
+                    aria-label="Stock Overview"
+                >
+                    <svg
+                        className="w-3.5 h-3.5 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <rect x="3" y="3" width="7" height="9" rx="1" />
+                        <rect x="14" y="3" width="7" height="5" rx="1" />
+                        <rect x="14" y="12" width="7" height="9" rx="1" />
+                        <rect x="3" y="16" width="7" height="5" rx="1" />
+                    </svg>
+                </button>
 
                 {/* Chart Button (Candlestick Bars Icon) */}
                 <button
