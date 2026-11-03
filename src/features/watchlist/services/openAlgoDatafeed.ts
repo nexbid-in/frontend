@@ -155,13 +155,29 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
         const nowMs = Date.now();
         const alignedNowMs = Math.floor(nowMs / (intervalSec * 1000)) * (intervalSec * 1000);
 
+        const isPagination = typeof (req as { before?: number }).before === "number";
+
         const targetToMs =
             typeof req.to === "number" && req.to > 0 ? req.to * 1000 : alignedNowMs;
 
-        const targetFromMs =
-            typeof req.from === "number" && req.from > 0 && req.from * 1000 < targetToMs
-                ? req.from * 1000
-                : targetToMs - lookbackMs;
+        let targetFromMs: number;
+        if (isPagination) {
+            // Backward scrolling pagination: respect the specific time window requested
+            targetFromMs =
+                typeof req.from === "number" && req.from > 0 && req.from * 1000 < targetToMs
+                    ? req.from * 1000
+                    : targetToMs - lookbackMs;
+        } else {
+            // Initial load: ensure we look back at least lookbackMs so that
+            // Indian market stock sessions (6.25 hrs/day, 5 days/week) yield enough
+            // candles to fill the entire visible canvas rather than leaving empty space.
+            const requestedFromMs =
+                typeof req.from === "number" && req.from > 0 ? req.from * 1000 : null;
+            const fullLookbackFromMs = targetToMs - lookbackMs;
+            targetFromMs = requestedFromMs
+                ? Math.min(requestedFromMs, fullLookbackFromMs)
+                : fullLookbackFromMs;
+        }
 
         try {
             const rawCandles = await marketService.getHistoricalCandles({

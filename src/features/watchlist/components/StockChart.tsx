@@ -368,6 +368,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                     symbol: activeSymbolRef.current,
                     exchange: activeExchangeRef.current,
                     interval: "15m",
+                    lookbackBars: 2500,
                     theme: isDarkRef.current ? "dark" : "light",
                     timezone: "Asia/Kolkata", // Native Indian Standard Time (IST)
                     branding: false, // Hide OpenAlgo corner watermark logo
