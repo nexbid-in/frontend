@@ -116,10 +116,11 @@ html:has(::view-transition-old(root)) * {
   transition: none !important;
 }
 
-/* OpenAlgo Charts: Hide unused topbar buttons */
+/* OpenAlgo Charts: Hide unused topbar buttons & raw internal data status banner */
 .oac-topbar__objects,
 .oac-topbar__data,
-.oac-topbar__theme {
+.oac-topbar__theme,
+.oac-data-status {
   display: none !important;
 }
 

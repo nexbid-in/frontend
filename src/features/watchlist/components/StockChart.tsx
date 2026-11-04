@@ -173,6 +173,10 @@ export const StockChart: React.FC<StockChartProps> = ({
     // Production loading & error state management (Zerodha / Fyers style)
     const [isChartLoading, setIsChartLoading] = useState<boolean>(true);
     const [chartError, setChartError] = useState<string | null>(null);
+    const [isStaleData, setIsStaleData] = useState<boolean>(false);
+    const [isChartEmpty, setIsChartEmpty] = useState<boolean>(false);
+    const [isRetrying, setIsRetrying] = useState<boolean>(false);
+    const isRetryingRef = useRef<boolean>(false);
 
     // Fullscreen state management & topbar Portal target
     const [topbarElement, setTopbarElement] = useState<HTMLElement | null>(null);
@@ -188,7 +192,15 @@ export const StockChart: React.FC<StockChartProps> = ({
         setLatestBar(null);
         setIsChartLoading(true);
         setChartError(null);
+        setIsStaleData(false);
+        setIsChartEmpty(false);
+        setIsRetrying(false);
     }
+
+    // Reset retry ref whenever active symbol changes
+    useEffect(() => {
+        isRetryingRef.current = false;
+    }, [symbol]);
 
     // Keep callbacks updated on datafeed instance
     const onPriceTickRef = useRef(onPriceTick);
@@ -378,17 +390,44 @@ export const StockChart: React.FC<StockChartProps> = ({
         return () => window.clearTimeout(timer);
     }, [isChartLoading, symbol]);
 
-    // Retry callback for user to re-trigger chart loading on error or timeout
+    // Retry callback for user to re-trigger chart loading on error or timeout without UI flicker
     const handleRetry = useCallback(() => {
-        setIsChartLoading(true);
-        setChartError(null);
+        if (isRetryingRef.current) return;
+        isRetryingRef.current = true;
+        setIsRetrying(true);
+        const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 500));
+
+        if (datafeedRef.current) {
+            datafeedRef.current.clearCache(activeSymbolRef.current);
+        }
         if (widgetRef.current) {
             try {
-                widgetRef.current.setSymbol(activeSymbolRef.current, activeExchangeRef.current);
+                const w = widgetRef.current as Widget & { reload?: () => Promise<void> };
+                if (typeof w.reload === "function") {
+                    Promise.allSettled([w.reload(), minDelayPromise]).finally(() => {
+                        isRetryingRef.current = false;
+                        setIsRetrying(false);
+                    });
+                } else {
+                    w.setSymbol(activeSymbolRef.current, activeExchangeRef.current);
+                    minDelayPromise.then(() => {
+                        isRetryingRef.current = false;
+                        setIsRetrying(false);
+                    });
+                }
                 enforceChartPriceFormatters(widgetRef.current);
             } catch (err) {
                 console.warn("[StockChart] Error retrying chart load:", err);
+                minDelayPromise.then(() => {
+                    isRetryingRef.current = false;
+                    setIsRetrying(false);
+                });
             }
+        } else {
+            minDelayPromise.then(() => {
+                isRetryingRef.current = false;
+                setIsRetrying(false);
+            });
         }
     }, []);
 
@@ -427,9 +466,21 @@ export const StockChart: React.FC<StockChartProps> = ({
             });
             feed.setOnStatusListener((status: DataFeedStatus) => {
                 if (status.symbol === activeSymbolRef.current) {
-                    setIsChartLoading(status.isLoading);
+                    if (status.isLoading) {
+                        // If retry is in flight, do NOT clear existing chartError to keep Error Card rock-solid
+                        if (!isRetryingRef.current) {
+                            setIsChartLoading(true);
+                            setChartError(null);
+                        }
+                        return;
+                    }
+
+                    // Request finished (success or failure)
+                    setIsChartLoading(false);
                     setChartError(status.error);
-                    if (!status.isLoading && !status.error) {
+                    setIsStaleData(Boolean(status.isStale));
+                    setIsChartEmpty(!status.error && status.barCount === 0);
+                    if (!status.error) {
                         enforceChartPriceFormatters(widgetRef.current);
                     }
                 }
@@ -498,6 +549,10 @@ export const StockChart: React.FC<StockChartProps> = ({
                         setLatestBar(null);
                         setIsChartLoading(true);
                         setChartError(null);
+                        setIsStaleData(false);
+                        setIsChartEmpty(false);
+                        setIsRetrying(false);
+                        isRetryingRef.current = false;
                         enforceChartPriceFormatters(widget);
                         onSymbolChangeRef.current?.(newSym, newExch);
                     }
@@ -592,24 +647,26 @@ export const StockChart: React.FC<StockChartProps> = ({
     const fallbackQuote = getStockMarketQuote(symbol);
 
     // Live market price / last traded price (LTP) strictly for BUY & SELL execution buttons.
-    // Must NEVER change when the user moves the crosshair over historical candles.
-    const currentMarketPrice = latestBar ? latestBar.close : fallbackQuote.price;
+    // When chart is empty or in hard error with no data, price is null to avoid deceptive fake quotes.
+    const currentMarketPrice = latestBar
+        ? latestBar.close
+        : isChartEmpty || chartError
+        ? null
+        : fallbackQuote.price;
 
     // Crosshair hover bar or latest bar for top-left OHLC historical inspection readout
     const activeBar = hoverBar || latestBar;
 
-    const openVal = activeBar ? activeBar.open : fallbackQuote.price;
-    const highVal = activeBar ? activeBar.high : fallbackQuote.price;
-    const lowVal = activeBar ? activeBar.low : fallbackQuote.price;
-    const closeVal = activeBar ? activeBar.close : fallbackQuote.price;
+    const openVal = activeBar ? activeBar.open : null;
+    const highVal = activeBar ? activeBar.high : null;
+    const lowVal = activeBar ? activeBar.low : null;
+    const closeVal = activeBar ? activeBar.close : null;
 
-    const diff = activeBar ? closeVal - openVal : fallbackQuote.change;
-    const diffPercent = activeBar
-        ? openVal > 0
-            ? (diff / openVal) * 100
-            : 0
-        : fallbackQuote.changePercent;
-    const isUp = diff >= 0;
+    const diff = activeBar && openVal !== null && closeVal !== null ? closeVal - openVal : null;
+    const diffPercent = activeBar && openVal && diff !== null
+        ? (diff / openVal) * 100
+        : null;
+    const isUp = (diff ?? 0) >= 0;
     const valueColor = isUp ? "text-[#22c55e]" : "text-[#ef4444]";
 
     const canTrade = stockType !== "INDEX" && isTradable;
@@ -632,22 +689,22 @@ export const StockChart: React.FC<StockChartProps> = ({
             {/* Zerodha & Fyers Production Loading / Error Fallback Overlay */}
             {(isChartLoading || chartError) && (
                 <div
-                    className={`absolute inset-0 z-40 flex items-center justify-center select-none backdrop-blur-xs transition-all duration-200 ${
-                        isDark ? "bg-[#131722]/85" : "bg-white/85"
+                    className={`absolute inset-0 z-40 flex items-center justify-center select-none backdrop-blur-xs transition-colors duration-150 ${
+                        isDark ? "bg-[#131722]/90" : "bg-white/90"
                     }`}
                 >
-                    {isChartLoading ? (
-                        /* Minimalist clean spinner only (TradingView & Fyers style) */
+                    {isChartLoading && !chartError ? (
+                        /* Minimalist clean spinner only on initial load (TradingView & Fyers style) */
                         <div className="relative w-10 h-10 flex items-center justify-center animate-in fade-in duration-150">
                             <div className="w-10 h-10 rounded-full border-3 border-emerald-500/20" />
                             <div className="absolute inset-0 w-10 h-10 rounded-full border-3 border-transparent border-t-emerald-500 animate-spin" />
                         </div>
                     ) : (
                         <div
-                            className={`flex flex-col items-center justify-center p-6 rounded-2xl border shadow-2xl max-w-sm w-full mx-4 text-center animate-in fade-in zoom-in-95 duration-150 ${
+                            className={`flex flex-col items-center justify-center p-6 rounded-2xl border shadow-2xl max-w-sm w-full mx-4 text-center ${
                                 isDark
-                                    ? "bg-[#1e222d]/95 border-white/10 text-white"
-                                    : "bg-white/95 border-gray-200 text-gray-900"
+                                    ? "bg-[#1e222d] border-white/10 text-white"
+                                    : "bg-white border-gray-200 text-gray-900"
                             }`}
                         >
                             {/* Alert/Warning Icon */}
@@ -674,24 +731,118 @@ export const StockChart: React.FC<StockChartProps> = ({
 
                             <button
                                 type="button"
+                                disabled={isRetrying}
                                 onClick={handleRetry}
-                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all shadow-md cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-75 disabled:cursor-wait active:scale-95 transition-all shadow-md cursor-pointer"
                             >
-                                <svg
-                                    className="w-3.5 h-3.5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                                </svg>
-                                <span>Retry Loading</span>
+                                {isRetrying ? (
+                                    <>
+                                        <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        <span>Retrying...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg
+                                            className="w-3.5 h-3.5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                                        </svg>
+                                        <span>Retry Loading</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Centered Intentional Empty State (When stock genuinely has 0 candles) */}
+            {isChartEmpty && !isChartLoading && !chartError && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center select-none pointer-events-none">
+                    <div
+                        className={`flex flex-col items-center justify-center p-6 rounded-2xl border shadow-xl max-w-sm w-full mx-4 text-center pointer-events-auto animate-in fade-in zoom-in-95 duration-150 ${
+                            isDark
+                                ? "bg-[#1e222d]/95 border-white/10 text-white"
+                                : "bg-white/95 border-gray-200 text-gray-900"
+                        }`}
+                    >
+                        <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3">
+                            <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
+                            </svg>
+                        </div>
+                        <h3 className="text-sm font-semibold mb-1">No Trading Data for {symbol}</h3>
+                        <p className="text-xs text-[#787b86] mb-2 leading-relaxed">
+                            There are no historical trades recorded for the {activeInterval} timeframe.
+                        </p>
+                        <p className="text-[11px] text-[#787b86]/80 mb-4">
+                            Try switching to a higher timeframe like 1D or check another symbol.
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (widgetRef.current) {
+                                        widgetRef.current.setInterval("1D");
+                                        setActiveInterval("1D");
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all shadow-md cursor-pointer"
+                            >
+                                <span>Switch to 1D</span>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isRetrying}
+                                onClick={handleRetry}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#787b86] hover:text-white bg-white/5 hover:bg-white/10 disabled:opacity-60 disabled:cursor-wait active:scale-95 transition-all cursor-pointer"
+                            >
+                                {isRetrying ? (
+                                    <>
+                                        <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        <span>Checking...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg
+                                            className="w-3.5 h-3.5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                                        </svg>
+                                        <span>Check Again</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -787,30 +938,51 @@ export const StockChart: React.FC<StockChartProps> = ({
                                 }`}
                             />
                         </span>
+
+                        {/* Stale / Offline Mode Badge */}
+                        {isStaleData && (
+                            <div
+                                className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 border border-amber-500/25 text-amber-400 select-none animate-in fade-in"
+                                title="Market data feed is temporarily unreachable. Displaying cached historical candles."
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                <span>Cached (Offline)</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* OHLC and Change Values (TradingView Format) */}
                     <div className="flex items-center gap-2.5 font-mono text-[13px] tabular-nums tracking-tight">
                         <div className="flex items-center gap-0.5">
                             <span className="text-[#787b86] text-[12px] font-sans font-medium">O</span>
-                            <span className={valueColor}>{formatPrice(openVal)}</span>
+                            <span className={openVal !== null ? valueColor : "text-[#787b86]"}>
+                                {openVal !== null ? formatPrice(openVal) : "—"}
+                            </span>
                         </div>
                         <div className="flex items-center gap-0.5">
                             <span className="text-[#787b86] text-[12px] font-sans font-medium">H</span>
-                            <span className={valueColor}>{formatPrice(highVal)}</span>
+                            <span className={highVal !== null ? valueColor : "text-[#787b86]"}>
+                                {highVal !== null ? formatPrice(highVal) : "—"}
+                            </span>
                         </div>
                         <div className="flex items-center gap-0.5">
                             <span className="text-[#787b86] text-[12px] font-sans font-medium">L</span>
-                            <span className={valueColor}>{formatPrice(lowVal)}</span>
+                            <span className={lowVal !== null ? valueColor : "text-[#787b86]"}>
+                                {lowVal !== null ? formatPrice(lowVal) : "—"}
+                            </span>
                         </div>
                         <div className="flex items-center gap-0.5">
                             <span className="text-[#787b86] text-[12px] font-sans font-medium">C</span>
-                            <span className={valueColor}>{formatPrice(closeVal)}</span>
+                            <span className={closeVal !== null ? valueColor : "text-[#787b86]"}>
+                                {closeVal !== null ? formatPrice(closeVal) : "—"}
+                            </span>
                         </div>
-                        <div className={`font-semibold ${valueColor}`}>
-                            {isUp ? `+${diff.toFixed(2)}` : diff.toFixed(2)}{" "}
-                            ({isUp ? `+${diffPercent.toFixed(2)}%` : `${diffPercent.toFixed(2)}%`})
-                        </div>
+                        {diff !== null && diffPercent !== null && (
+                            <div className={`font-semibold ${valueColor}`}>
+                                {isUp ? `+${diff.toFixed(2)}` : diff.toFixed(2)}{" "}
+                                ({isUp ? `+${diffPercent.toFixed(2)}%` : `${diffPercent.toFixed(2)}%`})
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -820,12 +992,15 @@ export const StockChart: React.FC<StockChartProps> = ({
                         {/* SELL Button (Matching Topbar Red-Orange Color) */}
                         <button
                             type="button"
+                            disabled={currentMarketPrice === null}
                             onClick={onSell}
-                            title={`Sell ${symbol}`}
-                            className="flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#c83200] bg-[#c83200]/10 hover:bg-[#c83200]/20 active:scale-95 transition-all cursor-pointer shadow-xs group"
+                            title={currentMarketPrice === null ? "Market data unavailable" : `Sell ${symbol}`}
+                            className={`flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#c83200] bg-[#c83200]/10 hover:bg-[#c83200]/20 active:scale-95 transition-all shadow-xs group ${
+                                currentMarketPrice === null ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                            }`}
                         >
                             <span className="font-mono text-xs font-bold text-[#c83200] group-hover:brightness-110">
-                                {formatINR(currentMarketPrice)}
+                                {currentMarketPrice !== null ? formatINR(currentMarketPrice) : "₹ —"}
                             </span>
                             <span className="text-[10px] font-bold text-[#c83200] tracking-wider">
                                 SELL
@@ -843,12 +1018,15 @@ export const StockChart: React.FC<StockChartProps> = ({
                         {/* BUY Button (Matching Topbar Green Color) */}
                         <button
                             type="button"
+                            disabled={currentMarketPrice === null}
                             onClick={onBuy}
-                            title={`Buy ${symbol}`}
-                            className="flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#00873e] bg-[#00873e]/10 hover:bg-[#00873e]/20 active:scale-95 transition-all cursor-pointer shadow-xs group"
+                            title={currentMarketPrice === null ? "Market data unavailable" : `Buy ${symbol}`}
+                            className={`flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#00873e] bg-[#00873e]/10 hover:bg-[#00873e]/20 active:scale-95 transition-all shadow-xs group ${
+                                currentMarketPrice === null ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                            }`}
                         >
                             <span className="font-mono text-xs font-bold text-[#00873e] group-hover:brightness-110">
-                                {formatINR(currentMarketPrice)}
+                                {currentMarketPrice !== null ? formatINR(currentMarketPrice) : "₹ —"}
                             </span>
                             <span className="text-[10px] font-bold text-[#00873e] tracking-wider">
                                 BUY

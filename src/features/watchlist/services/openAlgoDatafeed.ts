@@ -9,7 +9,6 @@ import type {
 } from "openalgo-charts";
 import { marketService } from "./marketService";
 import { stockService } from "./stockService";
-import { getStockMarketQuote } from "../utils/stockPriceHelper";
 import { env } from "@/config/env";
 
 export type TickListener = (
@@ -118,6 +117,7 @@ export interface DataFeedStatus {
     interval: string;
     error: string | null;
     barCount?: number;
+    isStale?: boolean;
 }
 
 export type StatusListener = (status: DataFeedStatus) => void;
@@ -129,12 +129,14 @@ export type StatusListener = (status: DataFeedStatus) => void;
  * - Handles live tick streaming & candle forming over WebSocket
  * - Integrates native Symbol Search against Nexbid's stock database
  * - Broadcasts loading and error lifecycle events for smooth UI fallback
+ * - Retains in-memory Stale-While-Revalidate cache to survive upstream drops
  */
 export class NexbidOpenAlgoDataFeed implements DataFeed {
     private ws: WebSocket | null = null;
     private reconnectTimeout: number | null = null;
     private isDestroyed = false;
     private subscribers = new Map<string, ActiveSubscription>();
+    private memoryCache = new Map<string, { bars: Bar[]; timestamp: number }>();
     private onTickCallback?: TickListener;
     private onBarListener?: BarListener;
     private onStatusListener?: StatusListener;
@@ -154,6 +156,22 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
 
     public setOnStatusListener(cb?: StatusListener): void {
         this.onStatusListener = cb;
+    }
+
+    /**
+     * Clear cached historical bars to force fresh fetch on manual user retry
+     */
+    public clearCache(symbol?: string): void {
+        if (symbol) {
+            const sym = symbol.toUpperCase().trim();
+            for (const key of this.memoryCache.keys()) {
+                if (key.startsWith(`${sym}_`)) {
+                    this.memoryCache.delete(key);
+                }
+            }
+        } else {
+            this.memoryCache.clear();
+        }
     }
 
     /**
@@ -251,6 +269,24 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                         }
                     }
 
+                    const cacheKey = `${symbol}_${resolution}`;
+                    const existing = this.memoryCache.get(cacheKey);
+                    if (existing && existing.bars.length > 0) {
+                        const combined = [...existing.bars, ...uniqueBars];
+                        combined.sort((a, b) => a.time - b.time);
+                        const dedupe: Bar[] = [];
+                        for (const b of combined) {
+                            if (dedupe.length > 0 && dedupe[dedupe.length - 1].time === b.time) {
+                                dedupe[dedupe.length - 1] = b;
+                            } else {
+                                dedupe.push(b);
+                            }
+                        }
+                        this.memoryCache.set(cacheKey, { bars: dedupe, timestamp: Date.now() });
+                    } else {
+                        this.memoryCache.set(cacheKey, { bars: uniqueBars, timestamp: Date.now() });
+                    }
+
                     // Loading complete successfully
                     this.onStatusListener?.({
                         isLoading: false,
@@ -258,46 +294,95 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                         interval: req.interval,
                         error: null,
                         barCount: uniqueBars.length,
+                        isStale: false,
                     });
 
                     return uniqueBars;
                 }
             }
 
-            // Backend returned empty candles array
+            // Upstream returned 0 candles: check resilient memory cache before concluding empty
+            const cacheKey = `${symbol}_${resolution}`;
+            const stale = this.memoryCache.get(cacheKey);
+            if (stale && stale.bars.length > 0) {
+                console.warn(
+                    `[NexbidOpenAlgoDataFeed] Upstream returned 0 candles for ${symbol}; serving resilient cached candles`
+                );
+                const lastBar = stale.bars[stale.bars.length - 1];
+                this.onBarListener?.({ ...lastBar });
+                this.onStatusListener?.({
+                    isLoading: false,
+                    symbol,
+                    interval: req.interval,
+                    error: null,
+                    barCount: stale.bars.length,
+                    isStale: true,
+                });
+                return stale.bars;
+            }
+
+            // Genuinely empty dataset for this timeframe (e.g. illiquid symbol)
             this.onStatusListener?.({
                 isLoading: false,
                 symbol,
                 interval: req.interval,
                 error: null,
                 barCount: 0,
+                isStale: false,
             });
+            return [];
         } catch (err) {
             if (requestId === this.activeRequestId) {
                 console.warn(`[NexbidOpenAlgoDataFeed] Error fetching history for ${symbol}:`, err);
-                const errMsg = err instanceof Error ? err.message : "Failed to load market data";
+
+                // Backward pagination failure should never wipe out or mask the existing active chart
+                if (isPagination) {
+                    this.onStatusListener?.({
+                        isLoading: false,
+                        symbol,
+                        interval: req.interval,
+                        error: null,
+                    });
+                    return [];
+                }
+
+                const errMsg =
+                    err && typeof err === "object" && "message" in err && typeof (err as Error).message === "string"
+                        ? (err as Error).message
+                        : "Market data feed is temporarily unavailable. Please retry shortly.";
+
+                // Upstream outage / 503: check resilient memory cache to maintain user chart
+                const cacheKey = `${symbol}_${resolution}`;
+                const stale = this.memoryCache.get(cacheKey);
+                if (stale && stale.bars.length > 0) {
+                    console.warn(
+                        `[NexbidOpenAlgoDataFeed] Upstream unreachable for ${symbol}; serving resilient cached candles`
+                    );
+                    const lastBar = stale.bars[stale.bars.length - 1];
+                    this.onBarListener?.({ ...lastBar });
+                    this.onStatusListener?.({
+                        isLoading: false,
+                        symbol,
+                        interval: req.interval,
+                        error: null,
+                        barCount: stale.bars.length,
+                        isStale: true,
+                    });
+                    return stale.bars;
+                }
+
                 this.onStatusListener?.({
                     isLoading: false,
                     symbol,
                     interval: req.interval,
                     error: errMsg,
                     barCount: 0,
+                    isStale: false,
                 });
+                return [];
             }
+            return [];
         }
-
-        // Fallback baseline candle in case the backend returns empty data
-        const quote = getStockMarketQuote(symbol);
-        const fallbackTime = Math.floor(alignedNowMs / 1000);
-        const fallbackBar: Bar = {
-            time: fallbackTime,
-            open: quote.price,
-            high: quote.price,
-            low: quote.price,
-            close: quote.price,
-        };
-
-        return [fallbackBar];
     }
 
     /**
