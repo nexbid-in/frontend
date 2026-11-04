@@ -9,7 +9,7 @@ import type {
 } from "openalgo-charts";
 import { marketService } from "./marketService";
 import { stockService } from "./stockService";
-import { env } from "@/config/env";
+import { marketWebSocketService, type MarketTick } from "./marketWebSocketService";
 
 export type TickListener = (
     price: number,
@@ -19,11 +19,13 @@ export type TickListener = (
 ) => void;
 
 interface ActiveSubscription {
+    id: string;
     symbol: string;
     intervalSec: number;
     onBar: (bar: Bar, meta?: LiveBarMeta) => void;
     currentBar: Bar | null;
     startDayVolume?: number;
+    unsubWs?: () => void;
 }
 
 /**
@@ -132,8 +134,6 @@ export type StatusListener = (status: DataFeedStatus) => void;
  * - Retains in-memory Stale-While-Revalidate cache to survive upstream drops
  */
 export class NexbidOpenAlgoDataFeed implements DataFeed {
-    private ws: WebSocket | null = null;
-    private reconnectTimeout: number | null = null;
     private isDestroyed = false;
     private subscribers = new Map<string, ActiveSubscription>();
     private memoryCache = new Map<string, { bars: Bar[]; timestamp: number }>();
@@ -141,6 +141,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
     private onBarListener?: BarListener;
     private onStatusListener?: StatusListener;
     private activeRequestId = 0;
+    private nextSubscriptionId = 0;
 
     constructor(onTick?: TickListener) {
         this.onTickCallback = onTick;
@@ -394,29 +395,26 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
     ): UnsubscribeFn {
         const symbol = req.symbol.toUpperCase().trim();
         const intervalSec = intervalToSeconds(req.interval);
-        const subKey = `${symbol}_${req.interval}`;
+        const subId = `sub_${++this.nextSubscriptionId}`;
 
         const subscription: ActiveSubscription = {
+            id: subId,
             symbol,
             intervalSec,
             onBar,
             currentBar: null,
         };
 
-        this.subscribers.set(subKey, subscription);
+        // Subscribe to live ticks from shared reference-counted market WebSocket service
+        subscription.unsubWs = marketWebSocketService.subscribe(symbol, (tick) => {
+            this.handleLiveTick(tick);
+        });
 
-        // Ensure WebSocket is open and subscribed
-        this.ensureWebSocketConnection();
-        this.sendWsSubscription(symbol);
+        this.subscribers.set(subId, subscription);
 
         return () => {
-            this.subscribers.delete(subKey);
-            const hasOtherSubsForSymbol = Array.from(this.subscribers.values()).some(
-                (s) => s.symbol === symbol
-            );
-            if (!hasOtherSubsForSymbol) {
-                this.sendWsUnsubscription(symbol);
-            }
+            subscription.unsubWs?.();
+            this.subscribers.delete(subId);
         };
     }
 
@@ -450,214 +448,104 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
     }
 
     // ==========================================
-    // Internal WebSocket & Live Tick Handling
+    // Internal Live Tick Handling & Candle Aggregation
     // ==========================================
 
-    private ensureWebSocketConnection(): void {
-        if (this.isDestroyed) return;
-        if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
-            return;
-        }
+    private handleLiveTick(tick: MarketTick): void {
+        const sym = tick.symbol;
+        const ltp = tick.ltp;
+        const tickVolume = tick.volume;
+        const tickTimeSec =
+            tick.timestamp > 1e11 ? Math.floor(tick.timestamp / 1000) : tick.timestamp;
 
-        const wsUrl = `${env.WS_URL}/ws/market-feed`;
+        const marketOpen = isIndianMarketOpen(tick.timestamp);
 
-        try {
-            const socket = new WebSocket(wsUrl);
-            this.ws = socket;
+        // Deliver live bar updates to matching subscribers
+        for (const sub of this.subscribers.values()) {
+            if (sub.symbol === sym) {
+                const bucketStart =
+                    Math.floor(tickTimeSec / sub.intervalSec) * sub.intervalSec;
 
-            socket.onopen = () => {
-                if (this.isDestroyed) {
-                    socket.close();
-                    return;
-                }
-                // Resubscribe to all active unique symbols upon open
-                const uniqueSymbols = new Set(
-                    Array.from(this.subscribers.values()).map((s) => s.symbol)
-                );
-                uniqueSymbols.forEach((sym) => this.sendWsSubscription(sym));
-            };
-
-            socket.onmessage = (event: MessageEvent) => {
-                this.handleWsMessage(event.data);
-            };
-
-            socket.onerror = (err) => {
-                console.warn("[NexbidOpenAlgoDataFeed] WebSocket error:", err);
-            };
-
-            socket.onclose = () => {
-                this.ws = null;
-                if (!this.isDestroyed && this.subscribers.size > 0 && !this.reconnectTimeout) {
-                    this.reconnectTimeout = window.setTimeout(() => {
-                        this.reconnectTimeout = null;
-                        this.ensureWebSocketConnection();
-                    }, 2000);
-                }
-            };
-        } catch (err) {
-            console.warn("[NexbidOpenAlgoDataFeed] Failed to open WebSocket:", err);
-        }
-    }
-
-    private sendWsSubscription(symbol: string): void {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            try {
-                this.ws.send(
-                    JSON.stringify({
-                        action: "subscribe",
-                        symbol,
-                    })
-                );
-            } catch {
-                // Ignore socket send errors
-            }
-        }
-    }
-
-    private sendWsUnsubscription(symbol: string): void {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            try {
-                this.ws.send(
-                    JSON.stringify({
-                        action: "unsubscribe",
-                        symbol,
-                    })
-                );
-            } catch {
-                // Ignore socket send errors
-            }
-        }
-    }
-
-    private handleWsMessage(raw: unknown): void {
-        try {
-            const text = typeof raw === "string" ? raw : String(raw);
-            const payload = JSON.parse(text);
-
-            if (payload?.type === "TICK" && typeof payload.symbol === "string") {
-                const sym = payload.symbol.toUpperCase().trim();
-                const ltp = Number(payload.data?.ltp);
-                if (isNaN(ltp) || ltp <= 0) return;
-
-                const tickVolume =
-                    typeof payload.data?.volume === "number" && !isNaN(payload.data.volume)
-                        ? Number(payload.data.volume)
-                        : undefined;
-                const rawTimestamp =
-                    typeof payload.data?.timestamp === "number" && payload.data.timestamp > 0
-                        ? payload.data.timestamp
-                        : Date.now();
-                const tickTimeSec =
-                    rawTimestamp > 1e11 ? Math.floor(rawTimestamp / 1000) : rawTimestamp;
-
-                const marketOpen = isIndianMarketOpen(rawTimestamp);
-
-                // Deliver live bar updates to matching subscribers
-                for (const sub of this.subscribers.values()) {
-                    if (sub.symbol === sym) {
-                        const bucketStart =
-                            Math.floor(tickTimeSec / sub.intervalSec) * sub.intervalSec;
-
-                        // 1. Off-market hours (night / weekend / before 9:15 or after 15:30):
-                        // Do NOT create ghost candles or overwrite historical candle volume with cumulative day volume.
-                        if (!marketOpen) {
-                            if (sub.currentBar) {
-                                sub.currentBar = {
-                                    ...sub.currentBar,
-                                    close: ltp,
-                                };
-                                sub.onBar({ ...sub.currentBar });
-                                this.onBarListener?.({ ...sub.currentBar });
-                            }
-                            continue;
-                        }
-
-                        // 2. Active market hours: handle real-time candle formation and delta volume
-                        if (!sub.currentBar || bucketStart > sub.currentBar.time) {
-                            // Period rolled over or new candle formation
-                            let initialCandleVol: number | undefined;
-                            if (tickVolume !== undefined) {
-                                if (tickVolume > 10_000) {
-                                    // Fyers cumulative day volume: reset baseline for this new candle
-                                    sub.startDayVolume = tickVolume;
-                                    initialCandleVol = 0;
-                                } else {
-                                    initialCandleVol = tickVolume;
-                                }
-                            }
-
-                            sub.currentBar = {
-                                time: bucketStart,
-                                open: sub.currentBar ? sub.currentBar.close : ltp,
-                                high: sub.currentBar ? Math.max(sub.currentBar.close, ltp) : ltp,
-                                low: sub.currentBar ? Math.min(sub.currentBar.close, ltp) : ltp,
-                                close: ltp,
-                                volume: initialCandleVol,
-                            };
-                        } else {
-                            // Intra-candle live update within active market hours
-                            let updatedVolume = sub.currentBar.volume;
-                            if (tickVolume !== undefined) {
-                                if (tickVolume > 10_000 && sub.startDayVolume !== undefined) {
-                                    // Subtract candle baseline so cumulative day volume doesn't inflate candle
-                                    updatedVolume = Math.max(0, tickVolume - sub.startDayVolume);
-                                } else if (tickVolume <= 10_000) {
-                                    // Incremental trade volume
-                                    updatedVolume = (sub.currentBar.volume ?? 0) + tickVolume;
-                                }
-                            }
-
-                            sub.currentBar = {
-                                ...sub.currentBar,
-                                high: Math.max(sub.currentBar.high, ltp),
-                                low: Math.min(sub.currentBar.low, ltp),
-                                close: ltp,
-                                volume: updatedVolume,
-                            };
-                        }
-
+                // 1. Off-market hours (night / weekend / before 9:15 or after 15:30):
+                // Do NOT create ghost candles or overwrite historical candle volume with cumulative day volume.
+                if (!marketOpen) {
+                    if (sub.currentBar) {
+                        sub.currentBar = {
+                            ...sub.currentBar,
+                            close: ltp,
+                        };
                         sub.onBar({ ...sub.currentBar });
                         this.onBarListener?.({ ...sub.currentBar });
                     }
+                    continue;
                 }
 
-                // Notify external quote listeners (e.g., Watchlist Header LTP pill)
-                if (this.onTickCallback) {
-                    const change =
-                        typeof payload.data?.change === "number" ? payload.data.change : 0;
-                    const changePercent =
-                        typeof payload.data?.changePercent === "number"
-                            ? payload.data.changePercent
-                            : 0;
-                    this.onTickCallback(ltp, change, changePercent, sym);
+                // 2. Active market hours: handle real-time candle formation and delta volume
+                if (!sub.currentBar || bucketStart > sub.currentBar.time) {
+                    // Period rolled over or new candle formation
+                    let initialCandleVol: number | undefined;
+                    if (tickVolume !== undefined) {
+                        if (tickVolume > 10_000) {
+                            // Fyers cumulative day volume: reset baseline for this new candle
+                            sub.startDayVolume = tickVolume;
+                            initialCandleVol = 0;
+                        } else {
+                            initialCandleVol = tickVolume;
+                        }
+                    }
+
+                    sub.currentBar = {
+                        time: bucketStart,
+                        open: sub.currentBar ? sub.currentBar.close : ltp,
+                        high: sub.currentBar ? Math.max(sub.currentBar.close, ltp) : ltp,
+                        low: sub.currentBar ? Math.min(sub.currentBar.close, ltp) : ltp,
+                        close: ltp,
+                        volume: initialCandleVol,
+                    };
+                } else {
+                    // Intra-candle live update within active market hours
+                    let updatedVolume = sub.currentBar.volume;
+                    if (tickVolume !== undefined) {
+                        if (tickVolume > 10_000 && sub.startDayVolume !== undefined) {
+                            // Subtract candle baseline so cumulative day volume doesn't inflate candle
+                            updatedVolume = Math.max(0, tickVolume - sub.startDayVolume);
+                        } else if (tickVolume <= 10_000) {
+                            // Incremental trade volume
+                            updatedVolume = (sub.currentBar.volume ?? 0) + tickVolume;
+                        }
+                    }
+
+                    sub.currentBar = {
+                        ...sub.currentBar,
+                        high: Math.max(sub.currentBar.high, ltp),
+                        low: Math.min(sub.currentBar.low, ltp),
+                        close: ltp,
+                        volume: updatedVolume,
+                    };
                 }
+
+                sub.onBar({ ...sub.currentBar });
+                this.onBarListener?.({ ...sub.currentBar });
             }
-        } catch (err) {
-            console.warn("[NexbidOpenAlgoDataFeed] Error parsing WS tick:", err);
+        }
+
+        // Notify external quote listeners (e.g., Watchlist Header LTP pill)
+        if (this.onTickCallback) {
+            this.onTickCallback(ltp, tick.change, tick.changePercent, sym);
         }
     }
 
     /**
-     * Teardown WebSocket connections and timers.
+     * Teardown active subscriptions and listeners.
      */
     destroy(): void {
         this.isDestroyed = true;
 
-        if (this.reconnectTimeout) {
-            window.clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
+        for (const sub of this.subscribers.values()) {
+            sub.unsubWs?.();
         }
-
-        if (this.ws) {
-            try {
-                this.ws.close();
-            } catch {
-                // Ignore socket close errors
-            }
-            this.ws = null;
-        }
-
         this.subscribers.clear();
+
         this.onTickCallback = undefined;
         this.onBarListener = undefined;
     }

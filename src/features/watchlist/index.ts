@@ -2,6 +2,7 @@ export * from "./types";
 export * from "./services/stockService";
 export * from "./services/marketService";
 export * from "./services/watchlistService";
+export * from "./services/marketWebSocketService";
 export * from "./services/openAlgoDatafeed";
 export * from "./hooks/useWatchlist";
 export * from "./components/StockCard";
