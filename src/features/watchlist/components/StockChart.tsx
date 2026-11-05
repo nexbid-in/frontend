@@ -128,6 +128,53 @@ function enforceChartPriceFormatters(widget: Widget | null): void {
 }
 
 /**
+ * Synchronize the volume indicator's cached values and legend with real-time ticks.
+ *
+ * OpenAlgo computes indicator values in batch during initial candle loading or on bucket close.
+ * During live market hours, intra-candle ticks update the primary/volume series renderer (and its
+ * right-side scale badge) but do NOT re-run indicator calculations to conserve CPU.
+ *
+ * This function injects the current live bar's volume into the volume indicator's values array
+ * (`ind._values.volume[lastIndex]`), ensuring that:
+ * 1. Default / resting state: Left-side legend matches the real-time right-side scale badge.
+ * 2. Crosshair hover: When inspecting a past candle, historical volume is preserved.
+ * 3. Off-market hours: Defaults to the last traded candle's volume.
+ */
+function syncVolumeIndicatorLegend(
+    widget: Widget | null,
+    liveBar: Bar | null,
+    isHoveringPastBar: boolean
+): void {
+    if (!widget || !widget.chart || !liveBar) return;
+    try {
+        const chartAny = widget.chart as unknown as {
+            indicators?: () => Array<{
+                indicatorId?: string;
+                _values?: { volume?: number[] };
+                _barCount?: number;
+                updateLegendValues?: (index?: number) => void;
+            }>;
+        };
+        const indicators = chartAny.indicators?.() || [];
+        for (const ind of indicators) {
+            if (ind.indicatorId === "volume") {
+                const count = ind._barCount || 0;
+                const volArray = ind._values?.volume;
+                if (Array.isArray(volArray) && volArray.length > 0) {
+                    const targetIdx = count > 0 ? count - 1 : volArray.length - 1;
+                    volArray[targetIdx] = liveBar.volume ?? 0;
+                }
+                if (!isHoveringPastBar && typeof ind.updateLegendValues === "function") {
+                    ind.updateLegendValues();
+                }
+            }
+        }
+    } catch (err) {
+        console.warn("[StockChart] Error syncing volume indicator legend:", err);
+    }
+}
+
+/**
  * Production-ready TradingView-style financial charting terminal powered by OpenAlgo Charts.
  * - Out-of-the-box topbar, left drawing rail (87 tools), 112 indicators, bottom timezone & range bar
  * - Top-left TradingView-style interactive legend with dynamic OHLCV & real-time crosshair inspection
@@ -168,6 +215,8 @@ export const StockChart: React.FC<StockChartProps> = ({
     // Interactive bar & crosshair states
     const [hoverBar, setHoverBar] = useState<Bar | null>(null);
     const [latestBar, setLatestBar] = useState<Bar | null>(null);
+    const latestBarRef = useRef<Bar | null>(null);
+    const isHoveringPastBarRef = useRef<boolean>(false);
     const [activeInterval, setActiveInterval] = useState<string>("15m");
 
     // Production loading & error state management (Zerodha / Fyers style)
@@ -197,9 +246,11 @@ export const StockChart: React.FC<StockChartProps> = ({
         setIsRetrying(false);
     }
 
-    // Reset retry ref whenever active symbol changes
+    // Reset refs whenever active symbol changes
     useEffect(() => {
         isRetryingRef.current = false;
+        latestBarRef.current = null;
+        isHoveringPastBarRef.current = false;
     }, [symbol]);
 
     // Keep callbacks updated on datafeed instance
@@ -462,7 +513,13 @@ export const StockChart: React.FC<StockChartProps> = ({
             // Create shared DataFeed instance
             const feed = new NexbidOpenAlgoDataFeed(onPriceTickRef.current);
             feed.setOnBarListener((bar) => {
+                latestBarRef.current = bar;
                 setLatestBar(bar);
+                syncVolumeIndicatorLegend(
+                    widgetRef.current,
+                    bar,
+                    isHoveringPastBarRef.current
+                );
             });
             feed.setOnStatusListener((status: DataFeedStatus) => {
                 if (status.symbol === activeSymbolRef.current) {
@@ -482,6 +539,13 @@ export const StockChart: React.FC<StockChartProps> = ({
                     setIsChartEmpty(!status.error && status.barCount === 0);
                     if (!status.error) {
                         enforceChartPriceFormatters(widgetRef.current);
+                        if (latestBarRef.current) {
+                            syncVolumeIndicatorLegend(
+                                widgetRef.current,
+                                latestBarRef.current,
+                                isHoveringPastBarRef.current
+                            );
+                        }
                     }
                 }
             });
@@ -547,6 +611,8 @@ export const StockChart: React.FC<StockChartProps> = ({
                         activeExchangeRef.current = newExch;
                         setHoverBar(null);
                         setLatestBar(null);
+                        latestBarRef.current = null;
+                        isHoveringPastBarRef.current = false;
                         setIsChartLoading(true);
                         setChartError(null);
                         setIsStaleData(false);
@@ -565,12 +631,23 @@ export const StockChart: React.FC<StockChartProps> = ({
                     }
                 });
 
-                // Track crosshair position for TradingView-style top-left OHLC live readout
+                // Track crosshair position for TradingView-style top-left OHLC live readout & volume legend
                 widget.chart.on("crosshair:move", (ev) => {
                     if (ev && ev.bar) {
                         setHoverBar(ev.bar);
+                        const isPast = Boolean(
+                            latestBarRef.current && ev.bar.time < latestBarRef.current.time
+                        );
+                        isHoveringPastBarRef.current = isPast;
+                        if (!isPast) {
+                            // Crosshair is resting or hovering active current bar: keep legend synchronized with live volume
+                            syncVolumeIndicatorLegend(widget, latestBarRef.current, false);
+                        }
                     } else {
                         setHoverBar(null);
+                        isHoveringPastBarRef.current = false;
+                        // Crosshair moved out of chart canvas: restore resting live volume in legend
+                        syncVolumeIndicatorLegend(widget, latestBarRef.current, false);
                     }
                 });
             } catch (err) {
