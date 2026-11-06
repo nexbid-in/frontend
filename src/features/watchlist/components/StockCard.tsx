@@ -90,7 +90,7 @@ export const StockCard: React.FC<StockCardProps> = ({
             {/* Zerodha Kite Style Floating Hover Action Toolbar */}
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1.5 bg-[#181a1f] p-1 rounded border border-dash-border shadow-lg z-10 animate-in fade-in zoom-in-95 duration-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1.5 bg-dash-card p-1 rounded border border-dash-border shadow-md z-10 animate-in fade-in zoom-in-95 duration-100"
             >
                 {/* Buy Button (Hidden for non-tradable Indices) */}
                 {!isIndex && stock.isTradable && (
@@ -120,12 +120,12 @@ export const StockCard: React.FC<StockCardProps> = ({
                 <button
                     type="button"
                     onClick={() => (onOpenOverview ? onOpenOverview(item) : onSelect(item))}
-                    className="w-7 h-7 rounded-[3px] border border-white/20 hover:border-white/40 bg-[#1e2024] hover:bg-[#282c34] text-white transition-colors cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 rounded-[3px] border border-dash-border hover:border-dash-border/80 bg-dash-panel-2 hover:bg-dash-nav-active text-dash-text-muted hover:text-dash-text transition-colors cursor-pointer flex items-center justify-center"
                     title="Stock Overview"
                     aria-label="Stock Overview"
                 >
                     <svg
-                        className="w-3.5 h-3.5 text-white"
+                        className="w-3.5 h-3.5"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -144,11 +144,11 @@ export const StockCard: React.FC<StockCardProps> = ({
                 <button
                     type="button"
                     onClick={() => onOpenChart(item)}
-                    className="w-7 h-7 rounded-[3px] border border-white/20 hover:border-white/40 bg-[#1e2024] hover:bg-[#282c34] text-white transition-colors cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 rounded-[3px] border border-dash-border hover:border-dash-border/80 bg-dash-panel-2 hover:bg-dash-nav-active text-dash-text-muted hover:text-dash-text transition-colors cursor-pointer flex items-center justify-center"
                     title="Trading Chart"
                     aria-label="Open Chart"
                 >
-                    <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                         <line x1="5" y1="9" x2="5" y2="19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         <rect x="3.5" y="11" width="3" height="6" rx="0.5" fill="currentColor" />
                         <line x1="12" y1="4" x2="12" y2="18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -163,11 +163,11 @@ export const StockCard: React.FC<StockCardProps> = ({
                     type="button"
                     disabled={isDeleting}
                     onClick={() => onDelete(stock.id)}
-                    className="w-7 h-7 rounded-[3px] border border-white/20 hover:border-red-500/50 hover:text-red-400 bg-[#1e2024] hover:bg-[#282c34] text-white transition-colors cursor-pointer flex items-center justify-center disabled:opacity-50"
+                    className="w-7 h-7 rounded-[3px] border border-dash-border hover:border-red-500/40 bg-dash-panel-2 hover:bg-red-500/10 text-dash-text-muted hover:text-red-500 transition-colors cursor-pointer flex items-center justify-center disabled:opacity-50"
                     title="Remove from Watchlist"
                     aria-label="Remove stock"
                 >
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 4h6" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
