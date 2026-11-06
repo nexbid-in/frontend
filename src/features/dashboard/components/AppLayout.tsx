@@ -7,6 +7,7 @@ import { queryClient } from "@/config/queryClient";
 
 import { hideToast, showToast } from "@/store/uiSlice";
 import { Toast, ConfirmModal, UserAvatar } from "@/components/ui";
+import { NavbarNiftyTicker } from "./NavbarNiftyTicker";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -90,13 +91,7 @@ export function AppLayout() {
                         nexbid
                     </Link>
 
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-dash-text-muted">NIFTY50 Index</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-sm font-semibold text-dash-text">25,492.30</span>
-                            <span className="text-xs font-medium text-[#ef4444]">-17.40 (-0.07%)</span>
-                        </div>
-                    </div>
+                    <NavbarNiftyTicker />
                 </div>
 
                 <div className="flex items-center gap-5">

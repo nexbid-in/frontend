@@ -20,6 +20,22 @@ interface ClientWsMessage {
     symbol: string;
 }
 
+export function getSymbolAliases(symbol: string): string[] {
+    const sym = symbol.toUpperCase().trim();
+    const spaceless = sym.replace(/\s+/g, "");
+    const aliases = new Set<string>([sym, spaceless]);
+    if (spaceless === "NIFTY50" || sym === "NIFTY 50" || sym === "NIFTY") {
+        aliases.add("NIFTY 50");
+        aliases.add("NIFTY50");
+        aliases.add("NIFTY");
+    } else if (spaceless === "BANKNIFTY" || sym === "NIFTY BANK" || spaceless === "NIFTYBANK") {
+        aliases.add("BANKNIFTY");
+        aliases.add("NIFTY BANK");
+        aliases.add("NIFTYBANK");
+    }
+    return Array.from(aliases);
+}
+
 /**
  * Shared Singleton WebSocket Service for Live Market Feeds.
  *
@@ -95,8 +111,11 @@ class MarketWebSocketService {
      * Get the most recently received tick for a symbol if available in memory.
      */
     public getLatestTick(symbol: string): MarketTick | undefined {
-        const sym = symbol.toUpperCase().trim();
-        return this.latestTicks.get(sym) || this.latestTicks.get(sym.replace(/\s+/g, ""));
+        for (const alias of getSymbolAliases(symbol)) {
+            const tick = this.latestTicks.get(alias);
+            if (tick) return tick;
+        }
+        return undefined;
     }
 
     /**
@@ -301,34 +320,25 @@ class MarketWebSocketService {
                     timestamp,
                 };
 
-                // Cache latest tick in memory
-                this.latestTicks.set(sym, tick);
-                const spaceless = sym.replace(/\s+/g, "");
-                if (spaceless !== sym) {
-                    this.latestTicks.set(spaceless, tick);
+                // Cache latest tick in memory for all aliases
+                const aliases = getSymbolAliases(sym);
+                for (const alias of aliases) {
+                    this.latestTicks.set(alias, tick);
                 }
 
-                // Dispatch to direct subscribers
-                const directSet = this.subscribers.get(sym);
-                if (directSet) {
-                    directSet.forEach((cb) => {
-                        try {
-                            cb(tick);
-                        } catch (err) {
-                            console.error("[MarketWebSocketService] Tick callback error:", err);
-                        }
-                    });
-                }
-
-                // Dispatch to spaceless alias subscribers (e.g. "TATA MOTORS" vs "TATAMOTORS")
-                if (spaceless !== sym) {
-                    const spacelessSet = this.subscribers.get(spaceless);
-                    if (spacelessSet) {
-                        spacelessSet.forEach((cb) => {
-                            try {
-                                cb(tick);
-                            } catch (err) {
-                                console.error("[MarketWebSocketService] Tick callback error:", err);
+                // Dispatch to all subscribers matching any alias (prevent duplicate invocation)
+                const notified = new Set<TickHandler>();
+                for (const alias of aliases) {
+                    const set = this.subscribers.get(alias);
+                    if (set) {
+                        set.forEach((cb) => {
+                            if (!notified.has(cb)) {
+                                notified.add(cb);
+                                try {
+                                    cb(tick);
+                                } catch (err) {
+                                    console.error("[MarketWebSocketService] Tick callback error:", err);
+                                }
                             }
                         });
                     }
