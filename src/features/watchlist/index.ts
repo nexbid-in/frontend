@@ -10,6 +10,7 @@ export * from "./hooks/useStockOverview";
 export * from "./utils/stockPriceHelper";
 export * from "./components/StockCard";
 export * from "./components/StockSearchDropdown";
+export * from "./components/StockSearchModal";
 export * from "./components/WatchlistSidebar";
 export * from "./components/StockChart";
 export * from "./components/StockOverviewPanel";
