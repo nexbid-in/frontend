@@ -99,17 +99,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         return data.pages.flatMap((page) => page.stocks);
     }, [data?.pages]);
 
-    // Global category counts from first page metadata
-    const counts = useMemo(() => {
-        return (
-            data?.pages[0]?.counts ?? {
-                all: 0,
-                equities: 0,
-                indices: 0,
-            }
-        );
-    }, [data?.pages]);
-
     // Infinite scroll observer
     useEffect(() => {
         const sentinelEl = sentinelRef.current;
@@ -261,58 +250,39 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                         <button
                             type="button"
                             onClick={() => setActiveTab("ALL")}
-                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                                 activeTab === "ALL"
                                     ? "bg-primary-green/10 text-primary-green border border-primary-green/25 font-semibold"
                                     : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
                             }`}
                         >
                             <span>All</span>
-                            {counts.all > 0 && (
-                                <span className="text-[10px] opacity-75 font-mono">({counts.all})</span>
-                            )}
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setActiveTab("EQUITY")}
-                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                                 activeTab === "EQUITY"
                                     ? "bg-primary-green/10 text-primary-green border border-primary-green/25 font-semibold"
                                     : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
                             }`}
                         >
                             <span>Stocks</span>
-                            {counts.equities > 0 && (
-                                <span className="text-[10px] opacity-75 font-mono">({counts.equities})</span>
-                            )}
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setActiveTab("INDEX")}
-                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                                 activeTab === "INDEX"
                                     ? "bg-primary-green/10 text-primary-green border border-primary-green/25 font-semibold"
                                     : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
                             }`}
                         >
                             <span>Indices</span>
-                            {counts.indices > 0 && (
-                                <span className="text-[10px] opacity-75 font-mono">({counts.indices})</span>
-                            )}
                         </button>
                     </div>
-
-                    {(isLoading || (isFetching && !isFetchingNextPage)) && (
-                        <div className="h-5 flex items-center gap-1.5 text-xs text-primary-green shrink-0">
-                            <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                            </svg>
-                            <span>Searching...</span>
-                        </div>
-                    )}
                 </div>
 
                 {/* Modal Results Body */}
@@ -320,25 +290,15 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                     ref={scrollContainerRef}
                     className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1"
                 >
-                    {isLoading ? (
-                        /* Skeleton Loading Rows */
-                        <div className="divide-y divide-dash-border/40">
-                            {Array.from({ length: 6 }).map((_, idx) => (
-                                <div key={idx} className="p-3 px-4 flex items-center justify-between animate-pulse">
-                                    <div className="space-y-2">
-                                        <div className="h-4 w-28 bg-dash-panel-2 rounded" />
-                                        <div className="h-3 w-48 bg-dash-panel-2 rounded" />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-3 w-8 bg-dash-panel-2 rounded" />
-                                        <div className="h-5 w-5 bg-dash-panel-2 rounded" />
-                                    </div>
-                                </div>
-                            ))}
+                    {isLoading || (isFetching && allStocks.length === 0) ? (
+                        /* Smooth Centered Loading Spinner in Symbol Listing Section */
+                        <div className="h-full min-h-[340px] flex flex-col items-center justify-center text-center space-y-3 animate-in fade-in duration-150">
+                            <div className="w-7 h-7 rounded-full border-2 border-primary-green/20 border-t-primary-green animate-spin" />
+                            <span className="text-xs text-dash-text-muted font-medium">Loading instruments...</span>
                         </div>
                     ) : allStocks.length === 0 ? (
                         /* No Results Found */
-                        <div className="h-full flex flex-col items-center justify-center py-12 text-center text-dash-text-muted space-y-2">
+                        <div className="h-full min-h-[340px] flex flex-col items-center justify-center py-12 text-center text-dash-text-muted space-y-2 animate-in fade-in duration-150">
                             <p className="text-sm font-medium text-dash-text">
                                 {debouncedQuery.trim()
                                     ? `No instruments found matching "${debouncedQuery}"`
@@ -351,8 +311,8 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                             </p>
                         </div>
                     ) : (
-                        /* TradingView Reference Style Instrument Rows */
-                        <div className="divide-y divide-dash-border/40">
+                        /* TradingView Reference Style Instrument Rows with Smooth Fade-in */
+                        <div className="divide-y divide-dash-border/40 animate-in fade-in duration-150">
                             {allStocks.map((stock) => {
                                 const isAdded = watchlistStockIds.has(stock.id);
                                 const isItemProcessing = processingStockId === stock.id;

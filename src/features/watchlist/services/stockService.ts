@@ -21,7 +21,7 @@ export const stockService = {
     },
 
     /**
-     * Search instruments with pagination, instrument category filtering, and counts.
+     * Search instruments with pagination and instrument category filtering.
      */
     searchInstruments: async (
         params: SearchStocksParams = {}

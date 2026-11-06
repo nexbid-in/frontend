@@ -32,12 +32,6 @@ export interface PaginationDTO {
     hasMore: boolean;
 }
 
-export interface InstrumentCountsDTO {
-    all: number;
-    equities: number;
-    indices: number;
-}
-
 export interface SearchStocksParams {
     query?: string;
     type?: "ALL" | "EQUITY" | "INDEX";
@@ -48,7 +42,6 @@ export interface SearchStocksParams {
 export interface SearchStocksResponseDTO {
     stocks: StockItemDTO[];
     pagination?: PaginationDTO;
-    counts?: InstrumentCountsDTO;
 }
 
 export interface GetWatchlistResponseDTO {
