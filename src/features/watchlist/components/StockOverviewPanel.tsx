@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
 import type { WatchlistItemDTO } from "../types";
 import {
-    getStockMarketQuote,
     getStockFundamentals,
     formatINR,
     formatVolume,
 } from "../utils/stockPriceHelper";
+import { useLiveStockQuote } from "../hooks/useLiveStockQuote";
 
 interface StockOverviewPanelProps {
     item: WatchlistItemDTO;
@@ -22,7 +22,7 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
 }) => {
     const stock = item.stock;
     const isIndex = stock.type === "INDEX";
-    const quote = useMemo(() => getStockMarketQuote(stock.symbol), [stock.symbol]);
+    const quote = useLiveStockQuote(stock.symbol);
     const fundamentals = useMemo(() => getStockFundamentals(stock.symbol), [stock.symbol]);
 
     // Calculate percentage positions for range slider markers
@@ -119,7 +119,13 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
 
                         <div className="text-center">
                             <span className="text-[11px] text-dash-text-muted">Current LTP</span>
-                            <p className="font-mono font-bold text-dash-text mt-0.5">
+                            <p className={`font-mono font-bold mt-0.5 transition-colors duration-200 ${
+                                quote.flashDirection === "up"
+                                    ? "text-[#22c55e]"
+                                    : quote.flashDirection === "down"
+                                    ? "text-[#ef4444]"
+                                    : "text-dash-text"
+                            }`}>
                                 ₹{formatINR(quote.price)}
                             </p>
                         </div>

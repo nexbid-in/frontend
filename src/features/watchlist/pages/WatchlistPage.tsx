@@ -9,6 +9,7 @@ import { StockChart } from "../components/StockChart";
 import { StockOverviewPanel } from "../components/StockOverviewPanel";
 import type { WatchlistItemDTO } from "../types";
 import { getStockMarketQuote, formatINR } from "../utils/stockPriceHelper";
+import { marketWebSocketService } from "../services/marketWebSocketService";
 import { useAppSelector } from "@/store/hooks";
 
 export function WatchlistPage() {
@@ -251,7 +252,7 @@ export function WatchlistPage() {
                                 <strong className="text-dash-text">{orderModal.item.stock.name}</strong> ({orderModal.item.stock.exchange})
                             </p>
                             <p>
-                                Market Price: <span className="font-mono text-dash-text font-semibold">₹{formatINR(getStockMarketQuote(orderModal.item.stock.symbol).price)}</span>
+                                Market Price: <span className="font-mono text-dash-text font-semibold">₹{formatINR(marketWebSocketService.getLatestTick(orderModal.item.stock.symbol)?.ltp ?? getStockMarketQuote(orderModal.item.stock.symbol).price)}</span>
                             </p>
                             <div className="p-3 bg-dash-panel-2 rounded-lg border border-dash-border text-xs text-dash-text-muted">
                                 Full Order Execution Form (Intraday MIS / Longterm CNC, Quantity, Limit vs Market) will be connected here.

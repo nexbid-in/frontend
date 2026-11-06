@@ -452,6 +452,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
     // ==========================================
 
     private handleLiveTick(tick: MarketTick): void {
+        if (this.isDestroyed) return;
         const sym = tick.symbol;
         const ltp = tick.ltp;
         const tickVolume = tick.volume;

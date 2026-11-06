@@ -1,6 +1,7 @@
 import React from "react";
 import type { WatchlistItemDTO } from "../types";
-import { getStockMarketQuote, formatINR, formatStockDisplayName } from "../utils/stockPriceHelper";
+import { formatINR, formatStockDisplayName } from "../utils/stockPriceHelper";
+import { useLiveStockQuote } from "../hooks/useLiveStockQuote";
 
 interface StockCardProps {
     item: WatchlistItemDTO;
@@ -27,7 +28,7 @@ export const StockCard: React.FC<StockCardProps> = ({
 }) => {
     const stock = item.stock;
     const isIndex = stock.type === "INDEX";
-    const quote = getStockMarketQuote(stock.symbol);
+    const quote = useLiveStockQuote(stock.symbol);
     const displayName = formatStockDisplayName(stock.name, stock.symbol);
 
     return (
@@ -60,9 +61,17 @@ export const StockCard: React.FC<StockCardProps> = ({
                     </div>
                 </div>
 
-                {/* Right Column: Price & Change (Hidden on Hover when Action Bar shows) */}
+                {/* Right Column: Price & Change with Live Tick Flash */}
                 <div className="text-right shrink-0 transition-opacity duration-150 group-hover:opacity-0 md:group-hover:opacity-0">
-                    <div className="text-sm font-mono font-medium text-dash-text">
+                    <div
+                        className={`text-sm font-mono font-medium transition-colors duration-200 ${
+                            quote.flashDirection === "up"
+                                ? "text-[#22c55e]"
+                                : quote.flashDirection === "down"
+                                ? "text-[#ef4444]"
+                                : "text-dash-text"
+                        }`}
+                    >
                         {formatINR(quote.price)}
                     </div>
                     <div

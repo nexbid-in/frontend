@@ -36,6 +36,7 @@ class MarketWebSocketService {
     private ws: WebSocket | null = null;
     private subscribers = new Map<string, Set<TickHandler>>();
     private pendingUnsubscribes = new Map<string, ReturnType<typeof setTimeout>>();
+    private latestTicks = new Map<string, MarketTick>();
     private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     private isExplicitlyDestroyed = false;
     private reconnectAttempts = 0;
@@ -89,6 +90,14 @@ class MarketWebSocketService {
             }
         }
     };
+
+    /**
+     * Get the most recently received tick for a symbol if available in memory.
+     */
+    public getLatestTick(symbol: string): MarketTick | undefined {
+        const sym = symbol.toUpperCase().trim();
+        return this.latestTicks.get(sym) || this.latestTicks.get(sym.replace(/\s+/g, ""));
+    }
 
     /**
      * Subscribe to live ticks for a symbol.
@@ -251,18 +260,28 @@ class MarketWebSocketService {
                     typeof payload.data?.volume === "number" && !isNaN(payload.data.volume)
                         ? payload.data.volume
                         : undefined;
-                const change =
+                let change =
                     typeof payload.data?.change === "number"
                         ? payload.data.change
                         : typeof payload.change === "number"
                         ? payload.change
                         : 0;
-                const changePercent =
+                let changePercent =
                     typeof payload.data?.changePercent === "number"
                         ? payload.data.changePercent
                         : typeof payload.changePercent === "number"
                         ? payload.changePercent
                         : 0;
+
+                // Fallback: If backend didn't supply change/changePercent, calculate from close (PDC) or open
+                if (change === 0 && ltp > 0) {
+                    const basePrice = close > 0 && close !== ltp ? close : open > 0 && open !== ltp ? open : 0;
+                    if (basePrice > 0) {
+                        change = Math.round((ltp - basePrice) * 100) / 100;
+                        changePercent = Math.round(((ltp - basePrice) / basePrice) * 10000) / 100;
+                    }
+                }
+
                 const rawTimestamp =
                     typeof payload.data?.timestamp === "number" && payload.data.timestamp > 0
                         ? payload.data.timestamp
@@ -282,6 +301,13 @@ class MarketWebSocketService {
                     timestamp,
                 };
 
+                // Cache latest tick in memory
+                this.latestTicks.set(sym, tick);
+                const spaceless = sym.replace(/\s+/g, "");
+                if (spaceless !== sym) {
+                    this.latestTicks.set(spaceless, tick);
+                }
+
                 // Dispatch to direct subscribers
                 const directSet = this.subscribers.get(sym);
                 if (directSet) {
@@ -295,7 +321,6 @@ class MarketWebSocketService {
                 }
 
                 // Dispatch to spaceless alias subscribers (e.g. "TATA MOTORS" vs "TATAMOTORS")
-                const spaceless = sym.replace(/\s+/g, "");
                 if (spaceless !== sym) {
                     const spacelessSet = this.subscribers.get(spaceless);
                     if (spacelessSet) {
@@ -340,6 +365,7 @@ class MarketWebSocketService {
             this.ws = null;
         }
         this.subscribers.clear();
+        this.latestTicks.clear();
     }
 }
 
