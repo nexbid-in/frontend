@@ -59,6 +59,7 @@ class MarketWebSocketService {
     private pendingUnsubscribes = new Map<string, ReturnType<typeof setTimeout>>();
     private latestTicks = new Map<string, MarketTick>();
     private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    private resumeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
     private isExplicitlyDestroyed = false;
     private reconnectAttempts = 0;
     private readonly DEBOUNCE_MS = 500;
@@ -71,18 +72,28 @@ class MarketWebSocketService {
         }
     }
 
+    private scheduleResume = (): void => {
+        if (this.resumeDebounceTimer) {
+            clearTimeout(this.resumeDebounceTimer);
+        }
+        this.resumeDebounceTimer = setTimeout(() => {
+            this.resumeDebounceTimer = null;
+            this.handleResume();
+        }, 300);
+    };
+
     private handleVisibilityChange = (): void => {
         if (document.visibilityState === "visible") {
-            this.handleResume();
+            this.scheduleResume();
         }
     };
 
     private handleWindowFocus = (): void => {
-        this.handleResume();
+        this.scheduleResume();
     };
 
     private handleOnline = (): void => {
-        this.handleResume();
+        this.scheduleResume();
     };
 
     /**
@@ -91,13 +102,20 @@ class MarketWebSocketService {
     private handleResume = (): void => {
         if (this.isExplicitlyDestroyed) return;
 
-        // 1. If socket dropped or closed in the background, reconnect immediately
+        // 1. If socket dropped or closed while in background, reconnect immediately
         if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
             this.ensureConnected();
             return;
         }
 
-        // 2. If socket is open and has active subscribers, cancel pending unsubscribes and re-subscribe
+        // 2. If socket is connecting, ensureConnected will handle subscriptions onopen
+        if (this.ws.readyState === WebSocket.CONNECTING) {
+            return;
+        }
+
+        // 3. If socket is already OPEN, it is healthy and active.
+        // Simply cancel any pending unsubscriptions so active handlers keep receiving ticks.
+        // DO NOT re-send "subscribe" messages to the backend! The backend is already streaming.
         if (this.ws.readyState === WebSocket.OPEN) {
             for (const [symbol, handlers] of this.subscribers.entries()) {
                 if (handlers.size > 0) {
@@ -106,7 +124,6 @@ class MarketWebSocketService {
                         clearTimeout(timer);
                         this.pendingUnsubscribes.delete(symbol);
                     }
-                    this.send({ action: "subscribe", symbol });
                 }
             }
         }
@@ -413,6 +430,11 @@ class MarketWebSocketService {
         if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = null;
+        }
+
+        if (this.resumeDebounceTimer) {
+            clearTimeout(this.resumeDebounceTimer);
+            this.resumeDebounceTimer = null;
         }
 
         if (this.ws) {

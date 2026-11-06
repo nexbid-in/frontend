@@ -186,18 +186,45 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
 
         const requestId = ++this.activeRequestId;
 
-        // Broadcast loading state to show fallback spinner immediately
-        this.onStatusListener?.({
-            isLoading: true,
-            symbol,
-            interval: req.interval,
-            error: null,
-        });
+        const isPagination = typeof (req as { before?: number }).before === "number";
+        const cacheKey = `${symbol}_${resolution}`;
+        const cached = this.memoryCache.get(cacheKey);
+        const hasExistingBars = Boolean(cached && cached.bars.length > 0);
+        const cacheAgeMs = cached ? Date.now() - cached.timestamp : Infinity;
+
+        // 1. Cache TTL (30 seconds):
+        // If we already fetched candles for this symbol & interval recently (within 30s),
+        // serve directly from memory without making a redundant 100 KB HTTP roundtrip!
+        // This completely eliminates HTTP traffic on tab switches, window blur/focus, container resize, and rapid navigation.
+        if (cached && cached.bars.length > 0 && cacheAgeMs < 30_000 && !isPagination) {
+            const lastBar = cached.bars[cached.bars.length - 1];
+            this.onBarListener?.({ ...lastBar });
+            this.onStatusListener?.({
+                isLoading: false,
+                symbol,
+                interval: req.interval,
+                error: null,
+                barCount: cached.bars.length,
+                isStale: false,
+            });
+            return cached.bars;
+        }
+
+        // Production Pattern (TradingView & Fyers standard):
+        // Only broadcast a blocking loading state on cold boot when NO cached candles exist for this symbol & interval.
+        // For background updates, tab refocusing/resumption, delta gap-filling, or pagination, keep the existing
+        // chart visible and interactive while fetching updates silently in the background!
+        if (!hasExistingBars && !isPagination) {
+            this.onStatusListener?.({
+                isLoading: true,
+                symbol,
+                interval: req.interval,
+                error: null,
+            });
+        }
 
         const nowMs = Date.now();
         const alignedNowMs = Math.floor(nowMs / (intervalSec * 1000)) * (intervalSec * 1000);
-
-        const isPagination = typeof (req as { before?: number }).before === "number";
 
         const targetToMs =
             typeof req.to === "number" && req.to > 0 ? req.to * 1000 : alignedNowMs;
@@ -209,6 +236,11 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                 typeof req.from === "number" && req.from > 0 && req.from * 1000 < targetToMs
                     ? req.from * 1000
                     : targetToMs - lookbackMs;
+        } else if (cached && cached.bars.length > 20) {
+            // Delta Sync: Only fetch the missing candles since our last cached candle timestamp (with a 2-bar overlap)
+            const lastBarMs = cached.bars[cached.bars.length - 1].time * 1000;
+            const overlapMs = intervalSec * 2 * 1000;
+            targetFromMs = Math.max(lastBarMs - overlapMs, targetToMs - lookbackMs);
         } else {
             // Initial load: ensure we look back at least lookbackMs so that
             // Indian market stock sessions (6.25 hrs/day, 5 days/week) yield enough
@@ -270,6 +302,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                         }
                     }
 
+                    let resultBars = uniqueBars;
                     const cacheKey = `${symbol}_${resolution}`;
                     const existing = this.memoryCache.get(cacheKey);
                     if (existing && existing.bars.length > 0) {
@@ -283,6 +316,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                                 dedupe.push(b);
                             }
                         }
+                        resultBars = dedupe;
                         this.memoryCache.set(cacheKey, { bars: dedupe, timestamp: Date.now() });
                     } else {
                         this.memoryCache.set(cacheKey, { bars: uniqueBars, timestamp: Date.now() });
@@ -298,7 +332,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                         isStale: false,
                     });
 
-                    return uniqueBars;
+                    return resultBars;
                 }
             }
 

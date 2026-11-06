@@ -13,6 +13,8 @@ export function useWatchlistQuery() {
     return useQuery({
         queryKey: QUERY_KEYS.watchlist.user(),
         queryFn: watchlistService.getWatchlist,
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false, // Live ticks stream via WebSocket; avoid redundant REST refetches on tab switch
     });
 }
 
