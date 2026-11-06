@@ -6,6 +6,7 @@ import {
     formatVolume,
 } from "../utils/stockPriceHelper";
 import { useLiveStockQuote } from "../hooks/useLiveStockQuote";
+import { useStockOverviewQuery } from "../hooks/useStockOverview";
 
 interface StockOverviewPanelProps {
     item: WatchlistItemDTO;
@@ -22,23 +23,56 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
 }) => {
     const stock = item.stock;
     const isIndex = stock.type === "INDEX";
+
+    // 1. Live WebSocket quote streaming (continuous LTP & tick flash)
     const quote = useLiveStockQuote(stock.symbol);
-    const fundamentals = useMemo(() => getStockFundamentals(stock.symbol), [stock.symbol]);
+
+    // 2. Fetch rich market overview & performance returns from backend API
+    const { data: overview, isLoading } = useStockOverviewQuery(stock.symbol);
+
+    // 3. Fallback baseline if API is still loading or offline
+    const fallback = useMemo(() => getStockFundamentals(stock.symbol), [stock.symbol]);
+
+    const vitals = overview?.vitals;
+    const openPrice = vitals?.open ?? fallback.open;
+    const prevClosePrice = vitals?.close ?? fallback.prevClose;
+    const volume = vitals?.volume ?? fallback.volume;
+    const atpPrice = quote.atp ?? vitals?.atp ?? fallback.avgPrice;
+    const lowerCircuit = vitals ? vitals.lowerCircuit : fallback.lowerCircuit;
+    const upperCircuit = vitals ? vitals.upperCircuit : fallback.upperCircuit;
+
+    const dayLow = vitals ? Math.min(vitals.low, quote.price) : fallback.dayLow;
+    const dayHigh = vitals ? Math.max(vitals.high, quote.price) : fallback.dayHigh;
+
+    const week52Low = overview ? Math.min(overview.range52W.low, quote.price) : fallback.week52Low;
+    const week52High = overview ? Math.max(overview.range52W.high, quote.price) : fallback.week52High;
+
+    const performance = overview?.performance;
+    // Live WebSocket order book streaming with REST snapshot fallback
+    const buyQty = typeof quote.totalBuyQty === "number" ? quote.totalBuyQty : vitals?.totalBuyQty;
+    const sellQty = typeof quote.totalSellQty === "number" ? quote.totalSellQty : vitals?.totalSellQty;
+    const bidPrice = typeof quote.bidPrice === "number" ? quote.bidPrice : vitals?.bidPrice;
+    const askPrice = typeof quote.askPrice === "number" ? quote.askPrice : vitals?.askPrice;
 
     // Calculate percentage positions for range slider markers
     const dayRangePercent = useMemo(() => {
-        const span = fundamentals.dayHigh - fundamentals.dayLow;
+        const span = dayHigh - dayLow;
         if (span <= 0) return 50;
-        const pct = ((quote.price - fundamentals.dayLow) / span) * 100;
+        const pct = ((quote.price - dayLow) / span) * 100;
         return Math.min(100, Math.max(0, Math.round(pct)));
-    }, [quote.price, fundamentals.dayLow, fundamentals.dayHigh]);
+    }, [quote.price, dayLow, dayHigh]);
 
     const week52RangePercent = useMemo(() => {
-        const span = fundamentals.week52High - fundamentals.week52Low;
+        const span = week52High - week52Low;
         if (span <= 0) return 50;
-        const pct = ((quote.price - fundamentals.week52Low) / span) * 100;
+        const pct = ((quote.price - week52Low) / span) * 100;
         return Math.min(100, Math.max(0, Math.round(pct)));
-    }, [quote.price, fundamentals.week52Low, fundamentals.week52High]);
+    }, [quote.price, week52Low, week52High]);
+
+    // Market Depth calculations
+    const depthTotal = (buyQty ?? 0) + (sellQty ?? 0);
+    const buyPercent = depthTotal > 0 ? Math.round(((buyQty ?? 0) / depthTotal) * 100) : 50;
+    const sellPercent = 100 - buyPercent;
 
     return (
         <div className="w-full h-full overflow-y-auto custom-scrollbar p-6 space-y-6">
@@ -64,13 +98,36 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                     <p className="text-xs text-dash-text-muted mt-1">
                         {stock.name} {stock.sector ? `• ${stock.sector}` : ""}
                     </p>
+
+                    {/* Live LTP & Day Change */}
+                    <div className="flex items-baseline gap-2 mt-2">
+                        <span
+                            className={`text-2xl font-bold font-mono transition-colors duration-200 ${
+                                quote.flashDirection === "up"
+                                    ? "text-[#22c55e]"
+                                    : quote.flashDirection === "down"
+                                    ? "text-[#ef4444]"
+                                    : "text-dash-text"
+                            }`}
+                        >
+                            ₹{formatINR(quote.price)}
+                        </span>
+                        <span
+                            className={`text-sm font-mono font-medium ${
+                                quote.isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                            }`}
+                        >
+                            {quote.isPositive ? `+${quote.change.toFixed(2)}` : quote.change.toFixed(2)}{" "}
+                            ({quote.isPositive ? `+${quote.changePercent.toFixed(2)}%` : `${quote.changePercent.toFixed(2)}%`})
+                        </span>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
                         type="button"
                         onClick={() => onOpenChart(item)}
-                        className="px-3.5 py-1.5 text-xs font-medium text-dash-text bg-dash-panel hover:bg-dash-panel-2 border border-dash-border rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                        className="px-3.5 py-2 text-xs font-medium text-dash-text bg-dash-panel hover:bg-dash-panel-2 border border-dash-border rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
                     >
                         <svg className="w-4 h-4 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                             <line x1="18" y1="20" x2="18" y2="10" />
@@ -85,14 +142,14 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                             <button
                                 type="button"
                                 onClick={() => onBuy(item)}
-                                className="px-4 py-1.5 text-xs font-semibold text-white bg-[#00873e] hover:bg-[#009c48] rounded-lg transition-colors shadow-xs cursor-pointer"
+                                className="px-5 py-2 text-xs font-semibold text-white bg-[#00873e] hover:bg-[#009c48] rounded-lg transition-colors shadow-xs cursor-pointer"
                             >
                                 BUY
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onSell(item)}
-                                className="px-4 py-1.5 text-xs font-semibold text-white bg-[#c83200] hover:bg-[#df3d17] rounded-lg transition-colors shadow-xs cursor-pointer"
+                                className="px-5 py-2 text-xs font-semibold text-white bg-[#c83200] hover:bg-[#df3d17] rounded-lg transition-colors shadow-xs cursor-pointer"
                             >
                                 SELL
                             </button>
@@ -103,9 +160,14 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
 
             {/* Performance Sliders: Day High/Low & 52-Week High/Low (Zerodha Kite Style) */}
             <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-6">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">
-                    Price Performance & Ranges
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">
+                        Price Performance & Ranges
+                    </h3>
+                    {isLoading && (
+                        <span className="text-[11px] text-dash-text-muted animate-pulse">Syncing vitals...</span>
+                    )}
+                </div>
 
                 {/* Day Range Slider */}
                 <div className="space-y-2">
@@ -113,19 +175,13 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         <div className="text-left">
                             <span className="text-dash-text-muted">Today&apos;s Low</span>
                             <p className="font-mono font-semibold text-dash-text mt-0.5">
-                                ₹{formatINR(fundamentals.dayLow)}
+                                ₹{formatINR(dayLow)}
                             </p>
                         </div>
 
                         <div className="text-center">
                             <span className="text-[11px] text-dash-text-muted">Current LTP</span>
-                            <p className={`font-mono font-bold mt-0.5 transition-colors duration-200 ${
-                                quote.flashDirection === "up"
-                                    ? "text-[#22c55e]"
-                                    : quote.flashDirection === "down"
-                                    ? "text-[#ef4444]"
-                                    : "text-dash-text"
-                            }`}>
+                            <p className="font-mono font-bold text-dash-text mt-0.5">
                                 ₹{formatINR(quote.price)}
                             </p>
                         </div>
@@ -133,7 +189,7 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         <div className="text-right">
                             <span className="text-dash-text-muted">Today&apos;s High</span>
                             <p className="font-mono font-semibold text-dash-text mt-0.5">
-                                ₹{formatINR(fundamentals.dayHigh)}
+                                ₹{formatINR(dayHigh)}
                             </p>
                         </div>
                     </div>
@@ -161,7 +217,7 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         <div className="text-left">
                             <span className="text-dash-text-muted">52-Week Low</span>
                             <p className="font-mono font-semibold text-dash-text mt-0.5">
-                                ₹{formatINR(fundamentals.week52Low)}
+                                ₹{formatINR(week52Low)}
                             </p>
                         </div>
 
@@ -175,7 +231,7 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         <div className="text-right">
                             <span className="text-dash-text-muted">52-Week High</span>
                             <p className="font-mono font-semibold text-dash-text mt-0.5">
-                                ₹{formatINR(fundamentals.week52High)}
+                                ₹{formatINR(week52High)}
                             </p>
                         </div>
                     </div>
@@ -196,58 +252,177 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                 </div>
             </div>
 
+            {/* Historical Performance Returns (1W, 1M, 1Y) */}
+            {performance && (
+                <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">
+                            Historical Returns
+                        </h3>
+                        <span className="text-[11px] text-dash-text-muted">Trailing Performance</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border flex flex-col justify-between">
+                            <span className="text-[11px] text-dash-text-muted">1 Week</span>
+                            <p className={`text-base font-mono font-bold mt-1 ${
+                                performance.oneWeek === null
+                                    ? "text-dash-text-muted"
+                                    : performance.oneWeek >= 0
+                                    ? "text-[#22c55e]"
+                                    : "text-[#ef4444]"
+                            }`}>
+                                {performance.oneWeek !== null
+                                    ? `${performance.oneWeek >= 0 ? "+" : ""}${performance.oneWeek.toFixed(2)}%`
+                                    : "N/A"}
+                            </p>
+                        </div>
+
+                        <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border flex flex-col justify-between">
+                            <span className="text-[11px] text-dash-text-muted">1 Month</span>
+                            <p className={`text-base font-mono font-bold mt-1 ${
+                                performance.oneMonth === null
+                                    ? "text-dash-text-muted"
+                                    : performance.oneMonth >= 0
+                                    ? "text-[#22c55e]"
+                                    : "text-[#ef4444]"
+                            }`}>
+                                {performance.oneMonth !== null
+                                    ? `${performance.oneMonth >= 0 ? "+" : ""}${performance.oneMonth.toFixed(2)}%`
+                                    : "N/A"}
+                            </p>
+                        </div>
+
+                        <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border flex flex-col justify-between">
+                            <span className="text-[11px] text-dash-text-muted">1 Year</span>
+                            <p className={`text-base font-mono font-bold mt-1 ${
+                                performance.oneYear === null
+                                    ? "text-dash-text-muted"
+                                    : performance.oneYear >= 0
+                                    ? "text-[#22c55e]"
+                                    : "text-[#ef4444]"
+                            }`}>
+                                {performance.oneYear !== null
+                                    ? `${performance.oneYear >= 0 ? "+" : ""}${performance.oneYear.toFixed(2)}%`
+                                    : "N/A"}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Order Book / Market Depth Snapshot */}
+            {!isIndex && (typeof buyQty === "number" || typeof bidPrice === "number" || typeof askPrice === "number") && (
+                <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">
+                            Order Book Depth
+                        </h3>
+                        {typeof bidPrice === "number" && typeof askPrice === "number" && (
+                            <div className="text-xs font-mono">
+                                <span className="text-dash-text-muted">Spread: </span>
+                                <span className="text-dash-text font-medium">₹{(Math.max(0, askPrice - bidPrice)).toFixed(2)}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Buy vs Sell Volume Ratio Bar */}
+                    {depthTotal > 0 && (
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-mono">
+                                <span className="text-[#22c55e] font-medium">
+                                    Total Buy {formatVolume(buyQty ?? 0)} ({buyPercent}%)
+                                </span>
+                                <span className="text-[#ef4444] font-medium">
+                                    Total Sell {formatVolume(sellQty ?? 0)} ({sellPercent}%)
+                                </span>
+                            </div>
+                            <div className="w-full h-2 rounded-full flex overflow-hidden bg-dash-panel-2">
+                                <div className="bg-[#22c55e] transition-all duration-300" style={{ width: `${buyPercent}%` }} />
+                                <div className="bg-[#ef4444] transition-all duration-300" style={{ width: `${sellPercent}%` }} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Best Bid and Ask Prices */}
+                    {(typeof bidPrice === "number" || typeof askPrice === "number") && (
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div className="bg-dash-panel p-3 rounded-lg border border-dash-border">
+                                <span className="text-[11px] text-dash-text-muted">Best Bid (Buyer Price)</span>
+                                <p className="text-sm font-mono font-semibold text-[#22c55e] mt-1">
+                                    {typeof bidPrice === "number" ? `₹${formatINR(bidPrice)}` : "—"}
+                                </p>
+                            </div>
+                            <div className="bg-dash-panel p-3 rounded-lg border border-dash-border">
+                                <span className="text-[11px] text-dash-text-muted">Best Ask (Seller Price)</span>
+                                <p className="text-sm font-mono font-semibold text-[#ef4444] mt-1">
+                                    {typeof askPrice === "number" ? `₹${formatINR(askPrice)}` : "—"}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Key Market Fundamentals Grid */}
             <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">
-                    Key Market Statistics
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">
+                        Key Market Statistics
+                    </h3>
+                    {overview?.lastUpdated && (
+                        <span className="text-[10px] font-mono text-dash-text-muted">
+                            Updated {new Date(overview.lastUpdated).toLocaleTimeString()}
+                        </span>
+                    )}
+                </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
                         <span className="text-[11px] text-dash-text-muted">Open Price</span>
                         <p className="text-sm font-mono font-semibold text-dash-text mt-1">
-                            ₹{formatINR(fundamentals.open)}
+                            ₹{formatINR(openPrice)}
                         </p>
                     </div>
 
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
                         <span className="text-[11px] text-dash-text-muted">Previous Close</span>
                         <p className="text-sm font-mono font-semibold text-dash-text mt-1">
-                            ₹{formatINR(fundamentals.prevClose)}
+                            ₹{formatINR(prevClosePrice)}
                         </p>
                     </div>
 
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
                         <span className="text-[11px] text-dash-text-muted">Traded Volume</span>
                         <p className="text-sm font-mono font-semibold text-dash-text mt-1">
-                            {formatVolume(fundamentals.volume)} shares
+                            {formatVolume(volume)} shares
                         </p>
                     </div>
 
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
-                        <span className="text-[11px] text-dash-text-muted">Avg Traded Price (ATP)</span>
+                        <span className="text-[11px] text-dash-text-muted">Avg Price (ATP / VWAP)</span>
                         <p className="text-sm font-mono font-semibold text-dash-text mt-1">
-                            ₹{formatINR(fundamentals.avgPrice)}
+                            ₹{formatINR(atpPrice)}
                         </p>
                     </div>
 
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
-                        <span className="text-[11px] text-dash-text-muted">Lower Circuit (-10%)</span>
+                        <span className="text-[11px] text-dash-text-muted">Lower Circuit</span>
                         <p className="text-sm font-mono font-semibold text-[#ef4444] mt-1">
-                            ₹{formatINR(fundamentals.lowerCircuit)}
+                            {lowerCircuit !== null ? `₹${formatINR(lowerCircuit)}` : "No Limit"}
                         </p>
                     </div>
 
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
-                        <span className="text-[11px] text-dash-text-muted">Upper Circuit (+10%)</span>
+                        <span className="text-[11px] text-dash-text-muted">Upper Circuit</span>
                         <p className="text-sm font-mono font-semibold text-[#22c55e] mt-1">
-                            ₹{formatINR(fundamentals.upperCircuit)}
+                            {upperCircuit !== null ? `₹${formatINR(upperCircuit)}` : "No Limit"}
                         </p>
                     </div>
 
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
                         <span className="text-[11px] text-dash-text-muted">Sector / Segment</span>
-                        <p className="text-sm font-semibold text-dash-text mt-1 truncate">
+                        <p className="text-sm font-semibold text-dash-text mt-1 truncate" title={stock.sector ?? "General Equities"}>
                             {stock.sector ?? "General Equities"}
                         </p>
                     </div>
@@ -255,7 +430,7 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                     <div className="bg-dash-panel p-3.5 rounded-lg border border-dash-border">
                         <span className="text-[11px] text-dash-text-muted">Trading Permission</span>
                         <p className="text-sm font-semibold text-primary-green mt-1">
-                            {stock.isTradable ? "MIS & CNC Enabled" : "Index (Non-tradable)"}
+                            {stock.isTradable ? "MIS & CNC Enabled" : "Read-only"}
                         </p>
                     </div>
                 </div>

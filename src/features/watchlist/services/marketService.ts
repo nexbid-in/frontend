@@ -1,5 +1,6 @@
 import { apiClient } from "@/config/apiClient";
 import { API_ROUTES } from "@/constants/routes";
+import type { StockOverviewResponseDTO } from "../types";
 
 export interface HistoricalCandle {
     timestamp: number;
@@ -34,5 +35,15 @@ export const marketService = {
         });
 
         return response.data.data ?? [];
+    },
+
+    getStockOverview: async (symbol: string): Promise<StockOverviewResponseDTO> => {
+        const response = await apiClient.get<{
+            success: boolean;
+            message: string;
+            data: StockOverviewResponseDTO;
+        }>(API_ROUTES.MARKET.OVERVIEW(symbol));
+
+        return response.data.data;
     },
 };

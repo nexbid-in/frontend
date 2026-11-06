@@ -11,6 +11,11 @@ export interface MarketTick {
     change: number;
     changePercent: number;
     timestamp: number;
+    atp?: number;
+    bidPrice?: number | null;
+    askPrice?: number | null;
+    totalBuyQty?: number | null;
+    totalSellQty?: number | null;
 }
 
 export type TickHandler = (tick: MarketTick) => void;
@@ -307,6 +312,45 @@ class MarketWebSocketService {
                         : Date.now();
                 const timestamp = rawTimestamp > 1e11 ? rawTimestamp : rawTimestamp * 1000;
 
+                const atp =
+                    typeof payload.data?.atp === "number"
+                        ? payload.data.atp
+                        : typeof payload.atp === "number"
+                        ? payload.atp
+                        : undefined;
+                const bidPrice =
+                    typeof payload.data?.bidPrice === "number"
+                        ? payload.data.bidPrice
+                        : typeof payload.bidPrice === "number"
+                        ? payload.bidPrice
+                        : payload.data?.bidPrice === null || payload.bidPrice === null
+                        ? null
+                        : undefined;
+                const askPrice =
+                    typeof payload.data?.askPrice === "number"
+                        ? payload.data.askPrice
+                        : typeof payload.askPrice === "number"
+                        ? payload.askPrice
+                        : payload.data?.askPrice === null || payload.askPrice === null
+                        ? null
+                        : undefined;
+                const totalBuyQty =
+                    typeof payload.data?.totalBuyQty === "number"
+                        ? payload.data.totalBuyQty
+                        : typeof payload.totalBuyQty === "number"
+                        ? payload.totalBuyQty
+                        : payload.data?.totalBuyQty === null || payload.totalBuyQty === null
+                        ? null
+                        : undefined;
+                const totalSellQty =
+                    typeof payload.data?.totalSellQty === "number"
+                        ? payload.data.totalSellQty
+                        : typeof payload.totalSellQty === "number"
+                        ? payload.totalSellQty
+                        : payload.data?.totalSellQty === null || payload.totalSellQty === null
+                        ? null
+                        : undefined;
+
                 const tick: MarketTick = {
                     symbol: sym,
                     ltp,
@@ -318,6 +362,11 @@ class MarketWebSocketService {
                     change,
                     changePercent,
                     timestamp,
+                    atp,
+                    bidPrice,
+                    askPrice,
+                    totalBuyQty,
+                    totalSellQty,
                 };
 
                 // Cache latest tick in memory for all aliases

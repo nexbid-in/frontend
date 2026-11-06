@@ -32,4 +32,8 @@ export const QUERY_KEYS = {
         all: ["stocks"],
         search: (query: string) => ["stocks", "search", query],
     },
+    market: {
+        all: ["market"],
+        overview: (symbol: string) => ["market", "overview", symbol],
+    },
 };

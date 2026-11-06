@@ -76,5 +76,6 @@ export const API_ROUTES = {
     },
     MARKET: {
         HISTORY: '/market/history',
+        OVERVIEW: (symbol: string) => `/market/overview/${encodeURIComponent(symbol)}`,
     },
 } as const;

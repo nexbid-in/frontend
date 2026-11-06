@@ -93,7 +93,7 @@ export function formatStockDisplayName(name: string, symbol?: string): string {
         .replace(/\s*\((India|I|IN)\)/gi, "")
         // 2. Remove standard legal entity suffixes at word boundaries
         .replace(
-            /\b(Private|Public)?\s*(Limited|Ltd\.?|Corporation|Corp\.?|Holdings?|Enterprise(s)?)\b/gi,
+            /\b(Private|Public)?\s*(Limited|Ltd\.?|Corporation|Corp\.?|Holdings?)\b/gi,
             ""
         )
         // 3. Remove index benchmark descriptors (e.g. "Benchmark Index", "Benchmark")

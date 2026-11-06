@@ -6,6 +6,7 @@ export * from "./services/marketWebSocketService";
 export * from "./services/openAlgoDatafeed";
 export * from "./hooks/useWatchlist";
 export * from "./hooks/useLiveStockQuote";
+export * from "./hooks/useStockOverview";
 export * from "./utils/stockPriceHelper";
 export * from "./components/StockCard";
 export * from "./components/StockSearchDropdown";
