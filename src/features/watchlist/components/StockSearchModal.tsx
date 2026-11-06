@@ -10,7 +10,9 @@ interface StockSearchModalProps {
     watchlistCount: number;
     maxLimit?: number;
     onAddStock: (stockId: string) => Promise<void> | void;
+    onRemoveStock?: (stockId: string) => Promise<void> | void;
     isAdding?: boolean;
+    isRemoving?: boolean;
 }
 
 type InstrumentTab = "ALL" | "EQUITY" | "INDEX";
@@ -34,12 +36,14 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
     watchlistCount,
     maxLimit = 100,
     onAddStock,
+    onRemoveStock,
     isAdding = false,
+    isRemoving = false,
 }) => {
     const [inputValue, setInputValue] = useState("");
     const [debouncedQuery, setDebouncedQuery] = useState("");
     const [activeTab, setActiveTab] = useState<InstrumentTab>("ALL");
-    const [addingStockId, setAddingStockId] = useState<string | null>(null);
+    const [processingStockId, setProcessingStockId] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus input when modal opens and reset state
@@ -114,12 +118,43 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
 
     const handleAdd = async (stock: StockItemDTO) => {
         if (watchlistStockIds.has(stock.id) || isAdding) return;
-        setAddingStockId(stock.id);
+        setProcessingStockId(stock.id);
         try {
             await onAddStock(stock.id);
         } finally {
-            setAddingStockId(null);
+            setProcessingStockId(null);
         }
+    };
+
+    const handleRemove = async (stock: StockItemDTO) => {
+        if (!watchlistStockIds.has(stock.id) || !onRemoveStock || isRemoving) return;
+        setProcessingStockId(stock.id);
+        try {
+            await onRemoveStock(stock.id);
+        } finally {
+            setProcessingStockId(null);
+        }
+    };
+
+    /**
+     * TradingView aesthetic: highlight matching query text in symbol name
+     */
+    const renderHighlightedSymbol = (symbol: string, query: string) => {
+        const cleanQuery = query.trim().toUpperCase();
+        if (!cleanQuery) return <span>{symbol}</span>;
+
+        const idx = symbol.toUpperCase().indexOf(cleanQuery);
+        if (idx === -1) return <span>{symbol}</span>;
+
+        return (
+            <span>
+                {symbol.slice(0, idx)}
+                <span className="text-[#2962ff] dark:text-[#387aff] font-bold">
+                    {symbol.slice(idx, idx + cleanQuery.length)}
+                </span>
+                {symbol.slice(idx + cleanQuery.length)}
+            </span>
+        );
     };
 
     if (!isOpen) return null;
@@ -134,11 +169,11 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
             }}
         >
             <div
-                className="bg-dash-panel border border-dash-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+                className="bg-dash-panel border border-dash-border rounded-2xl shadow-2xl w-full max-w-2xl h-[580px] max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Modal Header: Search Input Bar (TradingView style) */}
-                <div className="p-4 border-b border-dash-border bg-dash-panel-2/40 flex items-center gap-3">
+                <div className="h-14 px-4 border-b border-dash-border bg-dash-panel-2/40 flex items-center gap-3 shrink-0">
                     <svg
                         className="w-5 h-5 text-dash-text-muted shrink-0"
                         fill="none"
@@ -155,7 +190,7 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="Search symbol, company or index (e.g. INFY, NIFTY, TATAMOTORS)..."
+                        placeholder="Search stock or index"
                         className="w-full bg-transparent text-sm md:text-base text-dash-text placeholder:text-dash-text-muted/60 focus:outline-none font-medium"
                     />
 
@@ -188,13 +223,13 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                     </button>
                 </div>
 
-                {/* Instrument Category Filter Tabs */}
-                <div className="px-4 py-2 border-b border-dash-border bg-dash-panel flex items-center justify-between gap-2 overflow-x-auto">
-                    <div className="flex items-center gap-1.5">
+                {/* Instrument Category Filter Tabs (Fixed height, perfectly stable, non-scrollable) */}
+                <div className="h-11 px-4 border-b border-dash-border bg-dash-panel flex items-center justify-between gap-2 shrink-0 overflow-hidden select-none">
+                    <div className="flex items-center gap-1.5 shrink-0">
                         <button
                             type="button"
                             onClick={() => setActiveTab("ALL")}
-                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                 activeTab === "ALL"
                                     ? "bg-primary-green/10 text-primary-green border border-primary-green/25 font-semibold"
                                     : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -209,7 +244,7 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                         <button
                             type="button"
                             onClick={() => setActiveTab("EQUITY")}
-                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                 activeTab === "EQUITY"
                                     ? "bg-primary-green/10 text-primary-green border border-primary-green/25 font-semibold"
                                     : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -224,7 +259,7 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                         <button
                             type="button"
                             onClick={() => setActiveTab("INDEX")}
-                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                            className={`h-7 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                 activeTab === "INDEX"
                                     ? "bg-primary-green/10 text-primary-green border border-primary-green/25 font-semibold"
                                     : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -238,7 +273,7 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                     </div>
 
                     {(isLoading || isFetching) && (
-                        <div className="flex items-center gap-1.5 text-xs text-primary-green shrink-0">
+                        <div className="h-5 flex items-center gap-1.5 text-xs text-primary-green shrink-0">
                             <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
@@ -249,10 +284,10 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                 </div>
 
                 {/* Modal Results Body */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1 min-h-[300px]">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
                     {debouncedQuery.trim().length === 0 ? (
                         /* Empty Search State with Popular Symbol Suggestions */
-                        <div className="py-8 px-4 text-center space-y-6">
+                        <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-6">
                             <div className="w-12 h-12 rounded-full bg-dash-panel-2 border border-dash-border mx-auto flex items-center justify-center text-dash-text-muted">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
                                     <circle cx="11" cy="11" r="8" />
@@ -292,18 +327,21 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                         /* Skeleton Loading Rows */
                         <div className="divide-y divide-dash-border/40">
                             {Array.from({ length: 4 }).map((_, idx) => (
-                                <div key={idx} className="p-3.5 flex items-center justify-between animate-pulse">
+                                <div key={idx} className="p-3 px-4 flex items-center justify-between animate-pulse">
                                     <div className="space-y-2">
-                                        <div className="h-4 w-32 bg-dash-panel-2 rounded" />
+                                        <div className="h-4 w-28 bg-dash-panel-2 rounded" />
                                         <div className="h-3 w-48 bg-dash-panel-2 rounded" />
                                     </div>
-                                    <div className="h-7 w-20 bg-dash-panel-2 rounded-lg" />
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-3 w-8 bg-dash-panel-2 rounded" />
+                                        <div className="h-5 w-5 bg-dash-panel-2 rounded" />
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     ) : filteredResults.length === 0 ? (
                         /* No Results Found */
-                        <div className="py-12 text-center text-dash-text-muted space-y-2">
+                        <div className="h-full flex flex-col items-center justify-center py-12 text-center text-dash-text-muted space-y-2">
                             <p className="text-sm font-medium text-dash-text">
                                 No instruments found matching &ldquo;{debouncedQuery}&rdquo;
                             </p>
@@ -312,68 +350,97 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                             </p>
                         </div>
                     ) : (
-                        /* TradingView Style Instrument Rows */
+                        /* TradingView Reference Style Instrument Rows */
                         <div className="divide-y divide-dash-border/40">
                             {filteredResults.map((stock) => {
                                 const isAdded = watchlistStockIds.has(stock.id);
-                                const isItemAdding = addingStockId === stock.id;
+                                const isItemProcessing = processingStockId === stock.id;
                                 const isIndex = stock.type === "INDEX";
 
                                 return (
                                     <div
                                         key={stock.id}
-                                        className="p-3.5 rounded-xl flex items-center justify-between hover:bg-dash-panel-2/60 transition-colors group"
+                                        className="p-3 px-4 rounded-xl flex items-center justify-between hover:bg-dash-panel-2/60 transition-colors group"
                                     >
+                                        {/* Left Side: Symbol on top, Full Name & Type Badge below */}
                                         <div className="min-w-0 pr-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-semibold text-dash-text group-hover:text-primary-green transition-colors">
-                                                    {stock.symbol}
+                                            <div className="text-sm font-semibold tracking-tight text-dash-text">
+                                                {renderHighlightedSymbol(stock.symbol, debouncedQuery)}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                                                <span className="text-xs text-dash-text-muted truncate">
+                                                    {formatStockDisplayName(stock.name, stock.symbol)}
                                                 </span>
-                                                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border border-dash-border text-dash-text-muted bg-dash-card">
-                                                    {stock.exchange}
-                                                </span>
-                                                {isIndex && (
-                                                    <span className="text-[10px] uppercase font-medium px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                                        Index
-                                                    </span>
-                                                )}
-                                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-dash-panel-2 text-dash-text-muted border border-dash-border">
-                                                    {stock.isTradable ? "Tradable" : "Read-only"}
+                                                <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-dash-panel-2 border border-dash-border text-dash-text-muted font-medium shrink-0">
+                                                    {isIndex ? "INDEX" : "STOCK"}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-dash-text-muted truncate mt-1">
-                                                {formatStockDisplayName(stock.name, stock.symbol)}
-                                                {stock.sector ? ` • ${stock.sector}` : ""}
-                                            </p>
                                         </div>
 
-                                        <div className="shrink-0">
+                                        {/* Right Side: Exchange name, followed by '+' or '✓' icon */}
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <span className="text-xs font-mono font-medium text-dash-text-muted uppercase">
+                                                {stock.exchange}
+                                            </span>
+
                                             {isAdded ? (
-                                                <span className="inline-flex items-center gap-1.5 text-xs text-primary-green font-medium px-3 py-1.5 rounded-lg bg-primary-green/10 border border-primary-green/20">
-                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                                                    </svg>
-                                                    Added
-                                                </span>
-                                            ) : (
+                                                /* Stock is in Watchlist: show Tick icon (click to remove) */
                                                 <button
                                                     type="button"
-                                                    disabled={isItemAdding || watchlistCount >= maxLimit}
-                                                    onClick={() => handleAdd(stock)}
-                                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-primary-green hover:bg-primary-green-hover px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                                                    disabled={isItemProcessing}
+                                                    onClick={() => handleRemove(stock)}
+                                                    className="p-1 rounded-md text-dash-text hover:text-red-400 hover:bg-dash-panel-2 transition-colors cursor-pointer flex items-center justify-center disabled:opacity-40"
+                                                    title="In Watchlist (click to remove)"
+                                                    aria-label={`Remove ${stock.symbol} from watchlist`}
                                                 >
-                                                    {isItemAdding ? (
-                                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    {isItemProcessing ? (
+                                                        <svg className="w-4 h-4 animate-spin text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                                         </svg>
                                                     ) : (
-                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                                                        <svg
+                                                            className="w-4 h-4"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                            strokeWidth="2.2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        >
+                                                            <path d="m4.5 12.75 6 6 9-13.5" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            ) : (
+                                                /* Stock is NOT in Watchlist: show Plus icon (click to add) */
+                                                <button
+                                                    type="button"
+                                                    disabled={isItemProcessing || watchlistCount >= maxLimit}
+                                                    onClick={() => handleAdd(stock)}
+                                                    className="p-1 rounded-md text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors cursor-pointer flex items-center justify-center disabled:opacity-40"
+                                                    title="Add to Watchlist"
+                                                    aria-label={`Add ${stock.symbol} to watchlist`}
+                                                >
+                                                    {isItemProcessing ? (
+                                                        <svg className="w-4 h-4 animate-spin text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg
+                                                            className="w-4 h-4"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        >
                                                             <line x1="12" y1="5" x2="12" y2="19" />
                                                             <line x1="5" y1="12" x2="19" y2="12" />
                                                         </svg>
                                                     )}
-                                                    <span>Add</span>
                                                 </button>
                                             )}
                                         </div>
@@ -385,7 +452,7 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                 </div>
 
                 {/* Modal Footer: Watchlist Status & Keyboard Hints */}
-                <div className="p-3 px-5 border-t border-dash-border bg-dash-panel-2/30 flex items-center justify-between text-xs text-dash-text-muted">
+                <div className="h-11 px-5 border-t border-dash-border bg-dash-panel-2/30 flex items-center justify-between text-xs text-dash-text-muted shrink-0 select-none">
                     <div className="flex items-center gap-2">
                         <span>Watchlist Capacity:</span>
                         <span className="font-mono text-dash-text font-semibold">
@@ -403,4 +470,3 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         </div>
     );
 };
-

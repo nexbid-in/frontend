@@ -13,7 +13,7 @@ interface WatchlistSidebarProps {
     onBuy: (item: WatchlistItemDTO) => void;
     onSell: (item: WatchlistItemDTO) => void;
     onAddStock: (stockId: string) => Promise<void> | void;
-    onDeleteStock: (stockId: string) => void;
+    onDeleteStock: (stockId: string) => Promise<void> | void;
     isAdding?: boolean;
     isDeleting?: boolean;
 }
@@ -101,7 +101,9 @@ export const WatchlistSidebar: React.FC<WatchlistSidebarProps> = ({
                 watchlistCount={items.length}
                 maxLimit={100}
                 onAddStock={onAddStock}
+                onRemoveStock={onDeleteStock}
                 isAdding={isAdding}
+                isRemoving={isDeleting}
             />
 
             {/* Watchlist Stock Cards List */}

@@ -133,7 +133,7 @@ export function WatchlistPage() {
         }
     };
 
-    const handleDeleteStock = (stockId: string) => {
+    const handleDeleteStock = async (stockId: string) => {
         if (selectedStockId === stockId && typeof window !== "undefined") {
             try {
                 localStorage.removeItem(lastStockStorageKey);
@@ -141,7 +141,11 @@ export function WatchlistPage() {
                 console.warn("Failed to clear deleted stock from storage:", err);
             }
         }
-        removeMutation.mutate(stockId);
+        try {
+            await removeMutation.mutateAsync(stockId);
+        } catch {
+            // Error notification is dispatched within the mutation hook
+        }
     };
 
     return (
