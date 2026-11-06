@@ -124,13 +124,11 @@ export function WatchlistPage() {
     };
 
     const handleAddStock = async (stockId: string) => {
-        const added = await addMutation.mutateAsync(stockId);
-        setSelectedStockId(added.stockId);
-        try {
-            localStorage.setItem(lastStockStorageKey, added.stockId);
-        } catch (err) {
-            console.warn("Failed to save last visited stock:", err);
+        // Ensure the current active stock remains selected so adding a new stock does not switch the chart
+        if (activeItem && !selectedStockId) {
+            setSelectedStockId(activeItem.stock.id);
         }
+        await addMutation.mutateAsync(stockId);
     };
 
     const handleDeleteStock = async (stockId: string) => {

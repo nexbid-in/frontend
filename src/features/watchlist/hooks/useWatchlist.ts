@@ -70,16 +70,8 @@ export function useAddToWatchlistMutation() {
 
     return useMutation({
         mutationFn: (stockId: string) => watchlistService.addToWatchlist(stockId),
-        onSuccess: (newItem) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.watchlist.all });
-            dispatch(
-                showToast({
-                    type: "success",
-                    title: "Added to Watchlist",
-                    message: `${newItem.stock.symbol} added to your watchlist.`,
-                    duration: 3000,
-                })
-            );
         },
         onError: (error: unknown) => {
             const message = error instanceof Error ? error.message : "Failed to add stock to watchlist.";
@@ -106,14 +98,6 @@ export function useRemoveFromWatchlistMutation() {
         mutationFn: (stockId: string) => watchlistService.removeFromWatchlist(stockId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.watchlist.all });
-            dispatch(
-                showToast({
-                    type: "success",
-                    title: "Removed from Watchlist",
-                    message: "Stock removed from your watchlist.",
-                    duration: 3000,
-                })
-            );
         },
         onError: (error: unknown) => {
             const message = error instanceof Error ? error.message : "Failed to remove stock from watchlist.";
