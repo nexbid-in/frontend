@@ -30,7 +30,16 @@ export const QUERY_KEYS = {
     },
     stocks: {
         all: ["stocks"],
-        search: (query: string) => ["stocks", "search", query],
+        search: (param?: string | { query?: string; type?: string }) => [
+            "stocks",
+            "search",
+            typeof param === "object" ? param : { query: param ?? "" },
+        ],
+        infinite: (params?: { query?: string; type?: string }) => [
+            "stocks",
+            "infinite",
+            params ?? {},
+        ],
     },
     market: {
         all: ["market"],

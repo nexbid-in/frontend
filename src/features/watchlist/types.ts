@@ -24,8 +24,31 @@ export interface WatchlistItemDTO {
     stock: StockItemDTO;
 }
 
+export interface PaginationDTO {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+}
+
+export interface InstrumentCountsDTO {
+    all: number;
+    equities: number;
+    indices: number;
+}
+
+export interface SearchStocksParams {
+    query?: string;
+    type?: "ALL" | "EQUITY" | "INDEX";
+    page?: number;
+    limit?: number;
+}
+
 export interface SearchStocksResponseDTO {
     stocks: StockItemDTO[];
+    pagination?: PaginationDTO;
+    counts?: InstrumentCountsDTO;
 }
 
 export interface GetWatchlistResponseDTO {

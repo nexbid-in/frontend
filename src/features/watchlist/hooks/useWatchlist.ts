@@ -1,9 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { watchlistService } from "../services/watchlistService";
 import { stockService } from "../services/stockService";
 import { QUERY_KEYS } from "@/constants/queryKeys";
 import { useAppDispatch } from "@/store/hooks";
 import { showToast } from "@/store/uiSlice";
+import type { SearchStocksResponseDTO } from "../types";
 
 /**
  * Hook to retrieve the user's watchlist with auto-caching.
@@ -25,6 +26,37 @@ export function useStockSearchQuery(debouncedQuery: string) {
         queryFn: () => stockService.searchStocks(trimmed),
         enabled: trimmed.length > 0,
         staleTime: 1000 * 60 * 5, // Cache search results for 5 minutes
+    });
+}
+
+/**
+ * Infinite query hook for paginated, filterable stock & index search/browse.
+ * Automatically handles pageParam increments and cache partitioning by query & type.
+ */
+export function useInfiniteStockSearchQuery(
+    query: string = "",
+    type: "ALL" | "EQUITY" | "INDEX" = "ALL",
+    limit: number = 20
+) {
+    const trimmed = query.trim();
+
+    return useInfiniteQuery<SearchStocksResponseDTO>({
+        queryKey: QUERY_KEYS.stocks.infinite({ query: trimmed, type }),
+        queryFn: ({ pageParam = 1 }) =>
+            stockService.searchInstruments({
+                query: trimmed,
+                type,
+                page: pageParam as number,
+                limit,
+            }),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => {
+            if (lastPage.pagination?.hasMore) {
+                return lastPage.pagination.page + 1;
+            }
+            return undefined;
+        },
+        staleTime: 1000 * 60 * 2, // 2 minutes
     });
 }
 
