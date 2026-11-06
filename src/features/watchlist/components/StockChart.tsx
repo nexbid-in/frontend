@@ -174,6 +174,282 @@ function syncVolumeIndicatorLegend(
     }
 }
 
+interface DrawState {
+    dpr: number;
+    theme?: {
+        background?: string;
+        axisText?: string;
+        axisLine?: string;
+    };
+    plotWidth: number;
+    plotHeight: number;
+}
+
+interface ToggleOptions {
+    count: number;
+    collapsed: boolean;
+    left: number;
+    top: number;
+    height: number;
+}
+
+interface TogglePrimitive {
+    _options: ToggleOptions;
+    _bounds: { x: number; y: number; width: number; height: number } | null;
+    draw: (ctx: CanvasRenderingContext2D, state: DrawState) => void;
+    setOptions: (opts: Partial<ToggleOptions>) => void;
+}
+
+/**
+ * Patches the drawing method of the OpenAlgo Indicator Legend Toggle primitive
+ * to match TradingView standards exactly based on user specifications:
+ * 1. Expanded: Drawn directly below the indicators with ONLY a chevron-up icon [^].
+ * 2. Collapsed (single indicator): Drawn directly below Buy/Sell buttons with ONLY a chevron-down icon [v].
+ * 3. Collapsed (multiple indicators): Drawn with a chevron-down icon and count [v 2].
+ * 4. Never displays label text like "Indicators".
+ */
+function patchIndicatorToggleDraw(toggle: TogglePrimitive): void {
+    if (!toggle) return;
+    const proto = Object.getPrototypeOf(toggle) as {
+        __isTradingViewDrawPatched?: boolean;
+        draw?: (ctx: CanvasRenderingContext2D, state: DrawState) => void;
+    };
+    if (proto.__isTradingViewDrawPatched) return;
+
+    proto.draw = function (this: TogglePrimitive, ctx: CanvasRenderingContext2D, state: DrawState) {
+        this._bounds = null;
+        const opts = this._options;
+        const dpr = state.dpr || 1;
+        const r = opts.height || 18;
+        const count = opts.count ?? 0;
+
+        // Hide toggle if count is 0, plot is too narrow, or out of vertical bounds
+        if (count === 0 || state.plotWidth < 18 || opts.top < 0 || opts.top + r > state.plotHeight) {
+            return;
+        }
+
+        const isCollapsed = Boolean(opts.collapsed);
+        // TradingView specification:
+        // - Count displayed ONLY when indicator details are hidden (collapsed) AND count > 1
+        // - If count == 1, or if expanded, NO count is rendered
+        const showCount = isCollapsed && count > 1;
+        const countText = String(count);
+
+        ctx.save();
+        ctx.font = `600 ${11 * dpr}px -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif`;
+
+        // Calculate compact button width (TradingView pill size)
+        let buttonWidth = 20;
+        if (showCount) {
+            const textWidth = ctx.measureText(countText).width / dpr;
+            buttonWidth = Math.max(30, Math.round(16 + textWidth + 6));
+        }
+
+        const a = Math.max(0, Math.min(opts.left, state.plotWidth - buttonWidth));
+        const l = opts.top;
+
+        // Save bounds for hit-testing / click detection
+        this._bounds = { x: a, y: l, width: buttonWidth, height: r };
+
+        // Theme-aware colors matching TradingView pill button
+        const isLight =
+            state.theme?.background &&
+            (state.theme.background.toLowerCase() === "#ffffff" ||
+                state.theme.background.toLowerCase().startsWith("rgb(255"));
+        const bgColor = isLight ? "rgba(240, 243, 250, 0.95)" : "rgba(30, 34, 45, 0.9)";
+        const borderColor = isLight ? "rgba(0, 0, 0, 0.15)" : "rgba(255, 255, 255, 0.16)";
+        const fgColor = isLight ? "#131722" : "#d1d4dc";
+
+        // Draw rounded rectangle background
+        ctx.beginPath();
+        const borderRadius = 3 * dpr;
+        if (typeof ctx.roundRect === "function") {
+            ctx.roundRect(a * dpr, l * dpr, buttonWidth * dpr, r * dpr, borderRadius);
+        } else {
+            ctx.rect(a * dpr, l * dpr, buttonWidth * dpr, r * dpr);
+        }
+        ctx.fillStyle = bgColor;
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = Math.max(1, Math.round(dpr));
+        ctx.stroke();
+
+        // Draw Chevron (UP when expanded, DOWN when collapsed)
+        const centerY = (l + r / 2) * dpr;
+        const chevronCenterX = showCount
+            ? (a + 8) * dpr
+            : (a + buttonWidth / 2) * dpr;
+        const d = 3.2 * dpr;
+
+        ctx.beginPath();
+        ctx.strokeStyle = fgColor;
+        ctx.lineWidth = 1.4 * dpr;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        if (isCollapsed) {
+            // Chevron DOWN: apex points down
+            ctx.moveTo(chevronCenterX - d, centerY - d / 2);
+            ctx.lineTo(chevronCenterX, centerY + d / 2);
+            ctx.lineTo(chevronCenterX + d, centerY - d / 2);
+        } else {
+            // Chevron UP: apex points up
+            ctx.moveTo(chevronCenterX - d, centerY + d / 2);
+            ctx.lineTo(chevronCenterX, centerY - d / 2);
+            ctx.lineTo(chevronCenterX + d, centerY + d / 2);
+        }
+        ctx.stroke();
+
+        // Draw Count (only if collapsed and count > 1)
+        if (showCount) {
+            ctx.fillStyle = fgColor;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "left";
+            ctx.fillText(countText, (a + 15) * dpr, centerY);
+        }
+
+        ctx.restore();
+    };
+
+    proto.__isTradingViewDrawPatched = true;
+}
+
+/**
+ * Configure TradingView-standard indicator legend layout in Pane 0:
+ * 1. Offsets the indicator legend stack vertically below the Sell / Buy buttons
+ *    (or below the stock name if trading is disabled, e.g. for Index).
+ * 2. Positions the indicator details (e.g. EMA, SMA) in order, with the collapse/expand
+ *    toggle button placed directly below the indicator list (and at Row 0 when collapsed).
+ * 3. Strictly counts indicators on the main price chart (Pane 0), excluding sub-pane indicators.
+ */
+function configureTradingViewLegendLayout(
+    widget: Widget | null,
+    canTrade: boolean
+): void {
+    if (!widget || !widget.chart) return;
+    try {
+        const targetTopOffset = canTrade ? 80 : 34;
+        const chartAny = widget.chart as unknown as {
+            _indicatorLegendCollapsed?: boolean;
+            _legends?: Array<{
+                legend: {
+                    options: () => { visible?: boolean; row?: number };
+                    setOptions: (opts: { row?: number; top?: number; left?: number }) => void;
+                    setSuppressed: (suppressed: boolean) => void;
+                };
+                paneIndex: number;
+            }>;
+            _studyLegends?: Set<unknown>;
+            _primitives?: { _priceCornerIndex?: () => number };
+            _primaryIndex?: () => number;
+            removePrimitive?: (primitive: unknown) => void;
+            _legendStack?: {
+                _legendOffset: { top: number; left: number };
+                _indicatorLegendRow: number;
+                _indicatorLegendToggle: TogglePrimitive | null;
+                _syncLegendOffsets: () => void;
+                _restackLegends: () => void;
+                __isTradingViewPatched?: boolean;
+            };
+        };
+
+        const stack = chartAny._legendStack;
+        if (!stack) return;
+
+        stack._legendOffset.top = targetTopOffset;
+        stack._legendOffset.left = 8;
+
+        if (stack._indicatorLegendToggle) {
+            patchIndicatorToggleDraw(stack._indicatorLegendToggle);
+        }
+
+        if (!stack.__isTradingViewPatched && typeof stack._restackLegends === "function") {
+            const origRestack = stack._restackLegends.bind(stack);
+
+            stack._restackLegends = function () {
+                origRestack();
+
+                if (this._indicatorLegendToggle) {
+                    patchIndicatorToggleDraw(this._indicatorLegendToggle);
+                }
+
+                const isCollapsed = Boolean(chartAny._indicatorLegendCollapsed);
+                const primaryPaneIdx =
+                    chartAny._primitives?._priceCornerIndex?.() ??
+                    chartAny._primaryIndex?.() ??
+                    0;
+                const legends = chartAny._legends || [];
+                const studyLegends = chartAny._studyLegends || new Set();
+
+                // Filter indicators added strictly to the MAIN PRICE CHART (paneIndex === primaryPaneIdx)
+                // Indicators in separate sub-panes (Volume in Pane 1, RSI in Pane 2) are not counted
+                const primaryStudies: Array<{
+                    legend: {
+                        options: () => { visible?: boolean; row?: number };
+                        setOptions: (opts: { row?: number }) => void;
+                        setSuppressed: (suppressed: boolean) => void;
+                    };
+                }> = [];
+
+                for (const item of legends) {
+                    if (
+                        studyLegends.has(item.legend) &&
+                        item.paneIndex === primaryPaneIdx &&
+                        item.legend.options().visible !== false
+                    ) {
+                        primaryStudies.push(item);
+                    }
+                }
+
+                // If no indicators exist on the main price chart, remove toggle button
+                if (primaryStudies.length === 0) {
+                    if (this._indicatorLegendToggle) {
+                        try {
+                            chartAny.removePrimitive?.(this._indicatorLegendToggle);
+                        } catch {
+                            // ignore
+                        }
+                        this._indicatorLegendToggle = null;
+                    }
+                    return;
+                }
+
+                // TradingView Standard Indicator Layout:
+                // When expanded: indicators occupy rows 0, 1, 2... and toggle sits below them
+                // When collapsed: indicators are suppressed and toggle sits at row 0
+                primaryStudies.forEach((item, idx) => {
+                    item.legend.setSuppressed(isCollapsed);
+                    if (!isCollapsed) {
+                        item.legend.setOptions({ row: idx });
+                    }
+                });
+
+                this._indicatorLegendRow = isCollapsed ? 0 : primaryStudies.length;
+                this._syncLegendOffsets();
+
+                if (this._indicatorLegendToggle) {
+                    this._indicatorLegendToggle.setOptions({
+                        count: primaryStudies.length,
+                        collapsed: isCollapsed,
+                        left: this._legendOffset.left,
+                        top: isCollapsed
+                            ? this._legendOffset.top
+                            : this._legendOffset.top + primaryStudies.length * 18,
+                        height: 18,
+                    });
+                }
+            };
+
+            stack.__isTradingViewPatched = true;
+        }
+
+        stack._syncLegendOffsets();
+        stack._restackLegends();
+    } catch (err) {
+        console.warn("[StockChart] Error configuring TradingView legend layout:", err);
+    }
+}
+
 /**
  * Production-ready TradingView-style financial charting terminal powered by OpenAlgo Charts.
  * - Out-of-the-box topbar, left drawing rail (87 tools), 112 indicators, bottom timezone & range bar
@@ -211,6 +487,13 @@ export const StockChart: React.FC<StockChartProps> = ({
     // Keep active symbol tracked
     const activeSymbolRef = useRef(symbol.toUpperCase());
     const activeExchangeRef = useRef(exchange.toUpperCase());
+
+    const canTrade = stockType !== "INDEX" && isTradable;
+    const canTradeRef = useRef(canTrade);
+    useEffect(() => {
+        canTradeRef.current = canTrade;
+        configureTradingViewLegendLayout(widgetRef.current, canTrade);
+    }, [canTrade]);
 
     // Interactive bar & crosshair states
     const [hoverBar, setHoverBar] = useState<Bar | null>(null);
@@ -539,6 +822,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                     setIsChartEmpty(!status.error && status.barCount === 0);
                     if (!status.error) {
                         enforceChartPriceFormatters(widgetRef.current);
+                        configureTradingViewLegendLayout(widgetRef.current, canTradeRef.current);
                         if (latestBarRef.current) {
                             syncVolumeIndicatorLegend(
                                 widgetRef.current,
@@ -576,10 +860,12 @@ export const StockChart: React.FC<StockChartProps> = ({
                         minPrecision: 2,
                         minMove: 0.05,
                     },
-                });
+                    legendOffset: { top: canTradeRef.current ? 80 : 34, left: 8 },
+                } as Parameters<typeof createWidget>[1]);
 
                 // Enforce 0.00 price format strictly on primary stock scale, and Fyers volume on volume pane
                 enforceChartPriceFormatters(widget);
+                configureTradingViewLegendLayout(widget, canTradeRef.current);
 
                 widgetRef.current = widget;
 
@@ -620,6 +906,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                         setIsRetrying(false);
                         isRetryingRef.current = false;
                         enforceChartPriceFormatters(widget);
+                        configureTradingViewLegendLayout(widget, canTradeRef.current);
                         onSymbolChangeRef.current?.(newSym, newExch);
                     }
                 });
@@ -745,8 +1032,6 @@ export const StockChart: React.FC<StockChartProps> = ({
         : null;
     const isUp = (diff ?? 0) >= 0;
     const valueColor = isUp ? "text-[#22c55e]" : "text-[#ef4444]";
-
-    const canTrade = stockType !== "INDEX" && isTradable;
 
     return (
         <div
