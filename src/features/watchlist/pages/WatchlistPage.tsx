@@ -148,7 +148,7 @@ export function WatchlistPage() {
 
     return (
         <div className="flex flex-col lg:flex-row h-full p-2 gap-2 overflow-hidden">
-            {/* Left Column: Watchlist Sidebar (~380px fixed width on desktop) */}
+            {/* Left Column: Watchlist Sidebar (~320px fixed width on desktop) */}
             <WatchlistSidebar
                 items={watchlistItems}
                 isLoading={isLoading}

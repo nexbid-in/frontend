@@ -56,9 +56,9 @@ export const WatchlistSidebar: React.FC<WatchlistSidebarProps> = ({
     }, [isSearchModalOpen]);
 
     return (
-        <aside className="w-full lg:w-[380px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-hidden shrink-0">
+        <aside className="w-full lg:w-[320px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-hidden shrink-0">
             {/* Header: Title, Counter & Search Modal Trigger */}
-            <div className="p-3.5 px-4 border-b border-dash-border bg-dash-panel-2/40 flex items-center justify-between shrink-0">
+            <div className="p-3 px-3.5 border-b border-dash-border bg-dash-panel-2/40 flex items-center justify-between shrink-0">
                 <h2 className="text-sm font-semibold text-dash-text tracking-tight">
                     Watchlist
                 </h2>
