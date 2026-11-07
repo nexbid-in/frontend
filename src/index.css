@@ -51,11 +51,11 @@
 
 .dashboard-root[data-theme="light"] {
   color-scheme: light;
-  --color-dash-bg: #F8FAFC;
+  --color-dash-bg: #ECEFF3;
   --color-dash-panel: #FFFFFF;
   --color-dash-panel-2: #F1F5F9;
   --color-dash-card: #FFFFFF;
-  --color-dash-border: #E2E8F0;
+  --color-dash-border: #D8DFE8;
   --color-dash-text: #0F172A;
   --color-dash-text-muted: #64748B;
   --color-dash-accent: #4F46E5;
@@ -68,7 +68,7 @@
   /* Shared modal & panel tokens */
   --color-panel: #FFFFFF;
   --color-panel-2: #F1F5F9;
-  --color-border-muted: #E2E8F0;
+  --color-border-muted: #D8DFE8;
 }
 
 .dashboard-root[data-theme="dark"] {
