@@ -9,8 +9,14 @@ import { hideToast, showToast } from "@/store/uiSlice";
 import { Toast, ConfirmModal, UserAvatar } from "@/components/ui";
 import { NavbarNiftyTicker } from "./NavbarNiftyTicker";
 import { NavbarMarginAvailable } from "./NavbarMarginAvailable";
+import {
+    StockSearchModal,
+    useWatchlistQuery,
+    useAddToWatchlistMutation,
+    useRemoveFromWatchlistMutation,
+} from "@/features/watchlist";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
@@ -77,11 +83,40 @@ export function AppLayout() {
         };
     }, [isDropdownOpen]);
 
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const { data: watchlistItems = [] } = useWatchlistQuery();
+    const watchlistStockIds = useMemo(
+        () => new Set(watchlistItems.map((item) => item.stock.id)),
+        [watchlistItems]
+    );
+    const addMutation = useAddToWatchlistMutation();
+    const removeMutation = useRemoveFromWatchlistMutation();
+
+    // Global keyboard shortcut (press '/' to open symbol search from any page)
+    useEffect(() => {
+        const handleSearchShortcut = (e: KeyboardEvent) => {
+            if (
+                e.key === "/" &&
+                !isSearchModalOpen &&
+                document.activeElement?.tagName !== "INPUT" &&
+                document.activeElement?.tagName !== "TEXTAREA"
+            ) {
+                e.preventDefault();
+                setIsSearchModalOpen(true);
+            }
+        };
+
+        window.addEventListener("keydown", handleSearchShortcut);
+        return () => window.removeEventListener("keydown", handleSearchShortcut);
+    }, [isSearchModalOpen]);
+
     const fullName = user
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
     const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
     const isWatchlistActive = location.pathname.startsWith(APP_ROUTES.USER.WATCHLIST);
+    const isPortfolioActive = location.pathname.startsWith(APP_ROUTES.USER.PORTFOLIO);
+    const isOrdersActive = location.pathname.startsWith(APP_ROUTES.USER.ORDERS);
     const isFundsActive = location.pathname === APP_ROUTES.USER.FUNDS;
 
     return (
@@ -95,14 +130,36 @@ export function AppLayout() {
                     <NavbarNiftyTicker />
                 </div>
 
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-1.5">
+                    {/* Universal Search Modal Trigger Button */}
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchModalOpen(true)}
+                        className="p-1.5 text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 rounded-md transition-colors cursor-pointer flex items-center justify-center mr-0.5"
+                        title="Search instruments (/)"
+                        aria-label="Search instruments"
+                    >
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.3-4.3" />
+                        </svg>
+                    </button>
+
                     <Link
                         to={APP_ROUTES.USER.DASHBOARD}
                         className={`${
                             isMarketsActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-3 py-1.5 rounded-md transition-colors`}
+                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
                     >
                         Markets
                     </Link>
@@ -112,19 +169,37 @@ export function AppLayout() {
                             isWatchlistActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-3 py-1.5 rounded-md transition-colors`}
+                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
                     >
                         Watchlist
                     </Link>
-                    <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-dash-text-muted hover:text-dash-text transition-colors">Portfolio</Link>
-                    <Link to={APP_ROUTES.USER.ORDERS} className="text-dash-text-muted hover:text-dash-text transition-colors">Orders</Link>
+                    <Link
+                        to={APP_ROUTES.USER.PORTFOLIO}
+                        className={`${
+                            isPortfolioActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
+                    >
+                        Portfolio
+                    </Link>
+                    <Link
+                        to={APP_ROUTES.USER.ORDERS}
+                        className={`${
+                            isOrdersActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
+                    >
+                        Orders
+                    </Link>
                     <Link
                         to={APP_ROUTES.USER.FUNDS}
                         className={`${
                             isFundsActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-3 py-1.5 rounded-md transition-colors`}
+                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
                     >
                         Funds
                     </Link>
@@ -275,6 +350,23 @@ export function AppLayout() {
                     handleSignOut();
                 }}
                 onCancel={() => setShowSignOutModal(false)}
+            />
+
+            {/* Universal Stock & Instrument Search Modal */}
+            <StockSearchModal
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                watchlistStockIds={watchlistStockIds}
+                watchlistCount={watchlistItems.length}
+                maxLimit={100}
+                onAddStock={async (stockId) => {
+                    await addMutation.mutateAsync(stockId);
+                }}
+                onRemoveStock={async (stockId) => {
+                    await removeMutation.mutateAsync(stockId);
+                }}
+                isAdding={addMutation.isPending}
+                isRemoving={removeMutation.isPending}
             />
         </div>
     );
