@@ -5,5 +5,6 @@ export const env = {
     API_URL: apiUrl,
     WS_URL: import.meta.env.VITE_WS_URL || defaultWsUrl,
     GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+    MARKET_DATA_PROVIDER: (import.meta.env.VITE_MARKET_DATA_PROVIDER || 'mock').toLowerCase(),
 } as const;
 
