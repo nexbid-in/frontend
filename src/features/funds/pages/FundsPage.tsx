@@ -145,8 +145,8 @@ export const FundsPage: React.FC = () => {
     };
 
     return (
-        <div className="h-full p-4 overflow-hidden">
-            <section className="h-full bg-dash-panel border border-dash-border rounded-lg p-5 flex flex-col overflow-hidden">
+        <div className="h-full p-2 overflow-hidden">
+            <section className="h-full bg-dash-panel border border-dash-border rounded-md p-5 flex flex-col overflow-hidden">
                 {/* Section Header */}
                 <div className="flex items-center justify-between pb-4 border-b border-dash-border shrink-0">
                     <div>

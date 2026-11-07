@@ -34,7 +34,7 @@ export const StockCard: React.FC<StockCardProps> = ({
     return (
         <div
             onClick={() => onSelect(item)}
-            className={`group relative px-4 py-2.5 border-b border-dash-border cursor-pointer transition-colors select-none ${
+            className={`group relative px-3.5 py-2.5 border-b border-dash-border cursor-pointer transition-colors select-none ${
                 isSelected
                     ? "bg-dash-panel-2 border-l-4 border-l-primary-green"
                     : "hover:bg-dash-panel-2/60 border-l-4 border-l-transparent"

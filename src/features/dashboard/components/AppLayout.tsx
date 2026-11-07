@@ -9,8 +9,14 @@ import { hideToast, showToast } from "@/store/uiSlice";
 import { Toast, ConfirmModal, UserAvatar } from "@/components/ui";
 import { NavbarNiftyTicker } from "./NavbarNiftyTicker";
 import { NavbarMarginAvailable } from "./NavbarMarginAvailable";
+import {
+    StockSearchModal,
+    useWatchlistQuery,
+    useAddToWatchlistMutation,
+    useRemoveFromWatchlistMutation,
+} from "@/features/watchlist";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
@@ -77,32 +83,83 @@ export function AppLayout() {
         };
     }, [isDropdownOpen]);
 
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const { data: watchlistItems = [] } = useWatchlistQuery();
+    const watchlistStockIds = useMemo(
+        () => new Set(watchlistItems.map((item) => item.stock.id)),
+        [watchlistItems]
+    );
+    const addMutation = useAddToWatchlistMutation();
+    const removeMutation = useRemoveFromWatchlistMutation();
+
+    // Global keyboard shortcut (press '/' to open symbol search from any page)
+    useEffect(() => {
+        const handleSearchShortcut = (e: KeyboardEvent) => {
+            if (
+                e.key === "/" &&
+                !isSearchModalOpen &&
+                document.activeElement?.tagName !== "INPUT" &&
+                document.activeElement?.tagName !== "TEXTAREA"
+            ) {
+                e.preventDefault();
+                setIsSearchModalOpen(true);
+            }
+        };
+
+        window.addEventListener("keydown", handleSearchShortcut);
+        return () => window.removeEventListener("keydown", handleSearchShortcut);
+    }, [isSearchModalOpen]);
+
     const fullName = user
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
     const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
     const isWatchlistActive = location.pathname.startsWith(APP_ROUTES.USER.WATCHLIST);
+    const isPortfolioActive = location.pathname.startsWith(APP_ROUTES.USER.PORTFOLIO);
+    const isOrdersActive = location.pathname.startsWith(APP_ROUTES.USER.ORDERS);
     const isFundsActive = location.pathname === APP_ROUTES.USER.FUNDS;
 
     return (
         <div className="dashboard-root flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans" data-theme={theme}>
-            <nav className="h-[60px] bg-dash-panel flex items-center justify-between px-6 border-b border-dash-border">
+            <nav className="h-[48px] shrink-0 bg-dash-panel flex items-center justify-between px-5 border-b border-dash-border">
                 <div className="flex items-center gap-5">
-                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-2xl font-bold text-primary-green tracking-tight">
+                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-xl font-bold text-primary-green tracking-tight">
                         nexbid
                     </Link>
 
                     <NavbarNiftyTicker />
                 </div>
 
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-1.5">
+                    {/* Universal Search Modal Trigger Button */}
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchModalOpen(true)}
+                        className="p-1 text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 rounded-md transition-colors cursor-pointer flex items-center justify-center mr-0.5"
+                        title="Search instruments (/)"
+                        aria-label="Search instruments"
+                    >
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.3-4.3" />
+                        </svg>
+                    </button>
+
                     <Link
                         to={APP_ROUTES.USER.DASHBOARD}
                         className={`${
                             isMarketsActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-3 py-1.5 rounded-md transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Markets
                     </Link>
@@ -112,19 +169,37 @@ export function AppLayout() {
                             isWatchlistActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-3 py-1.5 rounded-md transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Watchlist
                     </Link>
-                    <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-dash-text-muted hover:text-dash-text transition-colors">Portfolio</Link>
-                    <Link to={APP_ROUTES.USER.ORDERS} className="text-dash-text-muted hover:text-dash-text transition-colors">Orders</Link>
+                    <Link
+                        to={APP_ROUTES.USER.PORTFOLIO}
+                        className={`${
+                            isPortfolioActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
+                    >
+                        Portfolio
+                    </Link>
+                    <Link
+                        to={APP_ROUTES.USER.ORDERS}
+                        className={`${
+                            isOrdersActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
+                    >
+                        Orders
+                    </Link>
                     <Link
                         to={APP_ROUTES.USER.FUNDS}
                         className={`${
                             isFundsActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-3 py-1.5 rounded-md transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Funds
                     </Link>
@@ -135,20 +210,20 @@ export function AppLayout() {
 
                     <Link
                         to={APP_ROUTES.USER.FUNDS}
-                        className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text-muted hover:bg-dash-panel-2 px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer"
+                        className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text-muted hover:bg-dash-panel-2 px-3 py-1 rounded-md transition-all duration-150 cursor-pointer"
                     >
                         Add Funds
                     </Link>
 
                     {/* Dynamic User Profile Avatar & Dropdown */}
-                    <div className="relative" ref={dropdownRef}>
+                    <div className="relative flex items-center" ref={dropdownRef}>
                         {/* Profile Avatar Button (Click to toggle dropdown) */}
                         <button
                             type="button"
                             onClick={() => setIsDropdownOpen((prev) => !prev)}
                             aria-expanded={isDropdownOpen}
                             aria-haspopup="menu"
-                            className={`rounded-full shrink-0 select-none cursor-pointer transition-all ${
+                            className={`flex items-center justify-center rounded-full shrink-0 select-none cursor-pointer p-0 border-0 leading-none transition-all ${
                                 isDropdownOpen
                                     ? "ring-2 ring-primary-green"
                                     : "hover:ring-2 hover:ring-dash-border focus:outline-none focus:ring-2 focus:ring-primary-green"
@@ -167,7 +242,7 @@ export function AppLayout() {
                         {isDropdownOpen && (
                             <div
                                 role="menu"
-                                className="absolute right-0 mt-2 w-64 bg-dash-panel border border-dash-border rounded-xl shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                className="absolute right-0 top-full mt-2 w-64 bg-dash-panel border border-dash-border rounded-xl shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
                             >
                                 {/* First Section: Profile image, Full name, Email (Google & GitHub style) */}
                                 <div className="px-4 py-3 border-b border-dash-border flex items-center gap-3">
@@ -247,7 +322,7 @@ export function AppLayout() {
                 
             </nav>
 
-            <main className="flex-1 overflow-hidden h-[calc(100vh-60px)]">
+            <main className="flex-1 overflow-hidden h-[calc(100vh-48px)]">
                 <Outlet />
             </main>
 
@@ -275,6 +350,23 @@ export function AppLayout() {
                     handleSignOut();
                 }}
                 onCancel={() => setShowSignOutModal(false)}
+            />
+
+            {/* Universal Stock & Instrument Search Modal */}
+            <StockSearchModal
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                watchlistStockIds={watchlistStockIds}
+                watchlistCount={watchlistItems.length}
+                maxLimit={100}
+                onAddStock={async (stockId) => {
+                    await addMutation.mutateAsync(stockId);
+                }}
+                onRemoveStock={async (stockId) => {
+                    await removeMutation.mutateAsync(stockId);
+                }}
+                isAdding={addMutation.isPending}
+                isRemoving={removeMutation.isPending}
             />
         </div>
     );

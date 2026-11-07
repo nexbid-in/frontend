@@ -90,7 +90,7 @@ export function ProfileLayout() {
     };
 
     return (
-        <div className="flex flex-1 overflow-hidden h-full p-4 gap-4">
+        <div className="flex flex-1 overflow-hidden h-full p-2 gap-2">
             <section className="flex-1 bg-dash-panel border border-dash-border rounded-md h-full flex flex-col md:flex-row overflow-hidden">
                 {/* Profile Navigation Sidebar */}
                 <aside className="w-full md:w-64 p-6 bg-dash-sidebar border-b md:border-b-0 md:border-r border-dash-border flex flex-col justify-between shrink-0 overflow-y-auto">

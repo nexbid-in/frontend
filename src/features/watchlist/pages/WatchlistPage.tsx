@@ -147,8 +147,8 @@ export function WatchlistPage() {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row h-full p-4 gap-4 overflow-hidden">
-            {/* Left Column: Watchlist Sidebar (~380px fixed width on desktop) */}
+        <div className="flex flex-col lg:flex-row h-full p-2 gap-2 overflow-hidden">
+            {/* Left Column: Watchlist Sidebar (~320px fixed width on desktop) */}
             <WatchlistSidebar
                 items={watchlistItems}
                 isLoading={isLoading}
@@ -165,7 +165,7 @@ export function WatchlistPage() {
             />
 
             {/* Right Column: Dynamic Main View (Chart or Stock Overview) */}
-            <main className="flex-1 bg-dash-panel border border-dash-border rounded-xl flex flex-col h-full overflow-hidden">
+            <main className="flex-1 bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-hidden">
                 {activeItem ? (
                     <div className="w-full h-full overflow-hidden relative">
                         <div
