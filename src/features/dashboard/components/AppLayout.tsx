@@ -121,9 +121,9 @@ export function AppLayout() {
 
     return (
         <div className="dashboard-root flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans" data-theme={theme}>
-            <nav className="h-[60px] bg-dash-panel flex items-center justify-between px-6 border-b border-dash-border">
+            <nav className="h-[48px] shrink-0 bg-dash-panel flex items-center justify-between px-5 border-b border-dash-border">
                 <div className="flex items-center gap-5">
-                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-2xl font-bold text-primary-green tracking-tight">
+                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-xl font-bold text-primary-green tracking-tight">
                         nexbid
                     </Link>
 
@@ -135,7 +135,7 @@ export function AppLayout() {
                     <button
                         type="button"
                         onClick={() => setIsSearchModalOpen(true)}
-                        className="p-1.5 text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 rounded-md transition-colors cursor-pointer flex items-center justify-center mr-0.5"
+                        className="p-1 text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 rounded-md transition-colors cursor-pointer flex items-center justify-center mr-0.5"
                         title="Search instruments (/)"
                         aria-label="Search instruments"
                     >
@@ -159,7 +159,7 @@ export function AppLayout() {
                             isMarketsActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Markets
                     </Link>
@@ -169,7 +169,7 @@ export function AppLayout() {
                             isWatchlistActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Watchlist
                     </Link>
@@ -179,7 +179,7 @@ export function AppLayout() {
                             isPortfolioActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Portfolio
                     </Link>
@@ -189,7 +189,7 @@ export function AppLayout() {
                             isOrdersActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Orders
                     </Link>
@@ -199,7 +199,7 @@ export function AppLayout() {
                             isFundsActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
-                        } px-2.5 py-1.5 rounded-md text-sm transition-colors`}
+                        } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
                         Funds
                     </Link>
@@ -210,20 +210,20 @@ export function AppLayout() {
 
                     <Link
                         to={APP_ROUTES.USER.FUNDS}
-                        className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text-muted hover:bg-dash-panel-2 px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer"
+                        className="text-dash-text-muted hover:text-dash-text text-xs font-medium border border-dash-border hover:border-dash-text-muted hover:bg-dash-panel-2 px-3 py-1 rounded-md transition-all duration-150 cursor-pointer"
                     >
                         Add Funds
                     </Link>
 
                     {/* Dynamic User Profile Avatar & Dropdown */}
-                    <div className="relative" ref={dropdownRef}>
+                    <div className="relative flex items-center" ref={dropdownRef}>
                         {/* Profile Avatar Button (Click to toggle dropdown) */}
                         <button
                             type="button"
                             onClick={() => setIsDropdownOpen((prev) => !prev)}
                             aria-expanded={isDropdownOpen}
                             aria-haspopup="menu"
-                            className={`rounded-full shrink-0 select-none cursor-pointer transition-all ${
+                            className={`flex items-center justify-center rounded-full shrink-0 select-none cursor-pointer p-0 border-0 leading-none transition-all ${
                                 isDropdownOpen
                                     ? "ring-2 ring-primary-green"
                                     : "hover:ring-2 hover:ring-dash-border focus:outline-none focus:ring-2 focus:ring-primary-green"
@@ -242,7 +242,7 @@ export function AppLayout() {
                         {isDropdownOpen && (
                             <div
                                 role="menu"
-                                className="absolute right-0 mt-2 w-64 bg-dash-panel border border-dash-border rounded-xl shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                className="absolute right-0 top-full mt-2 w-64 bg-dash-panel border border-dash-border rounded-xl shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
                             >
                                 {/* First Section: Profile image, Full name, Email (Google & GitHub style) */}
                                 <div className="px-4 py-3 border-b border-dash-border flex items-center gap-3">
@@ -322,7 +322,7 @@ export function AppLayout() {
                 
             </nav>
 
-            <main className="flex-1 overflow-hidden h-[calc(100vh-60px)]">
+            <main className="flex-1 overflow-hidden h-[calc(100vh-48px)]">
                 <Outlet />
             </main>
 

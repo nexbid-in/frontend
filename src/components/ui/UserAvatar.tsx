@@ -53,7 +53,7 @@ export function UserAvatar({
                 alt={imageAlt}
                 referrerPolicy="no-referrer"
                 onError={() => setHasError(true)}
-                className={`${container} rounded-full object-cover shrink-0 select-none ${className}`}
+                className={`${container} rounded-full object-cover shrink-0 select-none block ${className}`}
             />
         );
     }
