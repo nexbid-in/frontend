@@ -1,10 +1,10 @@
 
 export function DashboardPage() {
     return (
-        <div className="flex h-full p-4 gap-4">
+        <div className="flex h-full p-2 gap-2 overflow-hidden">
             
             {/* Sidebar specific to Dashboard */}
-            <aside className="w-[400px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto custom-scrollbar">
+            <aside className="w-[380px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto custom-scrollbar shrink-0">
                 <div className="flex justify-between p-4 text-dash-text-muted text-xs font-medium border-b border-dash-border">
                     <span className="w-2/5">Index</span>
                     <span className="w-1/5 text-left">Price</span>
@@ -30,12 +30,12 @@ export function DashboardPage() {
             </aside>
 
             {/* Main Trading Dashboard Content */}
-            <section className="flex-1 bg-dash-panel border border-dash-border rounded-md p-6 h-full overflow-y-auto custom-scrollbar">
+            <section className="flex-1 bg-dash-panel border border-dash-border rounded-md p-5 h-full overflow-y-auto custom-scrollbar">
                 <div className="flex flex-col gap-6">
 
                     <div className="border-b border-dash-border pb-4">
                         <div className="text-base font-semibold text-dash-text mb-2">Holdings</div>
-                        <div className="flex items-center gap-40">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
                             <div>
                                 <div className="text-xs text-dash-text-muted">Invested</div>
                                 <div className="text-lg font-bold text-dash-text">₹102.30</div>
