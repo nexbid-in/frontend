@@ -8,6 +8,7 @@ import { queryClient } from "@/config/queryClient";
 import { hideToast, showToast } from "@/store/uiSlice";
 import { Toast, ConfirmModal, UserAvatar } from "@/components/ui";
 import { NavbarNiftyTicker } from "./NavbarNiftyTicker";
+import { NavbarMarginAvailable } from "./NavbarMarginAvailable";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -130,10 +131,7 @@ export function AppLayout() {
                 </div>
 
                 <div className="flex items-center gap-5 text-sm">
-                    <div className="flex items-center gap-2">
-                        <span className="text-dash-text-muted">Margin Available:</span>
-                        <span className="font-medium text-dash-text">₹3757.30</span>
-                    </div>
+                    <NavbarMarginAvailable />
 
                     <Link
                         to={APP_ROUTES.USER.FUNDS}
