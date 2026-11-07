@@ -7,6 +7,8 @@ import { queryClient } from "@/config/queryClient";
 
 import { hideToast, showToast } from "@/store/uiSlice";
 import { Toast, ConfirmModal, UserAvatar } from "@/components/ui";
+import { NavbarNiftyTicker } from "./NavbarNiftyTicker";
+import { NavbarMarginAvailable } from "./NavbarMarginAvailable";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -49,7 +51,11 @@ export function AppLayout() {
     // Close dropdown on click outside or Escape key
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (
+                dropdownRef.current &&
+                event.target instanceof Node &&
+                !dropdownRef.current.contains(event.target)
+            ) {
                 setIsDropdownOpen(false);
             }
         };
@@ -75,6 +81,7 @@ export function AppLayout() {
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
     const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
+    const isWatchlistActive = location.pathname.startsWith(APP_ROUTES.USER.WATCHLIST);
     const isFundsActive = location.pathname === APP_ROUTES.USER.FUNDS;
 
     return (
@@ -85,13 +92,7 @@ export function AppLayout() {
                         nexbid
                     </Link>
 
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-dash-text-muted">NIFTY50 Index</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-sm font-semibold text-dash-text">25,492.30</span>
-                            <span className="text-xs font-medium text-[#ef4444]">-17.40 (-0.07%)</span>
-                        </div>
-                    </div>
+                    <NavbarNiftyTicker />
                 </div>
 
                 <div className="flex items-center gap-5">
@@ -105,7 +106,16 @@ export function AppLayout() {
                     >
                         Markets
                     </Link>
-                    <Link to={APP_ROUTES.USER.WATCHLIST} className="text-dash-text-muted hover:text-dash-text transition-colors">Watchlist</Link>
+                    <Link
+                        to={APP_ROUTES.USER.WATCHLIST}
+                        className={`${
+                            isWatchlistActive
+                                ? "text-primary-green font-medium"
+                                : "text-dash-text-muted hover:text-dash-text"
+                        } px-3 py-1.5 rounded-md transition-colors`}
+                    >
+                        Watchlist
+                    </Link>
                     <Link to={APP_ROUTES.USER.PORTFOLIO} className="text-dash-text-muted hover:text-dash-text transition-colors">Portfolio</Link>
                     <Link to={APP_ROUTES.USER.ORDERS} className="text-dash-text-muted hover:text-dash-text transition-colors">Orders</Link>
                     <Link
@@ -121,10 +131,7 @@ export function AppLayout() {
                 </div>
 
                 <div className="flex items-center gap-5 text-sm">
-                    <div className="flex items-center gap-2">
-                        <span className="text-dash-text-muted">Margin Available:</span>
-                        <span className="font-medium text-dash-text">₹3757.30</span>
-                    </div>
+                    <NavbarMarginAvailable />
 
                     <Link
                         to={APP_ROUTES.USER.FUNDS}

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch } from "@/store/hooks";
 import { showToast } from "@/store/uiSlice";
-import { fundsService } from "../services/fundsService";
+import { useWalletOverview } from "../hooks/useWalletOverview";
 import { QUERY_KEYS } from "@/constants/queryKeys";
 import { StatementModal, type StatementModalTab } from "../components/StatementModal";
 import { PaymentModal } from "../components/PaymentModal";
@@ -31,10 +31,7 @@ export const FundsPage: React.FC = () => {
         isFetching: isFetchingOverview,
         error: queryError,
         refetch: refetchOverview,
-    } = useQuery({
-        queryKey: QUERY_KEYS.wallet.overview(),
-        queryFn: fundsService.getOverview,
-    });
+    } = useWalletOverview();
 
     const overviewError = queryError instanceof Error ? queryError.message : null;
 

@@ -24,4 +24,25 @@ export const QUERY_KEYS = {
     profile: {
         details: () => ["profile"],
     },
+    watchlist: {
+        all: ["watchlist"],
+        user: () => ["watchlist", "user"],
+    },
+    stocks: {
+        all: ["stocks"],
+        search: (param?: string | { query?: string; type?: string }) => [
+            "stocks",
+            "search",
+            typeof param === "object" ? param : { query: param ?? "" },
+        ],
+        infinite: (params?: { query?: string; type?: string }) => [
+            "stocks",
+            "infinite",
+            params ?? {},
+        ],
+    },
+    market: {
+        all: ["market"],
+        overview: (symbol: string) => ["market", "overview", symbol],
+    },
 };
