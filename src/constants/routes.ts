@@ -78,4 +78,12 @@ export const API_ROUTES = {
         HISTORY: '/market/history',
         OVERVIEW: (symbol: string) => `/market/overview/${encodeURIComponent(symbol)}`,
     },
+    ORDERS: {
+        ROOT: '/orders',
+        CANCEL: (id: string) => `/orders/${id}`,
+    },
+    PORTFOLIO: {
+        POSITIONS: '/portfolio/positions',
+        SQUARE_OFF: (id: string) => `/portfolio/positions/${id}/square-off`,
+    },
 } as const;

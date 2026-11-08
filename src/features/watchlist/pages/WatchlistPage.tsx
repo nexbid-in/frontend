@@ -8,9 +8,8 @@ import { WatchlistSidebar } from "../components/WatchlistSidebar";
 import { StockChart } from "../components/StockChart";
 import { StockOverviewPanel } from "../components/StockOverviewPanel";
 import type { WatchlistItemDTO } from "../types";
-import { getStockMarketQuote, formatINR } from "../utils/stockPriceHelper";
-import { marketWebSocketService } from "../services/marketWebSocketService";
 import { useAppSelector } from "@/store/hooks";
+import { OrderPlacementModal } from "@/features/trading";
 
 export function WatchlistPage() {
     const { data: watchlistItems = [], isLoading } = useWatchlistQuery();
@@ -220,67 +219,16 @@ export function WatchlistPage() {
                 )}
             </main>
 
-            {/* Simple Order Modal Feedback Placeholder for Phase 5 */}
+            {/* Production-grade Order Placement Modal */}
             {orderModal.isOpen && orderModal.item && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-                    <div className="w-full max-w-md bg-dash-panel border border-dash-border rounded-xl shadow-2xl p-6 space-y-4">
-                        <div className="flex items-center justify-between border-b border-dash-border pb-3">
-                            <div className="flex items-center gap-2">
-                                <span
-                                    className={`px-2 py-0.5 text-xs font-bold text-white rounded ${
-                                        orderModal.type === "BUY" ? "bg-[#00873e]" : "bg-[#c83200]"
-                                    }`}
-                                >
-                                    {orderModal.type}
-                                </span>
-                                <span className="text-sm font-semibold text-dash-text">
-                                    {orderModal.item.stock.symbol}
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
-                                className="text-dash-text-muted hover:text-dash-text transition-colors cursor-pointer"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div className="text-xs text-dash-text-muted space-y-2">
-                            <p>
-                                <strong className="text-dash-text">{orderModal.item.stock.name}</strong> ({orderModal.item.stock.exchange})
-                            </p>
-                            <p>
-                                Market Price: <span className="font-mono text-dash-text font-semibold">₹{formatINR(marketWebSocketService.getLatestTick(orderModal.item.stock.symbol)?.ltp ?? getStockMarketQuote(orderModal.item.stock.symbol).price)}</span>
-                            </p>
-                            <div className="p-3 bg-dash-panel-2 rounded-lg border border-dash-border text-xs text-dash-text-muted">
-                                Full Order Execution Form (Intraday MIS / Longterm CNC, Quantity, Limit vs Market) will be connected here.
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
-                                className="px-4 py-1.5 text-xs rounded-md border border-dash-border text-dash-text hover:bg-dash-card transition-colors cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
-                                className={`px-4 py-1.5 text-xs font-semibold text-white rounded-md transition-colors cursor-pointer ${
-                                    orderModal.type === "BUY" ? "bg-[#00873e] hover:bg-[#009c48]" : "bg-[#c83200] hover:bg-[#df3d17]"
-                                }`}
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <OrderPlacementModal
+                    isOpen={orderModal.isOpen}
+                    onClose={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
+                    initialSymbol={orderModal.item.stock.symbol}
+                    initialSide={orderModal.type}
+                    initialExchange={orderModal.item.stock.exchange}
+                    stockName={orderModal.item.stock.name}
+                />
             )}
         </div>
     );

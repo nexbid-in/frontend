@@ -45,4 +45,12 @@ export const QUERY_KEYS = {
         all: ["market"],
         overview: (symbol: string) => ["market", "overview", symbol],
     },
+    orders: {
+        all: ["orders"],
+        list: (status?: string) => ["orders", "list", status ?? "ALL"],
+    },
+    portfolio: {
+        all: ["portfolio"],
+        positions: (filter?: "OPEN" | "ALL") => ["portfolio", "positions", filter ?? "OPEN"],
+    },
 };
