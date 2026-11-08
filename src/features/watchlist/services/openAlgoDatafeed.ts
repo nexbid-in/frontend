@@ -501,9 +501,14 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
             tick.timestamp > 1e11 ? Math.floor(tick.timestamp / 1000) : tick.timestamp;
 
         // In Mock mode, bypass the strict 09:15-15:30 IST market check to allow 24/7 testing and candle formation.
-        // In Production/Fyers mode, strictly enforce market hours to prevent ghost candles overnight and on weekends.
+        // In Production/Fyers mode, strictly enforce market hours: when the market is closed (night/weekend/holiday),
+        // completely drop incoming ticks so the chart remains 100% frozen and static (production Zerodha/Fyers standard).
         const isMock = (import.meta.env.VITE_MARKET_DATA_PROVIDER || "mock").toLowerCase() === "mock";
         const marketOpen = isMock || isIndianMarketOpen(tick.timestamp);
+
+        if (!marketOpen) {
+            return;
+        }
 
         // Deliver live bar updates to matching subscribers
         for (const sub of this.subscribers.values()) {
@@ -511,24 +516,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                 const bucketStart =
                     Math.floor(tickTimeSec / sub.intervalSec) * sub.intervalSec;
 
-                // 1. Off-market hours (night / weekend / before 9:15 or after 15:30):
-                // Do NOT create ghost candles or overwrite historical candle volume with cumulative day volume.
-                // Update the last valid session candle in-place without advancing time.
-                if (!marketOpen) {
-                    if (sub.currentBar) {
-                        sub.currentBar = {
-                            ...sub.currentBar,
-                            high: Math.max(sub.currentBar.high, ltp),
-                            low: Math.min(sub.currentBar.low, ltp),
-                            close: ltp,
-                        };
-                        sub.onBar({ ...sub.currentBar });
-                        this.onBarListener?.({ ...sub.currentBar });
-                    }
-                    continue;
-                }
-
-                // 2. Active market hours: handle real-time candle formation and delta volume
+                // Active market hours: handle real-time candle formation and delta volume
                 if (!sub.currentBar || bucketStart > sub.currentBar.time) {
                     // Period rolled over or new candle formation
                     let initialCandleVol: number | undefined;
