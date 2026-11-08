@@ -122,15 +122,15 @@ export function AppLayout() {
     return (
         <div className="dashboard-root flex flex-col h-screen overflow-hidden bg-dash-bg text-dash-text font-sans" data-theme={theme}>
             <nav className="h-[48px] shrink-0 bg-dash-panel flex items-center justify-between px-5 border-b border-dash-border">
-                <div className="flex items-center gap-5">
-                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-xl font-bold text-primary-green tracking-tight">
+                <div className="flex items-center gap-5 shrink-0">
+                    <Link to={APP_ROUTES.USER.DASHBOARD} className="text-xl font-bold text-primary-green tracking-tight shrink-0">
                         nexbid
                     </Link>
 
                     <NavbarNiftyTicker />
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                     {/* Universal Search Modal Trigger Button */}
                     <button
                         type="button"
@@ -205,7 +205,7 @@ export function AppLayout() {
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-5 text-sm">
+                <div className="flex items-center gap-5 text-sm shrink-0">
                     <NavbarMarginAvailable />
 
                     <Link

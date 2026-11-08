@@ -18,11 +18,11 @@ export const NavbarNiftyTicker: React.FC<NavbarNiftyTickerProps> = ({
     const quote = useLiveStockQuote(symbol);
 
     return (
-        <div className="flex items-center gap-3 select-none">
-            <span className="text-sm font-medium text-dash-text-muted">{label}</span>
-            <div className="flex items-baseline gap-2">
+        <div className="flex items-center gap-3 select-none shrink-0">
+            <span className="text-sm font-medium text-dash-text-muted shrink-0">{label}</span>
+            <div className="flex items-baseline gap-2 w-[220px] shrink-0 tabular-nums">
                 <span
-                    className={`text-sm font-semibold font-mono transition-colors duration-200 ${
+                    className={`text-sm font-semibold font-mono tabular-nums shrink-0 transition-colors duration-200 ${
                         quote.flashDirection === "up"
                             ? "text-[#22c55e]"
                             : quote.flashDirection === "down"
@@ -33,7 +33,7 @@ export const NavbarNiftyTicker: React.FC<NavbarNiftyTickerProps> = ({
                     {formatINR(quote.price)}
                 </span>
                 <span
-                    className={`text-xs font-mono font-medium ${
+                    className={`text-xs font-mono font-medium tabular-nums shrink-0 ${
                         quote.isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
                     }`}
                 >

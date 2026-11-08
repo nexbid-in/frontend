@@ -295,9 +295,8 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                     this.onBarListener?.({ ...lastBar });
 
                     // Seed the active subscription's forming bar if one exists
-                    const subKeyPrefix = `${symbol}_`;
-                    for (const [key, sub] of this.subscribers.entries()) {
-                        if (key.startsWith(subKeyPrefix)) {
+                    for (const sub of this.subscribers.values()) {
+                        if (sub.symbol === symbol) {
                             sub.currentBar = { ...lastBar };
                         }
                     }
@@ -428,15 +427,23 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
         onBar: (bar: Bar, meta?: LiveBarMeta) => void
     ): UnsubscribeFn {
         const symbol = req.symbol.toUpperCase().trim();
+        const resolution = intervalToResolution(req.interval);
         const intervalSec = intervalToSeconds(req.interval);
         const subId = `sub_${++this.nextSubscriptionId}`;
+
+        // Attempt to pre-seed currentBar from cached historical bars if already loaded
+        const cacheKey = `${symbol}_${resolution}`;
+        const cached = this.memoryCache.get(cacheKey);
+        const initialBar = cached && cached.bars.length > 0
+            ? { ...cached.bars[cached.bars.length - 1] }
+            : null;
 
         const subscription: ActiveSubscription = {
             id: subId,
             symbol,
             intervalSec,
             onBar,
-            currentBar: null,
+            currentBar: initialBar,
         };
 
         // Subscribe to live ticks from shared reference-counted market WebSocket service
@@ -493,7 +500,15 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
         const tickTimeSec =
             tick.timestamp > 1e11 ? Math.floor(tick.timestamp / 1000) : tick.timestamp;
 
-        const marketOpen = isIndianMarketOpen(tick.timestamp);
+        // In Mock mode, bypass the strict 09:15-15:30 IST market check to allow 24/7 testing and candle formation.
+        // In Production/Fyers mode, strictly enforce market hours: when the market is closed (night/weekend/holiday),
+        // completely drop incoming ticks so the chart remains 100% frozen and static (production Zerodha/Fyers standard).
+        const isMock = (import.meta.env.VITE_MARKET_DATA_PROVIDER || "mock").toLowerCase() === "mock";
+        const marketOpen = isMock || isIndianMarketOpen(tick.timestamp);
+
+        if (!marketOpen) {
+            return;
+        }
 
         // Deliver live bar updates to matching subscribers
         for (const sub of this.subscribers.values()) {
@@ -501,21 +516,7 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
                 const bucketStart =
                     Math.floor(tickTimeSec / sub.intervalSec) * sub.intervalSec;
 
-                // 1. Off-market hours (night / weekend / before 9:15 or after 15:30):
-                // Do NOT create ghost candles or overwrite historical candle volume with cumulative day volume.
-                if (!marketOpen) {
-                    if (sub.currentBar) {
-                        sub.currentBar = {
-                            ...sub.currentBar,
-                            close: ltp,
-                        };
-                        sub.onBar({ ...sub.currentBar });
-                        this.onBarListener?.({ ...sub.currentBar });
-                    }
-                    continue;
-                }
-
-                // 2. Active market hours: handle real-time candle formation and delta volume
+                // Active market hours: handle real-time candle formation and delta volume
                 if (!sub.currentBar || bucketStart > sub.currentBar.time) {
                     // Period rolled over or new candle formation
                     let initialCandleVol: number | undefined;
