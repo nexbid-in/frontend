@@ -8,10 +8,12 @@ import "openalgo-charts/draw";
 import { useAppSelector } from "@/store/hooks";
 import {
     NexbidOpenAlgoDataFeed,
+    isIndianMarketOpen,
     type TickListener,
     type DataFeedStatus,
 } from "../services/openAlgoDatafeed";
 import { formatINR, getStockMarketQuote } from "../utils/stockPriceHelper";
+import { useLiveStockQuote } from "../hooks/useLiveStockQuote";
 import { registerCustomDrawingTools } from "../utils/customDrawingTools";
 
 // Register enhanced right-aligned horizontal line & ray price badges
@@ -1009,14 +1011,39 @@ export const StockChart: React.FC<StockChartProps> = ({
     // Calculate Active Candle Data for Overlay & Trade Buttons
     // ==========================================
     const fallbackQuote = getStockMarketQuote(symbol);
+    const liveQuote = useLiveStockQuote(symbol);
 
     // Live market price / last traded price (LTP) strictly for BUY & SELL execution buttons.
     // When chart is empty or in hard error with no data, price is null to avoid deceptive fake quotes.
     const currentMarketPrice = latestBar
         ? latestBar.close
+        : liveQuote.price
+        ? liveQuote.price
         : isChartEmpty || chartError
         ? null
         : fallbackQuote.price;
+
+    const isMock = (import.meta.env.VITE_MARKET_DATA_PROVIDER || "mock").toLowerCase() === "mock";
+    const isMarketActive = isMock || isIndianMarketOpen();
+
+    const hasBid = typeof liveQuote.bidPrice === "number" && liveQuote.bidPrice > 0;
+    const hasAsk = typeof liveQuote.askPrice === "number" && liveQuote.askPrice > 0;
+
+    // During active market hours:
+    // SELL button displays Best Bid (the highest price a buyer is offering to pay you)
+    // BUY button displays Best Ask (the lowest price a seller demands from you)
+    // Off-market hours (or when depth is unavailable): gracefully falls back to LTP on both buttons.
+    const sellPrice = (isMarketActive && hasBid)
+        ? liveQuote.bidPrice!
+        : currentMarketPrice;
+
+    const buyPrice = (isMarketActive && hasAsk)
+        ? liveQuote.askPrice!
+        : currentMarketPrice;
+
+    const spread = (isMarketActive && hasBid && hasAsk)
+        ? Math.max(0, liveQuote.askPrice! - liveQuote.bidPrice!).toFixed(2)
+        : "0.00";
 
     // Crosshair hover bar or latest bar for top-left OHLC historical inspection readout
     const activeBar = hoverBar || latestBar;
@@ -1351,44 +1378,44 @@ export const StockChart: React.FC<StockChartProps> = ({
                 {/* 2. Quick Trading Buttons (Sell / Spread / Buy) */}
                 {canTrade && (
                     <div className="pointer-events-auto flex items-center gap-2 mt-0.5">
-                        {/* SELL Button (Matching Topbar Red-Orange Color) */}
+                        {/* SELL Button (Best Bid during market hours, LTP off-market) */}
                         <button
                             type="button"
-                            disabled={currentMarketPrice === null}
+                            disabled={sellPrice === null}
                             onClick={onSell}
-                            title={currentMarketPrice === null ? "Market data unavailable" : `Sell ${symbol}`}
+                            title={sellPrice === null ? "Market data unavailable" : `Sell ${symbol} at ₹${formatINR(sellPrice)}`}
                             className={`flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#c83200] bg-[#c83200]/10 hover:bg-[#c83200]/20 active:scale-95 transition-all shadow-xs group ${
-                                currentMarketPrice === null ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                                sellPrice === null ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
                             }`}
                         >
                             <span className="font-mono text-xs font-bold text-[#c83200] group-hover:brightness-110">
-                                {currentMarketPrice !== null ? formatINR(currentMarketPrice) : "₹ —"}
+                                {sellPrice !== null ? formatINR(sellPrice) : "₹ —"}
                             </span>
                             <span className="text-[10px] font-bold text-[#c83200] tracking-wider">
                                 SELL
                             </span>
                         </button>
 
-                        {/* Bid-Ask Spread between SELL and BUY (Fyers Style) */}
+                        {/* Bid-Ask Spread between SELL and BUY (TradingView & Fyers Style) */}
                         <span
                             className="font-mono text-xs font-semibold text-[#787b86] px-0.5 select-none"
-                            title="Bid-Ask Spread"
+                            title={`Bid-Ask Spread: ₹${spread}`}
                         >
-                            0.00
+                            {spread}
                         </span>
 
-                        {/* BUY Button (Matching Topbar Green Color) */}
+                        {/* BUY Button (Best Ask during market hours, LTP off-market) */}
                         <button
                             type="button"
-                            disabled={currentMarketPrice === null}
+                            disabled={buyPrice === null}
                             onClick={onBuy}
-                            title={currentMarketPrice === null ? "Market data unavailable" : `Buy ${symbol}`}
+                            title={buyPrice === null ? "Market data unavailable" : `Buy ${symbol} at ₹${formatINR(buyPrice)}`}
                             className={`flex flex-col items-center justify-center px-3 py-1 min-w-[76px] rounded-md border border-[#00873e] bg-[#00873e]/10 hover:bg-[#00873e]/20 active:scale-95 transition-all shadow-xs group ${
-                                currentMarketPrice === null ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                                buyPrice === null ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
                             }`}
                         >
                             <span className="font-mono text-xs font-bold text-[#00873e] group-hover:brightness-110">
-                                {currentMarketPrice !== null ? formatINR(currentMarketPrice) : "₹ —"}
+                                {buyPrice !== null ? formatINR(buyPrice) : "₹ —"}
                             </span>
                             <span className="text-[10px] font-bold text-[#00873e] tracking-wider">
                                 BUY
