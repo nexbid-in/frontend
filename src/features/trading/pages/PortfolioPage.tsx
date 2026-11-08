@@ -368,18 +368,9 @@ export const PortfolioPage: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Net Total P&L & Overall Return */}
+                    {/* Net Total P&L */}
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg col-span-2 md:col-span-1">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-dash-text-muted">Total P&L</span>
-                            <span
-                                className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded ${
-                                    isNetPositive ? "bg-[#22c55e]/15 text-[#22c55e]" : "bg-[#ef4444]/15 text-[#ef4444]"
-                                }`}
-                            >
-                                {isNetPositive ? `+${summary.overallReturnPercentage.toFixed(2)}%` : `${summary.overallReturnPercentage.toFixed(2)}%`}
-                            </span>
-                        </div>
+                        <span className="text-[11px] text-dash-text-muted block">Total P&L</span>
                         <span
                             className={`text-sm md:text-base font-bold font-mono mt-1 block ${
                                 isNetPositive ? "text-[#22c55e]" : "text-[#ef4444]"

@@ -4,24 +4,15 @@ import { useOrdersQuery, useCancelOrderMutation, useMarketStatusQuery } from "..
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { formatINR } from "@/features/watchlist";
 import { APP_ROUTES } from "@/constants/routes";
-import type { OrderResponseDTO, OrdersTabFilter, OrderStatus } from "../types";
+import type { OrderResponseDTO, OrdersTabFilter } from "../types";
 
 export const OrdersPage: React.FC = () => {
     const [selectedTab, setSelectedTab] = useState<OrdersTabFilter>("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [cancellingOrder, setCancellingOrder] = useState<OrderResponseDTO | null>(null);
 
-    // Map UI tab to backend query filter if applicable, or fetch all and partition locally
-    const backendStatusParam: OrderStatus | undefined =
-        selectedTab === "PENDING"
-            ? "PENDING"
-            : selectedTab === "EXECUTED"
-            ? "EXECUTED"
-            : selectedTab === "CANCELLED"
-            ? "CANCELLED"
-            : undefined;
-
-    const { data: orders = [], isLoading, isFetching, refetch } = useOrdersQuery(backendStatusParam);
+    // Fetch all orders so tab counts and instant tab switching remain accurate
+    const { data: orders = [], isLoading, isFetching, refetch } = useOrdersQuery();
     const { data: marketStatus } = useMarketStatusQuery();
     const cancelMutation = useCancelOrderMutation();
 
