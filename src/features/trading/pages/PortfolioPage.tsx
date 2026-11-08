@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { usePositionsQuery, useSquareOffPositionMutation } from "../hooks/useTrading";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { useLiveStockQuote, formatINR } from "@/features/watchlist";
+import { marketWebSocketService, useLiveStockQuote, formatINR } from "@/features/watchlist";
 import { APP_ROUTES } from "@/constants/routes";
 import type { PositionResponseDTO, PositionsFilter } from "../types";
 
@@ -167,19 +167,77 @@ export const PortfolioPage: React.FC = () => {
     const { data, isLoading, isFetching, refetch } = usePositionsQuery(selectedFilter);
     const squareOffMutation = useSquareOffPositionMutation();
 
-    const summary = useMemo(() => {
-        return (
-            data?.summary ?? {
-                totalInvestment: 0,
-                currentPortfolioValue: 0,
-                totalUnrealizedPnL: 0,
-                totalRealizedPnL: 0,
-                netPnL: 0,
-                overallReturnPercentage: 0,
-                positionsCount: { total: 0, open: 0, closed: 0 },
-            }
+    // Map of live ticks: { [symbol]: liveLtp }
+    const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+
+    // Subscribe to live WebSocket feeds for all active open positions
+    useEffect(() => {
+        const openPositions = (data?.positions ?? []).filter((p) => p.quantity > 0);
+        if (openPositions.length === 0) return;
+
+        // Subscribe to live WebSocket feeds for each open symbol
+        const unsubs = openPositions.map((pos) =>
+            marketWebSocketService.subscribe(pos.symbol, (tick) => {
+                setLivePrices((prev) => {
+                    if (prev[pos.symbol] === tick.ltp) return prev;
+                    return { ...prev, [pos.symbol]: tick.ltp };
+                });
+            })
         );
-    }, [data?.summary]);
+
+        // Cleanup unsubscriptions on unmount or position change
+        return () => {
+            unsubs.forEach((unsub) => unsub());
+        };
+    }, [data?.positions]);
+
+    // Dynamically calculate live portfolio summary on every price tick
+    const summary = useMemo(() => {
+        const positions = data?.positions ?? [];
+        const openPositions = positions.filter((p) => p.quantity > 0);
+        const totalRealizedPnL = data?.summary?.totalRealizedPnL ?? 0;
+
+        let totalInvestment = 0;
+        let currentPortfolioValue = 0;
+        let totalUnrealizedPnL = 0;
+
+        for (const pos of openPositions) {
+            const cost = pos.averagePrice * pos.quantity;
+            totalInvestment += cost;
+
+            // Use live WebSocket tick if available, or in-memory singleton cache, fallback to snapshot
+            const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
+            const currentLtp =
+                livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.currentLtp ?? pos.averagePrice;
+            const isLong = pos.side === "LONG";
+
+            const posUnrealized = isLong
+                ? (currentLtp - pos.averagePrice) * pos.quantity
+                : (pos.averagePrice - currentLtp) * pos.quantity;
+
+            totalUnrealizedPnL += posUnrealized;
+
+            if (isLong) {
+                currentPortfolioValue += currentLtp * pos.quantity;
+            } else {
+                currentPortfolioValue += cost + posUnrealized;
+            }
+        }
+
+        const netPnL = totalRealizedPnL + totalUnrealizedPnL;
+        const overallReturnPercentage =
+            totalInvestment > 0 ? (totalUnrealizedPnL / totalInvestment) * 100 : 0;
+
+        return {
+            totalInvestment: totalInvestment > 0 ? totalInvestment : (data?.summary?.totalInvestment ?? 0),
+            currentPortfolioValue: totalInvestment > 0 ? currentPortfolioValue : (data?.summary?.currentPortfolioValue ?? 0),
+            totalUnrealizedPnL,
+            totalRealizedPnL,
+            netPnL,
+            overallReturnPercentage,
+            positionsCount: data?.summary?.positionsCount ?? { total: 0, open: 0, closed: 0 },
+        };
+    }, [data?.positions, data?.summary, livePrices]);
 
     // Filter positions by user search query
     const filteredPositions = useMemo(() => {
