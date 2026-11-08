@@ -4,6 +4,17 @@ export type ProductType = 'CNC' | 'MIS';
 export type OrderStatus = 'PENDING' | 'EXECUTED' | 'CANCELLED' | 'REJECTED';
 export type PositionSide = 'LONG' | 'SHORT';
 
+export type MarketSession = 'REGULAR' | 'PRE_MARKET' | 'POST_MARKET' | 'CLOSED';
+
+export interface MarketStatusInfo {
+    isOpen: boolean;
+    isMisAllowed: boolean;
+    isAmoAllowed: boolean;
+    session: MarketSession;
+    currentIstTime: string;
+    enforceMarketHours: boolean;
+}
+
 export interface PlaceOrderRequestDTO {
     symbol: string;
     side: OrderSide;
@@ -12,6 +23,7 @@ export interface PlaceOrderRequestDTO {
     quantity: number;
     price?: number | null;
     triggerPrice?: number | null;
+    isAmo?: boolean;
 }
 
 export interface OrderResponseDTO {
@@ -30,6 +42,7 @@ export interface OrderResponseDTO {
     triggerPrice: number | null;
     rejectionReason: string | null;
     blockedMargin: number;
+    isAmo: boolean;
     createdAt: string;
     updatedAt: string;
 }

@@ -56,6 +56,19 @@ export function usePositionsQuery(filter: PositionsFilter = "OPEN") {
 }
 
 /**
+ * Hook to retrieve Indian stock exchange market session status and trading hours.
+ * Automatically polls every 30 seconds.
+ */
+export function useMarketStatusQuery() {
+    return useQuery({
+        queryKey: QUERY_KEYS.orders.marketStatus(),
+        queryFn: () => tradingService.getMarketStatus(),
+        staleTime: 1000 * 30, // 30 seconds
+        refetchInterval: 1000 * 30,
+    });
+}
+
+/**
  * Hook to place a new virtual order.
  * Automatically invalidates Orders, Portfolio, and Wallet Margin caches.
  */
@@ -71,17 +84,19 @@ export function usePlaceOrderMutation() {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.portfolio.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
 
-            const statusText =
-                data.status === "EXECUTED"
-                    ? "executed immediately"
-                    : data.status === "PENDING"
-                    ? "placed as pending"
-                    : "submitted";
+            const isAmo = Boolean(data.isAmo);
+            const statusText = isAmo
+                ? "placed as After Market Order (AMO) — queued for market open at 09:15 AM IST"
+                : data.status === "EXECUTED"
+                ? "executed immediately"
+                : data.status === "PENDING"
+                ? "placed as pending"
+                : "submitted";
 
             dispatch(
                 showToast({
                     type: "success",
-                    title: `${data.side} Order Placed`,
+                    title: isAmo ? `${data.side} AMO Placed` : `${data.side} Order Placed`,
                     message: `${data.quantity} qty of ${data.symbol} (${data.orderType} • ${data.productType}) ${statusText}.`,
                 })
             );

@@ -80,6 +80,7 @@ export const API_ROUTES = {
     },
     ORDERS: {
         ROOT: '/orders',
+        MARKET_STATUS: '/orders/market-status',
         CANCEL: (id: string) => `/orders/${id}`,
     },
     PORTFOLIO: {

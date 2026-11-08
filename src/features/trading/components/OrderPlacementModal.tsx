@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { usePlaceOrderMutation } from "../hooks/useTrading";
+import { usePlaceOrderMutation, useMarketStatusQuery } from "../hooks/useTrading";
 import { useWalletOverview } from "@/features/funds";
 import { useLiveStockQuote, formatINR } from "@/features/watchlist";
 import type { OrderSide, OrderType, ProductType } from "../types";
@@ -34,19 +34,33 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const symbol = initialSymbol.toUpperCase().trim();
     const liveQuote = useLiveStockQuote(symbol);
     const { data: wallet } = useWalletOverview({ enabled: true });
+    const { data: marketStatus } = useMarketStatusQuery();
     const placeOrderMutation = usePlaceOrderMutation();
+
+    const isEnforcingHours = Boolean(marketStatus?.enforceMarketHours);
+    const isMarketClosed = isEnforcingHours && marketStatus ? !marketStatus.isOpen : false;
+    const isMisBlocked = isEnforcingHours && Boolean(marketStatus?.isOpen && !marketStatus.isMisAllowed);
 
     // Current applicable price
     const currentPrice = liveQuote.price > 0 ? liveQuote.price : initialPrice ?? 0;
 
     // Form states initialize cleanly with the props (no setState in useEffect needed!)
     const [side, setSide] = useState<OrderSide>(initialSide);
-    const [productType, setProductType] = useState<ProductType>("MIS");
+    const [productType, setProductType] = useState<ProductType>(() => (isMisBlocked ? "CNC" : "MIS"));
     const [orderType, setOrderType] = useState<OrderType>("MARKET");
     const [quantity, setQuantity] = useState<number>(1);
     const [limitPrice, setLimitPrice] = useState<string>(() =>
         currentPrice > 0 ? currentPrice.toFixed(2) : ""
     );
+    const [manualAmo, setManualAmo] = useState<boolean>(false);
+
+    // Determine whether this order will be submitted as an AMO:
+    // When market hours are enforced:
+    //   - Closed: MUST be AMO (regular orders are rejected by exchange)
+    //   - Open: CANNOT be AMO (AMOs are rejected during market hours)
+    // When market hours are not enforced (mock / test mode):
+    //   - Follows manualAmo toggle
+    const isAmo = isEnforcingHours ? isMarketClosed : manualAmo;
 
     const qtyInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,8 +108,9 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
         if (orderType === "LIMIT" && (isNaN(Number(limitPrice)) || Number(limitPrice) <= 0))
             return false;
         if (isShortOnMargin || isZeroBalance) return false;
+        if (isMisBlocked && productType === "MIS") return false;
         return true;
-    }, [quantity, orderType, limitPrice, isShortOnMargin, isZeroBalance]);
+    }, [quantity, orderType, limitPrice, isShortOnMargin, isZeroBalance, isMisBlocked, productType]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -109,6 +124,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                 productType,
                 quantity,
                 price: orderType === "LIMIT" ? Number(limitPrice) : undefined,
+                isAmo,
             });
             onClose();
         } catch {
@@ -203,6 +219,55 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                     </div>
                 </div>
 
+                {/* 2.1 AMO Notice Banner */}
+                {isAmo && (
+                    <div className="mx-4 mt-3 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-start gap-2.5">
+                        <div className="p-1 rounded bg-indigo-500/20 text-indigo-400 shrink-0 mt-0.5">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                        </div>
+                        <div className="flex-1 text-[11px] leading-relaxed">
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-indigo-400 uppercase tracking-wide">
+                                    After Market Order (AMO)
+                                </span>
+                                {marketStatus?.currentIstTime && (
+                                    <span className="text-dash-text-muted text-[10px]">
+                                        ({marketStatus.currentIstTime})
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-dash-text-muted mt-0.5">
+                                {isMarketClosed
+                                    ? "Indian stock exchange (NSE/BSE) is closed. This order will be queued as an AMO and submitted upon market open at 09:15 AM IST."
+                                    : "This order will be queued as an After Market Order (AMO) and executed at market open."}
+                            </p>
+                        </div>
+                        {!isEnforcingHours && (
+                            <button
+                                type="button"
+                                onClick={() => setManualAmo(false)}
+                                className="text-[10px] text-dash-text-muted hover:text-dash-text underline cursor-pointer shrink-0"
+                            >
+                                Disable
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* 2.2 MIS Cutoff Notice Banner */}
+                {isMisBlocked && (
+                    <div className="mx-4 mt-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 flex items-start gap-2">
+                        <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>
+                            <strong>MIS Cutoff Reached</strong>: New intraday orders are blocked after 03:20 PM IST due to exchange auto-square-off cutoffs. Please select Longterm CNC.
+                        </span>
+                    </div>
+                )}
+
                 {/* 3. Form Body */}
                 <form onSubmit={handleSubmit} className="p-4 space-y-4">
                     {/* Product Type (Intraday MIS vs Longterm CNC) */}
@@ -216,11 +281,14 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 type="button"
+                                disabled={isMisBlocked}
                                 onClick={() => setProductType("MIS")}
-                                className={`flex flex-col p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                                    productType === "MIS"
-                                        ? `${accentBorder} ${subtleBg}`
-                                        : "border-dash-border hover:bg-dash-panel-2"
+                                className={`flex flex-col p-2.5 rounded-lg border text-left transition-all ${
+                                    isMisBlocked
+                                        ? "opacity-50 cursor-not-allowed border-dash-border bg-dash-panel-2/40"
+                                        : productType === "MIS"
+                                        ? `${accentBorder} ${subtleBg} cursor-pointer`
+                                        : "border-dash-border hover:bg-dash-panel-2 cursor-pointer"
                                 }`}
                             >
                                 <div className="flex items-center justify-between w-full">
@@ -230,7 +298,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                                     </span>
                                 </div>
                                 <span className="text-[10px] text-dash-text-muted mt-0.5">
-                                    Square off by 3:15 PM
+                                    {isMisBlocked ? "Blocked after 3:20 PM" : "Square off by 3:15 PM"}
                                 </span>
                             </button>
 
@@ -286,6 +354,27 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                             </button>
                         </div>
                     </div>
+
+                    {/* Manual AMO Toggle (Sandbox / Mock Mode) */}
+                    {!isEnforcingHours && !isAmo && (
+                        <div className="flex items-center justify-between p-2.5 bg-dash-panel-2 border border-dash-border rounded-lg text-xs">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400">
+                                    AMO
+                                </span>
+                                <span className="text-dash-text-muted text-xs">
+                                    Test After Market Order (AMO)
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setManualAmo(true)}
+                                className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                            >
+                                Enable AMO
+                            </button>
+                        </div>
+                    )}
 
                     {/* Quantity & Price Inputs */}
                     <div className="grid grid-cols-2 gap-3">
@@ -447,11 +536,13 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                                             d="M4 12a8 8 0 018-8v8H4z"
                                         />
                                     </svg>
-                                    <span>Placing Order...</span>
+                                    <span>Placing {isAmo ? "AMO" : "Order"}...</span>
                                 </>
                             ) : (
                                 <span>
-                                    {side} {quantity} {symbol}
+                                    {isAmo
+                                        ? `Place AMO ${side} (${quantity} Qty)`
+                                        : `${side} ${quantity} ${symbol}`}
                                 </span>
                             )}
                         </button>

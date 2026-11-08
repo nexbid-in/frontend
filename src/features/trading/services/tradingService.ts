@@ -7,11 +7,24 @@ import type {
     GetPositionsResponseDTO,
     PositionResponseDTO,
     PositionsFilter,
+    MarketStatusInfo,
 } from "../types";
 
 export const tradingService = {
     /**
-     * Place a new virtual order (Market or Limit, MIS or CNC)
+     * Retrieve Indian stock exchange market session status, trading hours, and AMO availability
+     */
+    getMarketStatus: async (): Promise<MarketStatusInfo> => {
+        const response = await apiClient.get<{
+            success: boolean;
+            message: string;
+            data: MarketStatusInfo;
+        }>(API_ROUTES.ORDERS.MARKET_STATUS);
+        return response.data.data;
+    },
+
+    /**
+     * Place a new virtual order (Market or Limit, MIS or CNC, Regular or AMO)
      */
     placeOrder: async (data: PlaceOrderRequestDTO): Promise<OrderResponseDTO> => {
         const response = await apiClient.post<{

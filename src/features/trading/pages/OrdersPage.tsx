@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useOrdersQuery, useCancelOrderMutation } from "../hooks/useTrading";
+import { useOrdersQuery, useCancelOrderMutation, useMarketStatusQuery } from "../hooks/useTrading";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { formatINR } from "@/features/watchlist";
 import { APP_ROUTES } from "@/constants/routes";
@@ -22,6 +22,7 @@ export const OrdersPage: React.FC = () => {
             : undefined;
 
     const { data: orders = [], isLoading, isFetching, refetch } = useOrdersQuery(backendStatusParam);
+    const { data: marketStatus } = useMarketStatusQuery();
     const cancelMutation = useCancelOrderMutation();
 
     // Filter orders by search query
@@ -99,7 +100,29 @@ export const OrdersPage: React.FC = () => {
                 {/* 1. Page Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dash-border shrink-0">
                     <div>
-                        <h1 className="text-base font-semibold text-dash-text tracking-tight">Order Book</h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-base font-semibold text-dash-text tracking-tight">Order Book</h1>
+                            {marketStatus && (
+                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-dash-panel-2 border border-dash-border text-[10px]">
+                                    <span
+                                        className={`w-1.5 h-1.5 rounded-full ${
+                                            marketStatus.isOpen
+                                                ? "bg-emerald-500 animate-pulse"
+                                                : "bg-amber-500"
+                                        }`}
+                                    />
+                                    <span className="font-semibold text-dash-text">
+                                        {marketStatus.isOpen ? "Market Open" : "Market Closed"}
+                                    </span>
+                                    <span className="text-dash-text-muted">({marketStatus.currentIstTime})</span>
+                                    {marketStatus.isAmoAllowed && (
+                                        <span className="px-1 rounded bg-indigo-500/20 text-indigo-400 font-bold uppercase text-[9px]">
+                                            AMO
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <p className="text-xs text-dash-text-muted mt-0.5">
                             Real-time order statuses, fills, and pending limit executions
                         </p>
@@ -262,6 +285,14 @@ export const OrdersPage: React.FC = () => {
                                                     <span className="text-[9px] px-1 py-0.2 rounded bg-dash-panel-2 text-dash-text-muted border border-dash-border">
                                                         NSE
                                                     </span>
+                                                    {order.isAmo && (
+                                                        <span
+                                                            className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 uppercase tracking-wider"
+                                                            title="After Market Order (Dispatched when market opens at 09:15 AM IST)"
+                                                        >
+                                                            AMO
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
 
@@ -328,8 +359,19 @@ export const OrdersPage: React.FC = () => {
                                             {/* Status Pill */}
                                             <td className="py-3 px-3 text-center whitespace-nowrap">
                                                 {isPending && (
-                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                                                        PENDING
+                                                    <span
+                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                                            order.isAmo
+                                                                ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/30 cursor-help"
+                                                                : "bg-amber-500/15 text-amber-500 border-amber-500/30"
+                                                        }`}
+                                                        title={
+                                                            order.isAmo
+                                                                ? "After Market Order queued for execution upon market open (09:15 AM IST)"
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        {order.isAmo ? "PENDING (AMO)" : "PENDING"}
                                                     </span>
                                                 )}
                                                 {isExecuted && (

@@ -48,6 +48,7 @@ export const QUERY_KEYS = {
     orders: {
         all: ["orders"],
         list: (status?: string) => ["orders", "list", status ?? "ALL"],
+        marketStatus: () => ["orders", "market-status"],
     },
     portfolio: {
         all: ["portfolio"],
