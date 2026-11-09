@@ -10,9 +10,6 @@ import type {
 } from "../types";
 import { AxiosError } from "axios";
 
-/**
- * Extracts a human-readable message from API or network errors.
- */
 function extractErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof AxiosError) {
         return (
@@ -28,50 +25,35 @@ function extractErrorMessage(error: unknown, fallback: string): string {
     return fallback;
 }
 
-/**
- * Hook to retrieve user orders with auto-caching.
- */
 export function useOrdersQuery(status?: OrderStatus) {
     return useQuery({
         queryKey: QUERY_KEYS.orders.list(status),
         queryFn: () => tradingService.getOrders(status),
-        staleTime: 1000 * 5, // 5 seconds
+        staleTime: 1000 * 5,
         refetchInterval: (query) => {
-            // If any orders are pending, poll every 3 seconds to catch fill/rejection updates
             const hasPending = query.state.data?.some((o) => o.status === "PENDING");
             return hasPending ? 3000 : false;
         },
     });
 }
 
-/**
- * Hook to retrieve user portfolio positions and summary metrics.
- */
 export function usePositionsQuery(filter: PositionsFilter = "OPEN") {
     return useQuery({
         queryKey: QUERY_KEYS.portfolio.positions(filter),
         queryFn: () => tradingService.getPositions(filter),
-        staleTime: 1000 * 5, // 5 seconds
+        staleTime: 1000 * 5,
     });
 }
 
-/**
- * Hook to retrieve Indian stock exchange market session status and trading hours.
- * Automatically polls every 30 seconds.
- */
 export function useMarketStatusQuery() {
     return useQuery({
         queryKey: QUERY_KEYS.orders.marketStatus(),
         queryFn: () => tradingService.getMarketStatus(),
-        staleTime: 1000 * 30, // 30 seconds
+        staleTime: 1000 * 30,
         refetchInterval: 1000 * 30,
     });
 }
 
-/**
- * Hook to place a new virtual order.
- * Automatically invalidates Orders, Portfolio, and Wallet Margin caches.
- */
 export function usePlaceOrderMutation() {
     const queryClient = useQueryClient();
     const dispatch = useAppDispatch();
@@ -79,7 +61,6 @@ export function usePlaceOrderMutation() {
     return useMutation({
         mutationFn: (data: PlaceOrderRequestDTO) => tradingService.placeOrder(data),
         onSuccess: (data) => {
-            // Invalidate orders, portfolio, and wallet margin cache so UI reflects execution immediately
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.portfolio.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
@@ -114,9 +95,6 @@ export function usePlaceOrderMutation() {
     });
 }
 
-/**
- * Hook to cancel an active pending order and release blocked margin.
- */
 export function useCancelOrderMutation() {
     const queryClient = useQueryClient();
     const dispatch = useAppDispatch();
@@ -148,9 +126,6 @@ export function useCancelOrderMutation() {
     });
 }
 
-/**
- * Hook to square off / exit an open position at current market price.
- */
 export function useSquareOffPositionMutation() {
     const queryClient = useQueryClient();
     const dispatch = useAppDispatch();

@@ -6,11 +6,6 @@ interface NavbarNiftyTickerProps {
     label?: string;
 }
 
-/**
- * Isolated live index ticker for the top navigation bar.
- * Scopes WebSocket tick re-renders strictly to this component,
- * preventing expensive layout re-renders of the AppLayout shell.
- */
 export const NavbarNiftyTicker: React.FC<NavbarNiftyTickerProps> = ({
     symbol = "NIFTY 50",
     label = "NIFTY50 Index",

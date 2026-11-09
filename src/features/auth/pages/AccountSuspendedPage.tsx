@@ -11,7 +11,6 @@ export default function AccountSuspendedPage() {
 
     return (
         <div className="h-screen w-full bg-[#F8FAFC] text-gray-900 flex flex-col justify-between items-center px-4 py-3 sm:px-6 sm:py-4 overflow-hidden select-none">
-            {/* Top Brand Header */}
             <header className="w-full max-w-5xl flex items-center justify-between py-2 sm:py-3 shrink-0">
                 <Link to={APP_ROUTES.USER.HOME} className="flex items-center gap-2">
                     <span className="text-2xl sm:text-3xl font-extrabold text-primary-green tracking-tight">nexbid</span>
@@ -22,10 +21,8 @@ export default function AccountSuspendedPage() {
                 </div>
             </header>
 
-            {/* Main Center Card */}
             <main className="w-full max-w-lg my-auto flex flex-col justify-center">
                 <div className="bg-white border border-gray-200/90 rounded-2xl p-6 sm:p-8 shadow-xl shadow-gray-200/60 text-center relative">
-                    {/* Shield Icon Badge */}
                     <div className="relative mx-auto w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 mb-4 sm:mb-5 shadow-sm">
                         <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
                             <path
@@ -36,7 +33,6 @@ export default function AccountSuspendedPage() {
                         </svg>
                     </div>
 
-                    {/* Headings */}
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 sm:mb-2 tracking-tight">
                         Account Suspended
                     </h1>
@@ -44,7 +40,6 @@ export default function AccountSuspendedPage() {
                         Your Nexbid account has been restricted by administration. All active trading sessions have been terminated to safeguard your account.
                     </p>
 
-                    {/* Status Information Box */}
                     <div className="bg-gray-50 border border-gray-200/70 rounded-xl p-3.5 sm:p-4 mb-5 sm:mb-6 text-left space-y-2.5 sm:space-y-3">
                         <div className="flex items-start gap-2.5">
                             <span className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
@@ -67,7 +62,6 @@ export default function AccountSuspendedPage() {
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Link
                             to={APP_ROUTES.USER.SUPPORT}
@@ -91,7 +85,6 @@ export default function AccountSuspendedPage() {
                 </div>
             </main>
 
-            {/* Bottom Footer Note */}
             <footer className="w-full max-w-5xl text-center py-2 sm:py-3 text-[11px] sm:text-xs text-gray-500 shrink-0">
                 <p>Nexbid Risk & Compliance Desk · Automated Security Safeguard</p>
             </footer>

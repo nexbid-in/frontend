@@ -92,10 +92,8 @@ export function ProfileLayout() {
     return (
         <div className="flex flex-1 overflow-hidden h-full p-2 gap-2">
             <section className="flex-1 bg-dash-panel border border-dash-border rounded-md h-full flex flex-col md:flex-row overflow-hidden">
-                {/* Profile Navigation Sidebar */}
                 <aside className="w-full md:w-64 p-6 bg-dash-sidebar border-b md:border-b-0 md:border-r border-dash-border flex flex-col justify-between shrink-0 overflow-y-auto">
                     <div>
-                        {/* User Avatar & Identification */}
                         <div className="flex flex-col items-center pb-4 mb-4 border-b border-dash-border">
                             <UserAvatar
                                 src={user?.profileImage}
@@ -111,7 +109,6 @@ export function ProfileLayout() {
                             </div>
                         </div>
 
-                        {/* Navigation Links */}
                         <nav className="space-y-1">
                             {PROFILE_NAV_ITEMS.map((item) => {
                                 const isActive = isLinkActive(item.path, item.exact);
@@ -135,7 +132,6 @@ export function ProfileLayout() {
                         </nav>
                     </div>
 
-                    {/* Sign out Option */}
                     <div className="pt-4 border-t border-dash-border mt-4">
                         <button
                             type="button"
@@ -160,13 +156,11 @@ export function ProfileLayout() {
                     </div>
                 </aside>
 
-                {/* Profile Child Content Area */}
                 <main className="flex-1 p-8 md:p-10 overflow-y-auto custom-scrollbar flex flex-col">
                     <Outlet />
                 </main>
             </section>
 
-            {/* Sign Out Confirmation Modal */}
             <ConfirmModal
                 isOpen={showSignOutModal}
                 title="Confirm Sign Out"

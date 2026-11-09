@@ -5,7 +5,6 @@ import { queryClient } from '@/config/queryClient';
 
 const listenerMiddleware = createListenerMiddleware();
 
-// Automated session boundary cache cleanup for Fintech security
 listenerMiddleware.startListening({
     actionCreator: logout,
     effect: () => {

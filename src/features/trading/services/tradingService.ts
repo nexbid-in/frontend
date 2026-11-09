@@ -11,9 +11,6 @@ import type {
 } from "../types";
 
 export const tradingService = {
-    /**
-     * Retrieve Indian stock exchange market session status, trading hours, and AMO availability
-     */
     getMarketStatus: async (): Promise<MarketStatusInfo> => {
         const response = await apiClient.get<{
             success: boolean;
@@ -23,9 +20,6 @@ export const tradingService = {
         return response.data.data;
     },
 
-    /**
-     * Place a new virtual order (Market or Limit, MIS or CNC, Regular or AMO)
-     */
     placeOrder: async (data: PlaceOrderRequestDTO): Promise<OrderResponseDTO> => {
         const response = await apiClient.post<{
             success: boolean;
@@ -35,9 +29,6 @@ export const tradingService = {
         return response.data.data;
     },
 
-    /**
-     * Retrieve user orders, optionally filtered by status (PENDING, EXECUTED, CANCELLED, REJECTED)
-     */
     getOrders: async (status?: OrderStatus): Promise<OrderResponseDTO[]> => {
         const response = await apiClient.get<{
             success: boolean;
@@ -49,9 +40,6 @@ export const tradingService = {
         return response.data.data;
     },
 
-    /**
-     * Cancel an active pending order to unlock reserved margin
-     */
     cancelOrder: async (orderId: string): Promise<OrderResponseDTO> => {
         const response = await apiClient.delete<{
             success: boolean;
@@ -61,9 +49,6 @@ export const tradingService = {
         return response.data.data;
     },
 
-    /**
-     * Retrieve portfolio positions and aggregated summary (filter: 'OPEN' or 'ALL')
-     */
     getPositions: async (filter: PositionsFilter = "OPEN"): Promise<GetPositionsResponseDTO> => {
         const response = await apiClient.get<{
             success: boolean;
@@ -75,9 +60,6 @@ export const tradingService = {
         return response.data.data;
     },
 
-    /**
-     * Square off / exit an open position by placing an opposing market order
-     */
     squareOffPosition: async (positionId: string): Promise<PositionResponseDTO> => {
         const response = await apiClient.post<{
             success: boolean;

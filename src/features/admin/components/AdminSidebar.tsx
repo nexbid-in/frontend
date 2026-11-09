@@ -39,7 +39,6 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
 
     const sidebarContent = (
         <aside className="w-64 flex flex-col bg-panel border-r border-border-muted shrink-0 h-full">
-            {/* Brand Header */}
             <div className="py-6 px-6 border-b border-border-muted flex flex-col items-center justify-center text-center">
                 <NavLink to={APP_ROUTES.ADMIN.DASHBOARD} onClick={onCloseMobile} className="flex flex-col items-center">
                     <span className="text-2xl font-bold tracking-tight text-primary-green">nexbid</span>
@@ -47,9 +46,7 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                 </NavLink>
             </div>
 
-            {/* Navigation */}
             <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6 text-sm">
-                {/* Main Group */}
                 <div className="space-y-1">
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/60 mb-2">
                         Overview
@@ -105,7 +102,6 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                     </NavLink>
                 </div>
 
-                {/* Trading & Finance Group */}
                 <div className="space-y-1">
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/60 mb-2">
                         Trading & Finance
@@ -181,7 +177,6 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                     </NavLink>
                 </div>
 
-                {/* Operations Group */}
                 <div className="space-y-1">
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/60 mb-2">
                         Operations
@@ -237,7 +232,6 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                 </div>
             </nav>
 
-            {/* Sidebar Footer */}
             <div className="p-3 border-t border-border-muted">
                 <button
                     onClick={() => setIsLogoutModalOpen(true)}
@@ -266,20 +260,16 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
 
     return (
         <>
-            {/* Desktop Sidebar */}
             <div className="hidden lg:flex shrink-0">
                 {sidebarContent}
             </div>
 
-            {/* Mobile Drawer */}
             {isMobileOpen && (
                 <div className="lg:hidden fixed inset-0 z-50 flex">
-                    {/* Backdrop */}
                     <div
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
                         onClick={onCloseMobile}
                     />
-                    {/* Drawer Content */}
                     <div className="relative z-10 w-64 max-w-[80vw] h-full shadow-2xl">
                         {sidebarContent}
                     </div>

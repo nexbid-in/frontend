@@ -3,10 +3,6 @@ import { API_ROUTES } from "@/constants/routes";
 import type { SearchStocksParams, SearchStocksResponseDTO, StockItemDTO } from "../types";
 
 export const stockService = {
-    /**
-     * Search stocks/instruments returning a plain array of StockItemDTO.
-     * Preserves backward compatibility with openAlgoDatafeed and other consumers.
-     */
     searchStocks: async (
         queryOrParams?: string | SearchStocksParams,
         legacyLimit: number = 20
@@ -20,9 +16,6 @@ export const stockService = {
         return result.stocks;
     },
 
-    /**
-     * Search instruments with pagination and instrument category filtering.
-     */
     searchInstruments: async (
         params: SearchStocksParams = {}
     ): Promise<SearchStocksResponseDTO> => {

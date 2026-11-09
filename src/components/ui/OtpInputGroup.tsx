@@ -22,7 +22,6 @@ export function OtpInputGroup({ length = 6, onComplete }: OtpInputGroupProps) {
         newOtp[index] = element.target.value;
         setOtp(newOtp);
 
-        // Focus next input
         if (element.target.value && element.target.nextSibling) {
             (element.target.nextSibling as HTMLInputElement).focus();
         }

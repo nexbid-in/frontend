@@ -13,10 +13,8 @@ export function AuthLayout({ children, heroTitle, heroSubtitle }: AuthLayoutProp
 
     return (
         <div className="bg-white text-gray-900 h-screen flex overflow-hidden">
-            {/* Left Section (Branding & Features) */}
             <div
                 className="hidden lg:flex lg:w-[55%] flex-col justify-between p-10 xl:p-14 bg-gradient-to-br from-primary-green-light via-white to-blue-50 relative border-r border-green-100">
-                {/* Subtle radial gradient overlay */}
                 <div
                     className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent pointer-events-none">
                 </div>
@@ -35,7 +33,6 @@ export function AuthLayout({ children, heroTitle, heroSubtitle }: AuthLayoutProp
                 </div>
 
                 <div className="z-10 mt-8">
-                    {/* Stats */}
                     <div className="flex space-x-10 mb-8">
                         <div>
                             <h3 className="text-xl font-bold text-gray-900">3M+</h3>
@@ -51,7 +48,6 @@ export function AuthLayout({ children, heroTitle, heroSubtitle }: AuthLayoutProp
                         </div>
                     </div>
 
-                    {/* Features */}
                     <div className="space-y-5">
                         <div className="flex items-start space-x-3">
                             <div className="p-1.5 bg-green-100 rounded-md text-primary-green">
@@ -96,7 +92,6 @@ export function AuthLayout({ children, heroTitle, heroSubtitle }: AuthLayoutProp
                 </div>
             </div>
 
-            {/* Right Section (Login Form) */}
             <div className="w-full lg:w-[45%] bg-white flex flex-col justify-center items-center p-6 xl:p-12 relative">
                 <div className="absolute top-6 left-6">
                     <button onClick={() => navigate(-1)}

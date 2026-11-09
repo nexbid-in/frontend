@@ -36,7 +36,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
 
-    // Auto-focus input when modal opens and reset state
     useEffect(() => {
         if (isOpen) {
             setInputValue("");
@@ -49,7 +48,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         }
     }, [isOpen]);
 
-    // Debounce search input by 200ms
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedQuery(inputValue);
@@ -58,7 +56,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         return () => clearTimeout(timer);
     }, [inputValue]);
 
-    // Close on Escape key
     useEffect(() => {
         if (!isOpen) return;
 
@@ -72,7 +69,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isOpen, onClose]);
 
-    // Prevent body scrolling when modal is open
     useEffect(() => {
         if (isOpen) {
             const originalOverflow = document.body.style.overflow;
@@ -83,7 +79,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         }
     }, [isOpen]);
 
-    // Paginated, filtered stock search & browse
     const {
         data,
         isLoading,
@@ -93,13 +88,11 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         fetchNextPage,
     } = useInfiniteStockSearchQuery(debouncedQuery, activeTab, 20);
 
-    // Flatten pages into a single continuous list of instruments
     const allStocks = useMemo(() => {
         if (!data?.pages) return [];
         return data.pages.flatMap((page) => page.stocks);
     }, [data?.pages]);
 
-    // Infinite scroll observer
     useEffect(() => {
         const sentinelEl = sentinelRef.current;
         if (!sentinelEl) return;
@@ -124,7 +117,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         };
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    // Reset scroll to top on tab switch or new search query
     useEffect(() => {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTop = 0;
@@ -157,9 +149,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
         }
     };
 
-    /**
-     * TradingView aesthetic: highlight matching query text in symbol name
-     */
     const renderHighlightedSymbol = (symbol: string, query: string) => {
         const cleanQuery = query.trim().toUpperCase();
         if (!cleanQuery) return <span>{symbol}</span>;
@@ -193,7 +182,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                 className="bg-dash-panel border border-dash-border rounded-2xl shadow-2xl w-full max-w-2xl h-[580px] max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Modal Header: Search Input Bar (TradingView style) */}
                 <div className="h-14 px-4 border-b border-dash-border bg-dash-panel-2/40 flex items-center gap-3 shrink-0">
                     <svg
                         className="w-5 h-5 text-dash-text-muted shrink-0"
@@ -244,7 +232,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                     </button>
                 </div>
 
-                {/* Instrument Category Filter Tabs (Fixed height, perfectly stable, non-scrollable) */}
                 <div className="h-11 px-4 border-b border-dash-border bg-dash-panel flex items-center justify-between gap-2 shrink-0 overflow-hidden select-none">
                     <div className="flex items-center gap-1.5 shrink-0">
                         <button
@@ -285,19 +272,16 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                     </div>
                 </div>
 
-                {/* Modal Results Body */}
                 <div
                     ref={scrollContainerRef}
                     className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1"
                 >
                     {isLoading || (isFetching && allStocks.length === 0) ? (
-                        /* Smooth Centered Loading Spinner in Symbol Listing Section */
                         <div className="h-full min-h-[340px] flex flex-col items-center justify-center text-center space-y-3 animate-in fade-in duration-150">
                             <div className="w-7 h-7 rounded-full border-2 border-primary-green/20 border-t-primary-green animate-spin" />
                             <span className="text-xs text-dash-text-muted font-medium">Loading instruments...</span>
                         </div>
                     ) : allStocks.length === 0 ? (
-                        /* No Results Found */
                         <div className="h-full min-h-[340px] flex flex-col items-center justify-center py-12 text-center text-dash-text-muted space-y-2 animate-in fade-in duration-150">
                             <p className="text-sm font-medium text-dash-text">
                                 {debouncedQuery.trim()
@@ -311,7 +295,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                             </p>
                         </div>
                     ) : (
-                        /* TradingView Reference Style Instrument Rows with Smooth Fade-in */
                         <div className="divide-y divide-dash-border/40 animate-in fade-in duration-150">
                             {allStocks.map((stock) => {
                                 const isAdded = watchlistStockIds.has(stock.id);
@@ -323,7 +306,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                                         key={stock.id}
                                         className="p-3 px-4 rounded-xl flex items-center justify-between hover:bg-dash-panel-2/60 transition-colors group"
                                     >
-                                        {/* Left Side: Symbol on top, Full Name & Type Badge below */}
                                         <div className="min-w-0 pr-4">
                                             <div className="text-sm font-semibold tracking-tight text-dash-text">
                                                 {renderHighlightedSymbol(stock.symbol, debouncedQuery)}
@@ -338,14 +320,12 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                                             </div>
                                         </div>
 
-                                        {/* Right Side: Exchange name, followed by '+' or '✓' icon */}
                                         <div className="flex items-center gap-3 shrink-0">
                                             <span className="text-xs font-mono font-medium text-dash-text-muted uppercase">
                                                 {stock.exchange}
                                             </span>
 
                                             {isAdded ? (
-                                                /* Stock is in Watchlist: show Tick icon (click to remove) */
                                                 <button
                                                     type="button"
                                                     disabled={isItemProcessing}
@@ -374,7 +354,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                                                     )}
                                                 </button>
                                             ) : (
-                                                /* Stock is NOT in Watchlist: show Plus icon (click to add) */
                                                 <button
                                                     type="button"
                                                     disabled={isItemProcessing || watchlistCount >= maxLimit}
@@ -409,7 +388,6 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                                 );
                             })}
 
-                            {/* Bottom loading indicator during fetchNextPage */}
                             {isFetchingNextPage && (
                                 <div className="py-3 flex items-center justify-center gap-2 text-xs text-dash-text-muted select-none">
                                     <svg className="w-4 h-4 animate-spin text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -420,13 +398,11 @@ export const StockSearchModal: React.FC<StockSearchModalProps> = ({
                                 </div>
                             )}
 
-                            {/* Infinite scrolling sentinel */}
                             <div ref={sentinelRef} className="h-4 w-full pointer-events-none" />
                         </div>
                     )}
                 </div>
 
-                {/* Modal Footer: Watchlist Status & Keyboard Hints */}
                 <div className="h-11 px-5 border-t border-dash-border bg-dash-panel-2/30 flex items-center justify-between text-xs text-dash-text-muted shrink-0 select-none">
                     <div className="flex items-center gap-2">
                         <span>Watchlist Capacity:</span>

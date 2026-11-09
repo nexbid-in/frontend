@@ -38,22 +38,6 @@ function getInitialQuote(symbol: string): LiveQuote {
     };
 }
 
-/**
- * Custom hook that subscribes an individual stock symbol to live market ticks
- * from the shared singleton MarketWebSocketService.
- *
- * Architecture Highlights:
- * 1. Synchronous Cache / Baseline Initialization:
- *    Renders the latest cached tick immediately on mount (or falls back to baseline quote),
- *    preventing empty / layout shift states before WebSocket ticks arrive.
- * 2. Fine-grained Component-Scoped Re-rendering:
- *    Only re-renders the specific stock component when a tick for its symbol arrives.
- * 3. Directional Price Flash:
- *    Computes 'up' (green) or 'down' (red) based on previous price comparison,
- *    and auto-decays back to null after 400ms.
- * 4. Real-time Market Depth & ATP Streaming:
- *    Streams live Level-2 bid/ask, buy/sell volumes, and ATP directly into the quote state.
- */
 export function useLiveStockQuote(symbol: string): LiveQuote {
     const cleanSymbol = symbol.toUpperCase().trim();
 

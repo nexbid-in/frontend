@@ -3,7 +3,6 @@ export function DashboardPage() {
     return (
         <div className="flex h-full p-2 gap-2 overflow-hidden">
             
-            {/* Sidebar specific to Dashboard */}
             <aside className="w-[380px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto custom-scrollbar shrink-0">
                 <div className="flex justify-between p-4 text-dash-text-muted text-xs font-medium border-b border-dash-border">
                     <span className="w-2/5">Index</span>
@@ -29,7 +28,6 @@ export function DashboardPage() {
                 </div>
             </aside>
 
-            {/* Main Trading Dashboard Content */}
             <section className="flex-1 bg-dash-panel border border-dash-border rounded-md p-5 h-full overflow-y-auto custom-scrollbar">
                 <div className="flex flex-col gap-6">
 

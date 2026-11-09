@@ -40,7 +40,6 @@ export function AdminNavbar({ title, onToggleMobileSidebar }: AdminNavbarProps) 
     return (
         <header className="min-h-[72px] py-5 px-6 lg:px-8 bg-panel/80 backdrop-blur border-b border-border-muted flex items-center justify-between sticky top-0 z-10 shrink-0">
             <div className="flex items-center gap-3">
-                {/* Mobile Menu Trigger */}
                 <button
                     type="button"
                     onClick={onToggleMobileSidebar}
@@ -58,7 +57,6 @@ export function AdminNavbar({ title, onToggleMobileSidebar }: AdminNavbarProps) 
             </div>
 
             <div className="flex items-center gap-3">
-                {/* Date Display */}
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-text-secondary font-medium">
                     <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

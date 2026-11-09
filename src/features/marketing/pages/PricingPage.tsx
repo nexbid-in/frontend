@@ -9,7 +9,6 @@ import financialGrowthImg from '../assets/pricing/financial-growth.png';
 export default function PricingPage() {
     return (
         <>
-            {/* Hero Section */}
             <header className="relative bg-gradient-to-br from-primary-green-light via-white to-blue-50 pt-24 pb-32">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -27,7 +26,6 @@ export default function PricingPage() {
                 </div>
             </header>
 
-            {/* How Pricing Work section */}
             <section className="py-24 bg-white text-center">
                 <div className="max-w-5xl mx-auto px-6">
                     <h2 className="text-3xl font-semibold text-heading mb-12">How NexBid <span className="text-primary-green font-bold">Pricing</span> Works</h2>
@@ -52,7 +50,6 @@ export default function PricingPage() {
                 </div>
             </section>
 
-            {/* Conversion Section  */}
             <section className="py-24 bg-primary-green-light">
                 <div className="max-w-5xl mx-auto px-6 text-center">
                     <h2 className="text-3xl font-semibold text-heading mb-4"><span className=" text-primary-green">Simple,</span> Transparent Conversion</h2>
@@ -85,7 +82,6 @@ export default function PricingPage() {
                 </div>
             </section>
 
-            {/* Pays Off Section  */}
             <section className="py-24 bg-gray-50">
                 <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center px-8">
                     <div>
@@ -110,7 +106,6 @@ export default function PricingPage() {
                 </div>
             </section>
 
-            {/* CTA Banner Section */}
             <CtaBanner />
         </>
     );

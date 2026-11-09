@@ -19,7 +19,6 @@ export function WatchlistPage() {
     const userId = useAppSelector((state) => state.auth.user?.id);
     const lastStockStorageKey = userId ? `nexbid_last_stock_${userId}` : "nexbid_last_stock_guest";
 
-    // Initialize from localStorage if available
     const [selectedStockId, setSelectedStockId] = useState<string | null>(() => {
         if (typeof window === "undefined") return null;
         try {
@@ -31,7 +30,6 @@ export function WatchlistPage() {
 
     const [activeViewMode, setActiveViewMode] = useState<"chart" | "overview">("chart");
 
-    // Order Execution Modal placeholder state
     const [orderModal, setOrderModal] = useState<{
         isOpen: boolean;
         type: "BUY" | "SELL";
@@ -42,7 +40,6 @@ export function WatchlistPage() {
         item: null,
     });
 
-    // Resolve active stock: prioritize saved/selected stock, fallback to first in list
     const activeItem = useMemo(() => {
         if (watchlistItems.length === 0) return null;
         const targetId = selectedStockId || (typeof window !== "undefined" ? localStorage.getItem(lastStockStorageKey) : null);
@@ -51,7 +48,6 @@ export function WatchlistPage() {
         return found ?? watchlistItems[0];
     }, [watchlistItems, selectedStockId, lastStockStorageKey]);
 
-    // Keep localStorage in sync with activeItem so refreshes always reopen the exact visited stock
     useEffect(() => {
         if (activeItem && typeof window !== "undefined") {
             try {
@@ -123,7 +119,6 @@ export function WatchlistPage() {
     };
 
     const handleAddStock = async (stockId: string) => {
-        // Ensure the current active stock remains selected so adding a new stock does not switch the chart
         if (activeItem && !selectedStockId) {
             setSelectedStockId(activeItem.stock.id);
         }
@@ -147,7 +142,6 @@ export function WatchlistPage() {
 
     return (
         <div className="flex flex-col lg:flex-row h-full p-2 gap-2 overflow-hidden">
-            {/* Left Column: Watchlist Sidebar (~320px fixed width on desktop) */}
             <WatchlistSidebar
                 items={watchlistItems}
                 isLoading={isLoading}
@@ -163,7 +157,6 @@ export function WatchlistPage() {
                 isDeleting={removeMutation.isPending}
             />
 
-            {/* Right Column: Dynamic Main View (Chart or Stock Overview) */}
             <main className="flex-1 bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-hidden">
                 {activeItem ? (
                     <div className="w-full h-full overflow-hidden relative">
@@ -219,7 +212,6 @@ export function WatchlistPage() {
                 )}
             </main>
 
-            {/* Production-grade Order Placement Modal */}
             {orderModal.isOpen && orderModal.item && (
                 <OrderPlacementModal
                     isOpen={orderModal.isOpen}

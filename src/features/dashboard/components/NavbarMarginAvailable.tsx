@@ -3,11 +3,6 @@ import { useWalletOverview } from "@/features/funds";
 import { formatINR } from "@/features/watchlist";
 import { useAppSelector } from "@/store/hooks";
 
-/**
- * Isolated dynamic margin indicator for the top navigation bar.
- * Connects directly to TanStack Query's wallet cache and automatically
- * updates when funds are added or orders are executed.
- */
 export const NavbarMarginAvailable: React.FC = () => {
     const user = useAppSelector((state) => state.auth.user);
     const { data: walletOverview, isLoading } = useWalletOverview({

@@ -18,7 +18,6 @@ export function AdminUsersPage() {
     });
     const limit = 6;
 
-    // Debounce search query by 300ms
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(searchQuery);
@@ -29,7 +28,6 @@ export function AdminUsersPage() {
 
 
 
-    // TanStack Query: Admin users list with auto-caching
     const {
         data,
         isLoading: loading,
@@ -49,7 +47,6 @@ export function AdminUsersPage() {
     const totalUsers = data?.pagination?.totalUsers ?? 0;
     const error = errorMessage || (queryError instanceof Error ? queryError.message : "");
 
-    // TanStack Mutation: Update user blocked status
     const toggleStatusMutation = useMutation({
         mutationFn: (userId: string) => adminService.updateUserStatus(userId),
         onSuccess: () => {
@@ -181,7 +178,6 @@ export function AdminUsersPage() {
                 </div>
 
                 <div className="overflow-x-auto min-h-[300px] relative">
-                    {/* Loading Overlay */}
                     {loading && (
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/60 transition-all duration-200">
                             <div className="w-6 h-6 border-2 border-primary-green/20 border-t-primary-green rounded-full animate-spin"></div>
@@ -253,7 +249,6 @@ export function AdminUsersPage() {
                     )}
                 </div>
 
-                {/* Table Pagination / Footer */}
                 <div className="p-4 border-t border-border-muted flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-secondary">
                     <div>
                         Showing <span className="font-medium text-text-primary">{(page - 1) * limit + (users.length > 0 ? 1 : 0)}</span> to{" "}

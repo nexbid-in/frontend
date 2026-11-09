@@ -9,7 +9,6 @@ export function CtaBanner() {
             <div className="max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
                     <div className="w-52">
-                        {/* Ensure image path is correct */}
                         <img src={ctaImg} alt="Start Trading" />
                     </div>
                     <div className="flex-1 text-center md:text-left">

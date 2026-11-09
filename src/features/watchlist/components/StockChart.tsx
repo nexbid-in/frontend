@@ -19,13 +19,6 @@ import { registerCustomDrawingTools } from "../utils/customDrawingTools";
 // Register enhanced right-aligned horizontal line & ray price badges
 registerCustomDrawingTools();
 
-/**
- * Format volume in standard Fyers / TradingView compact style:
- * - >= 1 Billion: 1.25B
- * - >= 1 Million: 27.74M
- * - >= 1 Thousand: 520.15K
- * - < 1000: 450
- */
 function formatFyersVolume(val: number): string {
     if (!Number.isFinite(val)) return "";
     const abs = Math.abs(val);
@@ -98,7 +91,6 @@ function enforceChartPriceFormatters(widget: Widget | null): void {
 
         const panes = chartAny.panes?.() || [];
 
-        // 1. Enforce 0.00 price format strictly on primary stock candle price scale (Pane 0)
         if (panes[0]?.priceScale) {
             panes[0].priceScale.setPriceFormatter(standardPriceFormatter);
             if (panes[0].scales) {
@@ -109,7 +101,6 @@ function enforceChartPriceFormatters(widget: Widget | null): void {
         }
         chartAny.primarySeries?.()?.priceScale?.()?.setPriceFormatter(standardPriceFormatter);
 
-        // 2. Enforce compact Fyers volume format on volume indicator pane and scales
         const indicators = chartAny.indicators?.() || [];
         for (const ind of indicators) {
             if (ind.indicatorId === "volume" && typeof ind.paneIndex === "number") {
@@ -575,7 +566,6 @@ export const StockChart: React.FC<StockChartProps> = ({
         const el = outerContainerRef.current;
         if (!el) return;
 
-        // 1. If currently in CSS fallback maximization, exit fallback
         if (isFallbackMaximized) {
             setIsFallbackMaximized(false);
             requestAnimationFrame(() => {
@@ -584,7 +574,6 @@ export const StockChart: React.FC<StockChartProps> = ({
             return;
         }
 
-        // 2. If currently in native fullscreen, exit native fullscreen
         const fsElement = getFullscreenElement();
         if (fsElement) {
             try {
@@ -610,7 +599,6 @@ export const StockChart: React.FC<StockChartProps> = ({
             return;
         }
 
-        // 3. Otherwise enter fullscreen (try HTML5 Fullscreen API first, fallback to viewport maximization)
         try {
             const elWithPrefix = el as unknown as {
                 requestFullscreen?: () => Promise<void>;
@@ -692,7 +680,6 @@ export const StockChart: React.FC<StockChartProps> = ({
         };
     }, [isFallbackMaximized]);
 
-    // Keyboard shortcut: Alt+F or Shift+F to toggle fullscreen (matching TradingView)
     useEffect(() => {
         const handleGlobalShortcuts = (e: KeyboardEvent) => {
             const isTargetEditable =
@@ -768,7 +755,6 @@ export const StockChart: React.FC<StockChartProps> = ({
     }, []);
 
     // ==========================================
-    // 1. Initialize Widget on Mount
     // ==========================================
     useEffect(() => {
         let isCancelled = false;
@@ -973,7 +959,6 @@ export const StockChart: React.FC<StockChartProps> = ({
     }, [userId]); // Re-create widget if authenticated user changes
 
     // ==========================================
-    // 2. React to Symbol / Exchange Changes
     // ==========================================
     useEffect(() => {
         const sym = symbol.toUpperCase().trim();
@@ -995,7 +980,6 @@ export const StockChart: React.FC<StockChartProps> = ({
     }, [symbol, exchange]);
 
     // ==========================================
-    // 3. React to Theme Changes (Light / Dark)
     // ==========================================
     useEffect(() => {
         if (widgetRef.current) {
@@ -1068,14 +1052,12 @@ export const StockChart: React.FC<StockChartProps> = ({
             } ${isFallbackMaximized ? "!fixed !inset-0 !z-[9999] !w-screen !h-screen !m-0 !p-0" : ""}`}
             style={{ width: "100%", height: "100%" }}
         >
-            {/* Chart mount container strictly dedicated for OpenAlgo widget */}
             <div
                 ref={containerRef}
                 className="w-full h-full"
                 style={{ width: "100%", height: "100%" }}
             />
 
-            {/* Zerodha & Fyers Production Loading / Error Fallback Overlay */}
             {(isChartLoading || chartError) && (
                 <div
                     className={`absolute inset-0 z-40 flex items-center justify-center select-none backdrop-blur-xs transition-colors duration-150 ${
@@ -1083,7 +1065,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                     }`}
                 >
                     {isChartLoading && !chartError ? (
-                        /* Minimalist clean spinner only on initial load (TradingView & Fyers style) */
                         <div className="relative w-10 h-10 flex items-center justify-center animate-in fade-in duration-150">
                             <div className="w-10 h-10 rounded-full border-3 border-emerald-500/20" />
                             <div className="absolute inset-0 w-10 h-10 rounded-full border-3 border-transparent border-t-emerald-500 animate-spin" />
@@ -1096,7 +1077,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                                     : "bg-white border-gray-200 text-gray-900"
                             }`}
                         >
-                            {/* Alert/Warning Icon */}
                             <div className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-3">
                                 <svg
                                     className="w-5 h-5"
@@ -1154,7 +1134,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                 </div>
             )}
 
-            {/* Centered Intentional Empty State (When stock genuinely has 0 candles) */}
             {isChartEmpty && !isChartLoading && !chartError && (
                 <div className="absolute inset-0 z-30 flex items-center justify-center select-none pointer-events-none">
                     <div
@@ -1235,7 +1214,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                 </div>
             )}
 
-            {/* Topbar Fullscreen Button Portal (TradingView & Fyers layout) */}
             {topbarElement &&
                 createPortal(
                     <button
@@ -1292,16 +1270,11 @@ export const StockChart: React.FC<StockChartProps> = ({
                     topbarElement
                 )}
 
-            {/* ======================================================== */}
-            {/* TradingView Top-Left Floating Info & Quick Trading Bar   */}
-            {/* ======================================================== */}
             <div
                 className="absolute top-[48px] left-[52px] pointer-events-none flex flex-col gap-1.5 select-none font-sans drop-shadow-md"
                 style={{ zIndex: 35 }}
             >
-                {/* 1. Header Line: Title, Interval, Exchange, Badge & OHLC */}
                 <div className="flex items-center gap-2.5 flex-wrap text-sm">
-                    {/* Symbol / Stock Identity */}
                     <div className="flex items-center gap-1.5 font-bold tracking-tight">
                         <span className={`truncate max-w-[380px] text-sm font-bold ${isDark ? "text-[#d1d4dc]" : "text-[#131722]"}`}>
                             {stockName || symbol}
@@ -1314,7 +1287,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                         <span className="text-[#787b86] font-mono font-medium uppercase text-[13px]">
                             {exchange}
                         </span>
-                        {/* Fyers Market Status Dash Icon */}
                         <span
                             className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
                                 isDark ? "bg-[#2a2e39]" : "bg-[#e0e3eb]"
@@ -1328,7 +1300,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                             />
                         </span>
 
-                        {/* Stale / Offline Mode Badge */}
                         {isStaleData && (
                             <div
                                 className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 border border-amber-500/25 text-amber-400 select-none animate-in fade-in"
@@ -1340,7 +1311,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                         )}
                     </div>
 
-                    {/* OHLC and Change Values (TradingView Format) */}
                     <div className="flex items-center gap-2.5 font-mono text-[13px] tabular-nums tracking-tight">
                         <div className="flex items-center gap-0.5">
                             <span className="text-[#787b86] text-[12px] font-sans font-medium">O</span>
@@ -1375,10 +1345,8 @@ export const StockChart: React.FC<StockChartProps> = ({
                     </div>
                 </div>
 
-                {/* 2. Quick Trading Buttons (Sell / Spread / Buy) */}
                 {canTrade && (
                     <div className="pointer-events-auto flex items-center gap-2 mt-0.5">
-                        {/* SELL Button (Best Bid during market hours, LTP off-market) */}
                         <button
                             type="button"
                             disabled={sellPrice === null}
@@ -1396,7 +1364,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                             </span>
                         </button>
 
-                        {/* Bid-Ask Spread between SELL and BUY (TradingView & Fyers Style) */}
                         <span
                             className="font-mono text-xs font-semibold text-[#787b86] px-0.5 select-none"
                             title={`Bid-Ask Spread: ₹${spread}`}
@@ -1404,7 +1371,6 @@ export const StockChart: React.FC<StockChartProps> = ({
                             {spread}
                         </span>
 
-                        {/* BUY Button (Best Ask during market hours, LTP off-market) */}
                         <button
                             type="button"
                             disabled={buyPrice === null}

@@ -41,10 +41,8 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const isMarketClosed = isEnforcingHours && marketStatus ? !marketStatus.isOpen : false;
     const isMisBlocked = isEnforcingHours && Boolean(marketStatus?.isOpen && !marketStatus.isMisAllowed);
 
-    // Current applicable price
     const currentPrice = liveQuote.price > 0 ? liveQuote.price : initialPrice ?? 0;
 
-    // Form states initialize cleanly with the props (no setState in useEffect needed!)
     const [side, setSide] = useState<OrderSide>(initialSide);
     const [productType, setProductType] = useState<ProductType>(() => (isMisBlocked ? "CNC" : "MIS"));
     const [orderType, setOrderType] = useState<OrderType>("MARKET");
@@ -54,17 +52,10 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     );
     const [manualAmo, setManualAmo] = useState<boolean>(false);
 
-    // Determine whether this order will be submitted as an AMO:
-    // When market hours are enforced:
-    //   - Closed: MUST be AMO (regular orders are rejected by exchange)
-    //   - Open: CANNOT be AMO (AMOs are rejected during market hours)
-    // When market hours are not enforced (mock / test mode):
-    //   - Follows manualAmo toggle
     const isAmo = isEnforcingHours ? isMarketClosed : manualAmo;
 
     const qtyInputRef = useRef<HTMLInputElement>(null);
 
-    // Focus quantity input on open
     useEffect(() => {
         const timer = setTimeout(() => {
             qtyInputRef.current?.focus();
@@ -73,7 +64,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
         return () => clearTimeout(timer);
     }, []);
 
-    // Handle Escape key to close modal
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
@@ -84,7 +74,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onClose]);
 
-    // When switching to LIMIT, auto-fill current LTP if empty
     const handleOrderTypeChange = (type: OrderType) => {
         setOrderType(type);
         if (type === "LIMIT" && (!limitPrice || Number(limitPrice) <= 0)) {
@@ -92,12 +81,10 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
         }
     };
 
-    // Margin Calculations
     const effectivePrice =
         orderType === "LIMIT" && Number(limitPrice) > 0 ? Number(limitPrice) : currentPrice;
     const totalOrderValue = Math.max(0, quantity * effectivePrice);
 
-    // MIS gives 5x leverage (20% margin requirement), CNC is 100% (1x)
     const marginRequired = productType === "MIS" ? totalOrderValue / 5 : totalOrderValue;
     const marginAvailable = wallet?.balance ?? 0;
     const isShortOnMargin = marginRequired > marginAvailable && marginAvailable > 0;
@@ -128,7 +115,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
             });
             onClose();
         } catch {
-            // Error notification is dispatched within the mutation hook
+            /* Handled in mutation hook */
         }
     };
 
@@ -140,12 +127,10 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-            {/* Modal Card */}
             <div
                 className="w-full max-w-md bg-dash-panel border border-dash-border rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* 1. Header with dynamic Buy/Sell brand banner */}
                 <div className={`p-4 border-b border-dash-border ${subtleBg} flex items-center justify-between`}>
                     <div className="flex items-center gap-3">
                         <div className="flex flex-col">
@@ -165,7 +150,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         </div>
                     </div>
 
-                    {/* Live LTP & Directional Flash */}
                     <div className="flex flex-col items-end">
                         <div className="flex items-baseline gap-1.5 font-mono">
                             <span
@@ -191,7 +175,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                     </div>
                 </div>
 
-                {/* 2. Order Side Toggle (BUY vs SELL) */}
                 <div className="p-4 border-b border-dash-border">
                     <div className="grid grid-cols-2 p-1 bg-dash-panel-2 rounded-lg border border-dash-border gap-1">
                         <button
@@ -219,7 +202,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                     </div>
                 </div>
 
-                {/* 2.1 AMO Notice Banner */}
                 {isAmo && (
                     <div className="mx-4 mt-3 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-start gap-2.5">
                         <div className="p-1 rounded bg-indigo-500/20 text-indigo-400 shrink-0 mt-0.5">
@@ -256,7 +238,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                     </div>
                 )}
 
-                {/* 2.2 MIS Cutoff Notice Banner */}
                 {isMisBlocked && (
                     <div className="mx-4 mt-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 flex items-start gap-2">
                         <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -268,9 +249,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                     </div>
                 )}
 
-                {/* 3. Form Body */}
                 <form onSubmit={handleSubmit} className="p-4 space-y-4">
-                    {/* Product Type (Intraday MIS vs Longterm CNC) */}
                     <div>
                         <div className="flex items-center justify-between text-xs font-medium text-dash-text-muted mb-2">
                             <span>Product Type</span>
@@ -324,7 +303,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         </div>
                     </div>
 
-                    {/* Order Type (MARKET vs LIMIT) */}
                     <div>
                         <span className="text-xs font-medium text-dash-text-muted block mb-2">
                             Order Type
@@ -355,7 +333,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         </div>
                     </div>
 
-                    {/* Manual AMO Toggle (Sandbox / Mock Mode) */}
                     {!isEnforcingHours && !isAmo && (
                         <div className="flex items-center justify-between p-2.5 bg-dash-panel-2 border border-dash-border rounded-lg text-xs">
                             <div className="flex items-center gap-2">
@@ -376,9 +353,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         </div>
                     )}
 
-                    {/* Quantity & Price Inputs */}
                     <div className="grid grid-cols-2 gap-3">
-                        {/* Quantity Input */}
                         <div>
                             <label htmlFor="order-qty-input" className="block text-xs font-medium text-dash-text-muted mb-1.5">
                                 Quantity
@@ -422,7 +397,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                             </div>
                         </div>
 
-                        {/* Price Input */}
                         <div>
                             <label htmlFor="order-price-input" className="block text-xs font-medium text-dash-text-muted mb-1.5">
                                 Price (₹)
@@ -446,7 +420,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         </div>
                     </div>
 
-                    {/* Quick Quantity Chips */}
                     <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-dash-text-muted mr-1">Quick Qty:</span>
                         {[10, 25, 50, 100].map((addQty) => (
@@ -461,7 +434,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         ))}
                     </div>
 
-                    {/* Margin & Funds Breakdown Box */}
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg space-y-1.5 text-xs">
                         <div className="flex items-center justify-between">
                             <span className="text-dash-text-muted">Margin Required:</span>
@@ -476,7 +448,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                             </span>
                         </div>
 
-                        {/* Insufficient Funds Warning */}
                         {isShortOnMargin && (
                             <div className="pt-1 text-[11px] text-[#ef4444] font-medium flex items-center gap-1">
                                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -496,7 +467,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         )}
                     </div>
 
-                    {/* 4. Action Buttons */}
                     <div className="flex items-center justify-end gap-2 pt-2">
                         <button
                             type="button"

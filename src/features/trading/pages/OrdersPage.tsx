@@ -11,12 +11,10 @@ export const OrdersPage: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [cancellingOrder, setCancellingOrder] = useState<OrderResponseDTO | null>(null);
 
-    // Fetch all orders so tab counts and instant tab switching remain accurate
     const { data: orders = [], isLoading, isFetching, refetch } = useOrdersQuery();
     const { data: marketStatus } = useMarketStatusQuery();
     const cancelMutation = useCancelOrderMutation();
 
-    // Filter orders by search query
     const filteredOrders = useMemo(() => {
         return orders.filter((order) => {
             const matchesQuery =
@@ -35,7 +33,6 @@ export const OrdersPage: React.FC = () => {
         });
     }, [orders, selectedTab, searchQuery]);
 
-    // Compute status counts for badges
     const counts = useMemo(() => {
         let pending = 0;
         let executed = 0;
@@ -61,7 +58,7 @@ export const OrdersPage: React.FC = () => {
             await cancelMutation.mutateAsync(cancellingOrder.id);
             setCancellingOrder(null);
         } catch {
-            // Toast notification is dispatched in the mutation hook
+            /* Handled in mutation hook */
         }
     };
 
@@ -88,7 +85,6 @@ export const OrdersPage: React.FC = () => {
     return (
         <div className="h-full p-2 overflow-hidden">
             <section className="h-full bg-dash-panel border border-dash-border rounded-md p-5 flex flex-col overflow-hidden">
-                {/* 1. Page Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dash-border shrink-0">
                     <div>
                         <div className="flex items-center gap-3">
@@ -120,7 +116,6 @@ export const OrdersPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Search Input */}
                         <div className="relative">
                             <input
                                 type="text"
@@ -141,7 +136,6 @@ export const OrdersPage: React.FC = () => {
                             </svg>
                         </div>
 
-                        {/* Refresh Button */}
                         <button
                             type="button"
                             onClick={() => void refetch()}
@@ -167,7 +161,6 @@ export const OrdersPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 2. Status Filter Tabs */}
                 <div className="flex items-center gap-2 py-3 border-b border-dash-border shrink-0 overflow-x-auto custom-scrollbar">
                     {(
                         [
@@ -201,7 +194,6 @@ export const OrdersPage: React.FC = () => {
                     ))}
                 </div>
 
-                {/* 3. Orders Table View */}
                 <div className="flex-1 overflow-auto custom-scrollbar mt-3">
                     {isLoading ? (
                         <div className="h-full flex flex-col items-center justify-center text-dash-text-muted gap-2">
@@ -263,13 +255,11 @@ export const OrdersPage: React.FC = () => {
                                             key={order.id}
                                             className="hover:bg-dash-panel-2/60 transition-colors group"
                                         >
-                                            {/* Timestamp */}
                                             <td className="py-3 px-3 font-mono whitespace-nowrap">
                                                 <div className="text-dash-text font-medium">{time}</div>
                                                 <div className="text-[10px] text-dash-text-muted">{date}</div>
                                             </td>
 
-                                            {/* Instrument & Exchange */}
                                             <td className="py-3 px-3 font-medium whitespace-nowrap">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="text-dash-text font-semibold">{order.symbol}</span>
@@ -287,7 +277,6 @@ export const OrdersPage: React.FC = () => {
                                                 </div>
                                             </td>
 
-                                            {/* Product / Order Type */}
                                             <td className="py-3 px-3 whitespace-nowrap">
                                                 <div className="flex items-center gap-1">
                                                     <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-dash-panel-2 border border-dash-border text-dash-text">
@@ -299,7 +288,6 @@ export const OrdersPage: React.FC = () => {
                                                 </div>
                                             </td>
 
-                                            {/* Side (BUY / SELL) */}
                                             <td className="py-3 px-3 whitespace-nowrap">
                                                 <span
                                                     className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider inline-block ${
@@ -312,7 +300,6 @@ export const OrdersPage: React.FC = () => {
                                                 </span>
                                             </td>
 
-                                            {/* Quantity */}
                                             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                                                 <span className="text-dash-text font-semibold">
                                                     {order.filledQuantity}
@@ -320,7 +307,6 @@ export const OrdersPage: React.FC = () => {
                                                 <span className="text-dash-text-muted"> / {order.quantity}</span>
                                             </td>
 
-                                            {/* Order Price */}
                                             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                                                 {order.orderType === "MARKET" ? (
                                                     <span className="text-dash-text-muted italic">Market</span>
@@ -331,7 +317,6 @@ export const OrdersPage: React.FC = () => {
                                                 )}
                                             </td>
 
-                                            {/* Avg Executed Price */}
                                             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                                                 {order.averagePrice !== null && order.averagePrice > 0 ? (
                                                     <span className="text-dash-text font-semibold">
@@ -342,12 +327,10 @@ export const OrdersPage: React.FC = () => {
                                                 )}
                                             </td>
 
-                                            {/* Blocked Margin */}
                                             <td className="py-3 px-3 text-right font-mono text-dash-text-muted whitespace-nowrap">
                                                 ₹{formatINR(order.blockedMargin)}
                                             </td>
 
-                                            {/* Status Pill */}
                                             <td className="py-3 px-3 text-center whitespace-nowrap">
                                                 {isPending && (
                                                     <span
@@ -385,7 +368,6 @@ export const OrdersPage: React.FC = () => {
                                                 )}
                                             </td>
 
-                                            {/* Action Button */}
                                             <td className="py-3 px-3 text-right whitespace-nowrap">
                                                 {isPending ? (
                                                     <button
@@ -408,7 +390,6 @@ export const OrdersPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Cancel Confirmation Modal */}
             <ConfirmModal
                 isOpen={cancellingOrder !== null}
                 title="Cancel Order"

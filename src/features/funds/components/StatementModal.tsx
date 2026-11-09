@@ -58,7 +58,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
-    // Active View Tab State with render-phase prop synchronization
     const [activeTab, setActiveTab] = useState<StatementModalTab>(initialTab);
     const [prevInitialTab, setPrevInitialTab] = useState<StatementModalTab>(initialTab);
     const [prevIsOpen, setPrevIsOpen] = useState<boolean>(isOpen);
@@ -75,13 +74,11 @@ export const StatementModal: React.FC<StatementModalProps> = ({
         setActiveTab(initialTab);
     }
 
-    // Filter & Query States
     const [selectedType, setSelectedType] = useState<WalletTransactionType | "ALL">("ALL");
     const [searchInput, setSearchInput] = useState<string>("");
     const [activeSearch, setActiveSearch] = useState<string>("");
     const [currentPage, setCurrentPage] = useState<number>(1);
 
-    // TanStack Query: Wallet Statement Query with auto-caching
     const {
         data: statementData,
         isLoading,
@@ -113,7 +110,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
     };
     const error = queryError instanceof Error ? queryError.message : null;
 
-    // Reset pagination when filter or search changes
     const handleTypeChange = (type: WalletTransactionType | "ALL") => {
         setSelectedType(type);
         setCurrentPage(1);
@@ -135,7 +131,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
         refetch();
     };
 
-    // Close on Escape & prevent body scroll
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") onClose();
@@ -202,14 +197,12 @@ export const StatementModal: React.FC<StatementModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
                 aria-hidden="true"
             />
 
-            {/* Modal Container */}
             <div
                 ref={modalRef}
                 className="relative w-full max-w-6xl max-h-[90vh] bg-dash-panel border border-dash-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-10"
@@ -217,7 +210,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                 aria-modal="true"
                 aria-labelledby="statement-title"
             >
-                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-dash-border shrink-0 bg-dash-panel-2/50 gap-3">
                     <div className="min-w-0 pr-4 min-h-[46px] flex flex-col justify-center">
                         <div className="flex items-center gap-2">
@@ -256,7 +248,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Tab Switcher Pills */}
                         <div className="flex items-center bg-dash-card p-0.5 rounded-lg border border-dash-border">
                             <button
                                 type="button"
@@ -291,7 +282,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                             </button>
                         </div>
 
-                        {/* Close Button */}
                         <button
                             type="button"
                             onClick={onClose}
@@ -306,7 +296,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </div>
                 </div>
 
-                {/* Summary Metrics Banner */}
                 {overview && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-6 py-3 bg-dash-panel-2/30 border-b border-dash-border shrink-0">
                         <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
@@ -330,16 +319,12 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </div>
                 )}
 
-                {/* Top-up Orders Tab View (Keep-Alive container) */}
                 <div className={`flex flex-col flex-1 overflow-hidden ${activeTab === "topup_history" ? "flex" : "hidden"}`}>
                     <TopupHistoryView formatINR={formatINR} onClose={onClose} />
                 </div>
 
-                {/* Statement Tab View (Keep-Alive container) */}
                 <div className={`flex flex-col flex-1 overflow-hidden ${activeTab === "statement" ? "flex" : "hidden"}`}>
-                    {/* Controls Bar: Type Filters & Search */}
                     <div className="px-6 py-3 border-b border-dash-border bg-dash-panel-2/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
-                    {/* Filter Pills */}
                     <div className="flex flex-wrap items-center gap-1.5">
                         {FILTER_TYPES.map((filter) => {
                             const isSelected = selectedType === filter.value;
@@ -360,7 +345,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                         })}
                     </div>
 
-                    {/* Search Form */}
                     <div className="flex items-center gap-2">
                         <form onSubmit={handleSearchSubmit} className="relative flex items-center min-w-[260px] sm:w-72">
                         <input
@@ -420,10 +404,8 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </div>
                 </div>
 
-                {/* Table Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                     {isLoading ? (
-                        /* Loading Skeleton */
                         <div className="space-y-3 py-4">
                             {[1, 2, 3, 4, 5].map((i) => (
                                 <div
@@ -439,7 +421,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                             ))}
                         </div>
                     ) : error ? (
-                        /* Error State */
                         <div className="text-center py-12">
                             <svg
                                 className="w-10 h-10 text-rose-400 mx-auto mb-2"
@@ -464,7 +445,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                             </button>
                         </div>
                     ) : transactions.length === 0 ? (
-                        /* Empty State */
                         <div className="text-center py-12">
                             <svg
                                 className="w-12 h-12 text-dash-text-muted/40 mx-auto mb-3"
@@ -499,7 +479,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                             )}
                         </div>
                     ) : (
-                        /* Transactions Table */
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs">
                                 <thead>
@@ -547,7 +526,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     )}
                 </div>
 
-                {/* Footer with Pagination */}
                 <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-dash-border bg-dash-panel-2/50 gap-3 shrink-0">
                     <span className="text-xs text-dash-text-muted">
                         {pagination.totalTransactions > 0
@@ -556,7 +534,6 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                     </span>
 
                     <div className="flex items-center gap-2">
-                        {/* Pagination Controls */}
                         {pagination.totalPages > 1 && (
                             <div className="flex items-center gap-1.5 mr-2">
                                 <button

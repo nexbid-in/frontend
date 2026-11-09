@@ -25,7 +25,7 @@ interface ClientWsMessage {
     symbol: string;
 }
 
-export function getSymbolAliases(symbol: string): string[] {
+function getSymbolAliases(symbol: string): string[] {
     const sym = symbol.toUpperCase().trim();
     const spaceless = sym.replace(/\s+/g, "");
     const aliases = new Set<string>([sym, spaceless]);
@@ -41,18 +41,6 @@ export function getSymbolAliases(symbol: string): string[] {
     return Array.from(aliases);
 }
 
-/**
- * Shared Singleton WebSocket Service for Live Market Feeds.
- *
- * Key Architecture Highlights:
- * 1. Single Shared Connection: Prevents connection churning and connection limit exhaustion.
- * 2. Client-Side Reference Counting: Multiple components (or multiple chart indicators/intervals)
- *    can subscribe to the same ticker without stepping on each other.
- * 3. Debounced Unsubscribe (500ms): Defeats React StrictMode double-invocation and screen/tab navigation
- *    race conditions where unmount/remount triggers an immediate `unsubscribe` right after `subscribe`.
- * 4. Tab Visibility & Focus Resilience: Auto-resumes, verifies socket health, and re-confirms active
- *    subscriptions on `visibilitychange`, `window.focus`, and `online` events without requiring page reload.
- */
 class MarketWebSocketService {
     private ws: WebSocket | null = null;
     private subscribers = new Map<string, Set<TickHandler>>();
@@ -102,18 +90,15 @@ class MarketWebSocketService {
     private handleResume = (): void => {
         if (this.isExplicitlyDestroyed) return;
 
-        // 1. If socket dropped or closed while in background, reconnect immediately
         if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
             this.ensureConnected();
             return;
         }
 
-        // 2. If socket is connecting, ensureConnected will handle subscriptions onopen
         if (this.ws.readyState === WebSocket.CONNECTING) {
             return;
         }
 
-        // 3. If socket is already OPEN, it is healthy and active.
         // Simply cancel any pending unsubscriptions so active handlers keep receiving ticks.
         // DO NOT re-send "subscribe" messages to the backend! The backend is already streaming.
         if (this.ws.readyState === WebSocket.OPEN) {
@@ -147,14 +132,12 @@ class MarketWebSocketService {
     public subscribe(symbol: string, handler: TickHandler): () => void {
         const sym = symbol.toUpperCase().trim();
 
-        // 1. Cancel any pending unsubscription timer for this symbol immediately
         const pendingTimer = this.pendingUnsubscribes.get(sym);
         if (pendingTimer) {
             clearTimeout(pendingTimer);
             this.pendingUnsubscribes.delete(sym);
         }
 
-        // 2. Register handler in subscriber set
         let set = this.subscribers.get(sym);
         const isFirstSubscriber = !set || set.size === 0;
         if (!set) {
@@ -163,10 +146,8 @@ class MarketWebSocketService {
         }
         set.add(handler);
 
-        // 3. Ensure WebSocket is active
         this.ensureConnected();
 
-        // 4. Send subscription packet if this is the first active handler
         if (isFirstSubscriber && this.ws?.readyState === WebSocket.OPEN) {
             this.send({ action: "subscribe", symbol: sym });
         }
@@ -392,7 +373,6 @@ class MarketWebSocketService {
                     this.latestTicks.set(alias, tick);
                 }
 
-                // Dispatch to all subscribers matching any alias (prevent duplicate invocation)
                 const notified = new Set<TickHandler>();
                 for (const alias of aliases) {
                     const set = this.subscribers.get(alias);

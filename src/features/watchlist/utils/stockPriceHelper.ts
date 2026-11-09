@@ -5,7 +5,6 @@ export interface StockMarketQuote {
     isPositive: boolean;
 }
 
-// Baseline prices for popular Indian stocks & indices to match real market data
 const BASELINE_PRICES: Record<string, { price: number; change: number; changePercent: number }> = {
     HEROMOTOCO: { price: 5296.0, change: -30.0, changePercent: -0.56 },
     JSWSTEEL: { price: 1171.7, change: 2.9, changePercent: 0.25 },
@@ -36,10 +35,6 @@ const BASELINE_PRICES: Record<string, { price: number; change: number; changePer
     "NIFTY IT": { price: 42150.0, change: 180.5, changePercent: 0.43 },
 };
 
-/**
- * Returns a realistic market quote for a given stock symbol.
- * Falls back to a deterministic calculation based on symbol characters if not explicitly in baseline map.
- */
 export function getStockMarketQuote(symbol: string): StockMarketQuote {
     const cleanSymbol = symbol.toUpperCase().trim();
     const baseline = BASELINE_PRICES[cleanSymbol];
@@ -53,7 +48,6 @@ export function getStockMarketQuote(symbol: string): StockMarketQuote {
         };
     }
 
-    // Deterministic fallback based on symbol char codes
     let hash = 0;
     for (let i = 0; i < cleanSymbol.length; i++) {
         hash = (hash << 5) - hash + cleanSymbol.charCodeAt(i);
@@ -61,7 +55,7 @@ export function getStockMarketQuote(symbol: string): StockMarketQuote {
     }
     const absHash = Math.abs(hash);
     const price = 100 + (absHash % 4900) + ((absHash % 99) / 100);
-    const changeFactor = (absHash % 500) / 100 - 2.5; // range -2.5% to +2.5%
+    const changeFactor = (absHash % 500) / 100 - 2.5;
     const change = Math.round(((price * changeFactor) / 100) * 100) / 100;
     const changePercent = Math.round(changeFactor * 100) / 100;
 
@@ -80,27 +74,17 @@ export function formatINR(val: number): string {
     }).format(val);
 }
 
-/**
- * Dynamically converts full legal company names into clean trading brand names (e.g. Zerodha Kite).
- * Scalable for all existing database stocks and any new stocks added by admins.
- * E.g., "Tata Motors Limited" -> "Tata Motors", "Infosys Limited" -> "Infosys"
- */
 export function formatStockDisplayName(name: string, symbol?: string): string {
     if (!name || typeof name !== "string") return symbol || "";
 
     const cleaned = name
-        // 1. Remove parenthetical country/region tags like "(India)", "(I)"
         .replace(/\s*\((India|I|IN)\)/gi, "")
-        // 2. Remove standard legal entity suffixes at word boundaries
         .replace(
             /\b(Private|Public)?\s*(Limited|Ltd\.?|Corporation|Corp\.?|Holdings?)\b/gi,
             ""
         )
-        // 3. Remove index benchmark descriptors (e.g. "Benchmark Index", "Benchmark")
         .replace(/\b(Benchmark\s+Index|Benchmark)\b/gi, "")
-        // 4. Remove trailing symbols, dots, commas, dashes, or ampersands left after removal
         .replace(/[\s,.-]+$/, "")
-        // 5. Collapse multiple spaces into one
         .replace(/\s{2,}/g, " ")
         .trim();
 
@@ -120,9 +104,6 @@ export interface StockFundamentals {
     upperCircuit: number;
 }
 
-/**
- * Returns comprehensive market fundamentals and ranges derived from current quote
- */
 export function getStockFundamentals(symbol: string): StockFundamentals {
     const quote = getStockMarketQuote(symbol);
     const prevClose = Math.round((quote.price - quote.change) * 100) / 100;
@@ -144,7 +125,6 @@ export function getStockFundamentals(symbol: string): StockFundamentals {
     const lowerCircuit = Math.round(prevClose * 0.90 * 100) / 100;
     const upperCircuit = Math.round(prevClose * 1.10 * 100) / 100;
 
-    // Deterministic volume based on symbol
     let hash = 0;
     for (let i = 0; i < symbol.length; i++) {
         hash = (hash << 5) - hash + symbol.charCodeAt(i);
@@ -178,4 +158,3 @@ export function formatVolume(volume: number): string {
     }
     return volume.toLocaleString("en-IN");
 }
-

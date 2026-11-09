@@ -6,10 +6,6 @@ import { marketWebSocketService, useLiveStockQuote, formatINR } from "@/features
 import { APP_ROUTES } from "@/constants/routes";
 import type { PositionResponseDTO, PositionsFilter } from "../types";
 
-/**
- * Individual live-updating position table row.
- * Scopes WebSocket tick re-renders strictly to this row.
- */
 interface PositionRowProps {
     position: PositionResponseDTO;
     onSquareOff: (position: PositionResponseDTO) => void;
@@ -23,12 +19,10 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
 }) => {
     const quote = useLiveStockQuote(position.symbol);
 
-    // Compute live metrics with real-time WebSocket ticks
     const liveLtp = quote.price > 0 ? quote.price : position.currentLtp;
     const isLong = position.side === "LONG";
     const isOpen = position.quantity > 0;
 
-    // Real-time floating unrealized P&L
     const liveUnrealizedPnL = isOpen
         ? isLong
             ? (liveLtp - position.averagePrice) * position.quantity
@@ -47,14 +41,12 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
 
     return (
         <tr className="hover:bg-dash-panel-2/60 transition-colors group">
-            {/* Product Badge */}
             <td className="py-3 px-3 whitespace-nowrap">
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-dash-panel-2 border border-dash-border text-dash-text">
                     {position.productType}
                 </span>
             </td>
 
-            {/* Instrument & Exchange */}
             <td className="py-3 px-3 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
                     <span className="text-dash-text font-semibold">{position.symbol}</span>
@@ -64,7 +56,6 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </div>
             </td>
 
-            {/* Side Badge */}
             <td className="py-3 px-3 whitespace-nowrap">
                 <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider inline-block ${
@@ -77,19 +68,16 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
-            {/* Net Quantity */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span className={`font-semibold ${isOpen ? "text-dash-text" : "text-dash-text-muted"}`}>
                     {position.quantity}
                 </span>
             </td>
 
-            {/* Average Buy/Sell Price */}
             <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
                 ₹{formatINR(position.averagePrice)}
             </td>
 
-            {/* Live LTP with directional flash */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span
                     className={`font-semibold transition-colors duration-200 ${
@@ -104,7 +92,6 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
-            {/* Unrealized Floating P&L */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span className={`font-semibold ${pnlTextColor}`}>
                     {liveUnrealizedPnL >= 0 ? `+₹${formatINR(liveUnrealizedPnL)}` : `-₹${formatINR(Math.abs(liveUnrealizedPnL))}`}
@@ -114,7 +101,6 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
-            {/* Realized P&L */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span
                     className={`font-medium ${
@@ -133,12 +119,10 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
-            {/* Blocked Margin */}
             <td className="py-3 px-3 text-right font-mono text-dash-text-muted whitespace-nowrap">
                 {isOpen ? `₹${formatINR(position.blockedMargin)}` : "—"}
             </td>
 
-            {/* Action: Exit / Square Off */}
             <td className="py-3 px-3 text-right whitespace-nowrap">
                 {isOpen ? (
                     <button
@@ -167,15 +151,12 @@ export const PortfolioPage: React.FC = () => {
     const { data, isLoading, isFetching, refetch } = usePositionsQuery(selectedFilter);
     const squareOffMutation = useSquareOffPositionMutation();
 
-    // Map of live ticks: { [symbol]: liveLtp }
     const [livePrices, setLivePrices] = useState<Record<string, number>>({});
 
-    // Subscribe to live WebSocket feeds for all active open positions
     useEffect(() => {
         const openPositions = (data?.positions ?? []).filter((p) => p.quantity > 0);
         if (openPositions.length === 0) return;
 
-        // Subscribe to live WebSocket feeds for each open symbol
         const unsubs = openPositions.map((pos) =>
             marketWebSocketService.subscribe(pos.symbol, (tick) => {
                 setLivePrices((prev) => {
@@ -185,13 +166,11 @@ export const PortfolioPage: React.FC = () => {
             })
         );
 
-        // Cleanup unsubscriptions on unmount or position change
         return () => {
             unsubs.forEach((unsub) => unsub());
         };
     }, [data?.positions]);
 
-    // Dynamically calculate live portfolio summary on every price tick
     const summary = useMemo(() => {
         const positions = data?.positions ?? [];
         const openPositions = positions.filter((p) => p.quantity > 0);
@@ -205,7 +184,6 @@ export const PortfolioPage: React.FC = () => {
             const cost = pos.averagePrice * pos.quantity;
             totalInvestment += cost;
 
-            // Use live WebSocket tick if available, or in-memory singleton cache, fallback to snapshot
             const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
             const currentLtp =
                 livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.currentLtp ?? pos.averagePrice;
@@ -239,7 +217,6 @@ export const PortfolioPage: React.FC = () => {
         };
     }, [data?.positions, data?.summary, livePrices]);
 
-    // Filter positions by user search query
     const filteredPositions = useMemo(() => {
         const list = data?.positions ?? [];
         return list.filter((p) => {
@@ -256,7 +233,7 @@ export const PortfolioPage: React.FC = () => {
             await squareOffMutation.mutateAsync(squaringOffPosition.id);
             setSquaringOffPosition(null);
         } catch {
-            // Toast notification is handled in mutation hook
+            /* Handled in mutation hook */
         }
     };
 
@@ -265,7 +242,6 @@ export const PortfolioPage: React.FC = () => {
     return (
         <div className="h-full p-2 overflow-hidden">
             <section className="h-full bg-dash-panel border border-dash-border rounded-md p-5 flex flex-col overflow-hidden">
-                {/* 1. Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dash-border shrink-0">
                     <div>
                         <h1 className="text-base font-semibold text-dash-text tracking-tight">Portfolio Positions</h1>
@@ -275,7 +251,6 @@ export const PortfolioPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Search Input */}
                         <div className="relative">
                             <input
                                 type="text"
@@ -296,7 +271,6 @@ export const PortfolioPage: React.FC = () => {
                             </svg>
                         </div>
 
-                        {/* Refresh Button */}
                         <button
                             type="button"
                             onClick={() => void refetch()}
@@ -322,9 +296,7 @@ export const PortfolioPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 2. Top Summary KPI Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 py-4 border-b border-dash-border shrink-0">
-                    {/* Total Investment */}
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
                         <span className="text-[11px] text-dash-text-muted block">Total Invested</span>
                         <span className="text-sm md:text-base font-bold font-mono text-dash-text mt-1 block">
@@ -332,7 +304,6 @@ export const PortfolioPage: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Current Value */}
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
                         <span className="text-[11px] text-dash-text-muted block">Current Value</span>
                         <span className="text-sm md:text-base font-bold font-mono text-dash-text mt-1 block">
@@ -340,7 +311,6 @@ export const PortfolioPage: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Unrealized P&L */}
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
                         <span className="text-[11px] text-dash-text-muted block">Unrealized P&L</span>
                         <span
@@ -354,7 +324,6 @@ export const PortfolioPage: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Realized P&L */}
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
                         <span className="text-[11px] text-dash-text-muted block">Realized P&L</span>
                         <span
@@ -368,7 +337,6 @@ export const PortfolioPage: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Net Total P&L */}
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg col-span-2 md:col-span-1">
                         <span className="text-[11px] text-dash-text-muted block">Total P&L</span>
                         <span
@@ -383,7 +351,6 @@ export const PortfolioPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 3. Filter Navigation (Open vs All) */}
                 <div className="flex items-center gap-2 py-3 border-b border-dash-border shrink-0">
                     <button
                         type="button"
@@ -428,7 +395,6 @@ export const PortfolioPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* 4. Positions Table */}
                 <div className="flex-1 overflow-auto custom-scrollbar mt-3">
                     {isLoading ? (
                         <div className="h-full flex flex-col items-center justify-center text-dash-text-muted gap-2">
@@ -491,7 +457,6 @@ export const PortfolioPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Square-off confirmation modal */}
             <ConfirmModal
                 isOpen={squaringOffPosition !== null}
                 title="Square Off Position"

@@ -24,13 +24,10 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
     const stock = item.stock;
     const isIndex = stock.type === "INDEX";
 
-    // 1. Live WebSocket quote streaming (continuous LTP & tick flash)
     const quote = useLiveStockQuote(stock.symbol);
 
-    // 2. Fetch rich market overview & performance returns from backend API
     const { data: overview, isLoading } = useStockOverviewQuery(stock.symbol);
 
-    // 3. Fallback baseline if API is still loading or offline
     const fallback = useMemo(() => getStockFundamentals(stock.symbol), [stock.symbol]);
 
     const vitals = overview?.vitals;
@@ -48,13 +45,11 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
     const week52High = overview ? Math.max(overview.range52W.high, quote.price) : fallback.week52High;
 
     const performance = overview?.performance;
-    // Live WebSocket order book streaming with REST snapshot fallback
     const buyQty = typeof quote.totalBuyQty === "number" ? quote.totalBuyQty : vitals?.totalBuyQty;
     const sellQty = typeof quote.totalSellQty === "number" ? quote.totalSellQty : vitals?.totalSellQty;
     const bidPrice = typeof quote.bidPrice === "number" ? quote.bidPrice : vitals?.bidPrice;
     const askPrice = typeof quote.askPrice === "number" ? quote.askPrice : vitals?.askPrice;
 
-    // Calculate percentage positions for range slider markers
     const dayRangePercent = useMemo(() => {
         const span = dayHigh - dayLow;
         if (span <= 0) return 50;
@@ -69,14 +64,12 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
         return Math.min(100, Math.max(0, Math.round(pct)));
     }, [quote.price, week52Low, week52High]);
 
-    // Market Depth calculations
     const depthTotal = (buyQty ?? 0) + (sellQty ?? 0);
     const buyPercent = depthTotal > 0 ? Math.round(((buyQty ?? 0) / depthTotal) * 100) : 50;
     const sellPercent = 100 - buyPercent;
 
     return (
         <div className="w-full h-full overflow-y-auto custom-scrollbar p-6 space-y-6">
-            {/* Top Identity & Action Header */}
             <div className="bg-dash-card border border-dash-border rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2">
@@ -99,7 +92,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         {stock.name} {stock.sector ? `• ${stock.sector}` : ""}
                     </p>
 
-                    {/* Live LTP & Day Change */}
                     <div className="flex items-baseline gap-2 mt-2">
                         <span
                             className={`text-2xl font-bold font-mono transition-colors duration-200 ${
@@ -158,7 +150,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                 </div>
             </div>
 
-            {/* Performance Sliders: Day High/Low & 52-Week High/Low (Zerodha Kite Style) */}
             <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-6">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">
@@ -169,7 +160,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                     )}
                 </div>
 
-                {/* Day Range Slider */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                         <div className="text-left">
@@ -194,13 +184,11 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         </div>
                     </div>
 
-                    {/* Progress Track with Marker Pin */}
                     <div className="relative w-full h-2 bg-dash-panel-2 rounded-full overflow-visible">
                         <div
                             className="h-full rounded-full bg-linear-to-r from-[#ef4444] via-amber-400 to-[#22c55e]"
                             style={{ width: "100%" }}
                         />
-                        {/* Glowing Position Marker Pin */}
                         <div
                             className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white border-2 border-primary-green rounded-full shadow-md -ml-1.5 transition-all duration-300"
                             style={{ left: `${dayRangePercent}%` }}
@@ -211,7 +199,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
 
                 <div className="border-t border-dash-border/60" />
 
-                {/* 52-Week Range Slider */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                         <div className="text-left">
@@ -236,13 +223,11 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         </div>
                     </div>
 
-                    {/* Progress Track with Marker Pin */}
                     <div className="relative w-full h-2 bg-dash-panel-2 rounded-full overflow-visible">
                         <div
                             className="h-full rounded-full bg-linear-to-r from-dash-panel-2 via-primary-green/60 to-primary-green"
                             style={{ width: "100%" }}
                         />
-                        {/* Glowing Position Marker Pin */}
                         <div
                             className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white border-2 border-primary-green rounded-full shadow-md -ml-1.5 transition-all duration-300"
                             style={{ left: `${week52RangePercent}%` }}
@@ -252,7 +237,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                 </div>
             </div>
 
-            {/* Historical Performance Returns (1W, 1M, 1Y) */}
             {performance && (
                 <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-4">
                     <div className="flex items-center justify-between">
@@ -311,7 +295,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                 </div>
             )}
 
-            {/* Order Book / Market Depth Snapshot */}
             {!isIndex && (typeof buyQty === "number" || typeof bidPrice === "number" || typeof askPrice === "number") && (
                 <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-4">
                     <div className="flex items-center justify-between">
@@ -326,7 +309,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         )}
                     </div>
 
-                    {/* Buy vs Sell Volume Ratio Bar */}
                     {depthTotal > 0 && (
                         <div className="space-y-2">
                             <div className="flex justify-between text-xs font-mono">
@@ -344,7 +326,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                         </div>
                     )}
 
-                    {/* Best Bid and Ask Prices */}
                     {(typeof bidPrice === "number" || typeof askPrice === "number") && (
                         <div className="grid grid-cols-2 gap-3 pt-1">
                             <div className="bg-dash-panel p-3 rounded-lg border border-dash-border">
@@ -364,7 +345,6 @@ export const StockOverviewPanel: React.FC<StockOverviewPanelProps> = ({
                 </div>
             )}
 
-            {/* Key Market Fundamentals Grid */}
             <div className="bg-dash-card border border-dash-border rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-dash-text-muted">

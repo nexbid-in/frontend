@@ -39,16 +39,13 @@ const formatDate = (dateString: string) => {
 };
 
 export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, onClose }) => {
-    // Filter & Query States
     const [selectedStatus, setSelectedStatus] = useState<PaymentOrderStatus | "ALL">("ALL");
     const [searchInput, setSearchInput] = useState<string>("");
     const [activeSearch, setActiveSearch] = useState<string>("");
     const [currentPage, setCurrentPage] = useState<number>(1);
 
-    // Clipboard copy feedback
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    // TanStack Query: Top-up Orders History Query with auto-caching
     const {
         data: historyData,
         isLoading,
@@ -146,9 +143,7 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
 
     return (
         <div className="flex flex-col flex-1 overflow-hidden">
-            {/* Controls Bar: Status Filter Pills, Search, & Refresh */}
             <div className="px-6 py-3 border-b border-dash-border bg-dash-panel-2/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
-                {/* Filter Pills */}
                 <div className="flex flex-wrap items-center gap-1.5">
                     {STATUS_FILTERS.map((filter) => {
                         const isSelected = selectedStatus === filter.value;
@@ -169,7 +164,6 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                     })}
                 </div>
 
-                {/* Search Form & Refresh */}
                 <div className="flex items-center gap-2">
                     <form onSubmit={handleSearchSubmit} className="relative flex items-center min-w-[280px] sm:w-80">
                         <input
@@ -228,10 +222,8 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                 </div>
             </div>
 
-            {/* Table Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 {isLoading ? (
-                    /* Loading Skeleton */
                     <div className="space-y-3 py-4">
                         {[1, 2, 3, 4, 5].map((i) => (
                             <div
@@ -247,7 +239,6 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                         ))}
                     </div>
                 ) : error ? (
-                    /* Error State */
                     <div className="text-center py-12">
                         <svg
                             className="w-10 h-10 text-rose-400 mx-auto mb-2"
@@ -272,7 +263,6 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                         </button>
                     </div>
                 ) : orders.length === 0 ? (
-                    /* Empty State */
                     <div className="text-center py-12">
                         <svg
                             className="w-12 h-12 text-dash-text-muted/40 mx-auto mb-3"
@@ -307,7 +297,6 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                         )}
                     </div>
                 ) : (
-                    /* Orders Table */
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
                             <thead>
@@ -327,12 +316,10 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
 
                                     return (
                                         <tr key={order.id} className="hover:bg-dash-panel-2/50 transition-colors">
-                                            {/* Date & Time */}
                                             <td className="px-5 py-3.5 text-dash-text whitespace-nowrap">
                                                 {formatDate(order.createdAt)}
                                             </td>
 
-                                            {/* Gateway References: Order ID & Payment ID */}
                                             <td className="px-5 py-3.5 whitespace-nowrap min-w-[240px]">
                                                 <div className="flex flex-col gap-0.5">
                                                     <div className="flex items-center gap-1.5">
@@ -389,24 +376,20 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                                                 </div>
                                             </td>
 
-                                            {/* Real INR */}
                                             <td className="px-5 py-3.5 font-mono font-medium text-right text-dash-text whitespace-nowrap">
                                                 {formatINR(order.realAmount)}
                                             </td>
 
-                                            {/* Virtual Credits */}
                                             <td className="px-5 py-3.5 font-mono font-semibold text-right whitespace-nowrap">
                                                 <span className={isSuccess ? "text-primary-green" : "text-dash-text-muted"}>
                                                     +{formatINR(order.virtualAmount)} V-INR
                                                 </span>
                                             </td>
 
-                                            {/* Status Badge */}
                                             <td className="px-5 py-3.5 text-center whitespace-nowrap">
                                                 {renderStatusBadge(order.status)}
                                             </td>
 
-                                            {/* Audit Remarks */}
                                             <td className="px-5 py-3.5 text-dash-text-muted whitespace-nowrap text-[11px]">
                                                 {isSuccess ? (
                                                     <span className="text-primary-green/90 font-medium flex items-center gap-1">
@@ -442,7 +425,6 @@ export const TopupHistoryView: React.FC<TopupHistoryViewProps> = ({ formatINR, o
                 )}
             </div>
 
-            {/* Footer with Pagination */}
             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-dash-border bg-dash-panel-2/50 gap-3 shrink-0">
                 <span className="text-xs text-dash-text-muted">
                     {pagination.totalOrders > 0

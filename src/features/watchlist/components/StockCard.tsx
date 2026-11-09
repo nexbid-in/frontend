@@ -41,7 +41,6 @@ export const StockCard: React.FC<StockCardProps> = ({
             }`}
         >
             <div className="flex items-center justify-between">
-                {/* Left Column: Clean Brand Name & Exchange Badge */}
                 <div className="min-w-0 pr-2">
                     <span className="text-sm font-medium text-dash-text tracking-tight truncate block group-hover:text-primary-green transition-colors">
                         {displayName}
@@ -61,7 +60,6 @@ export const StockCard: React.FC<StockCardProps> = ({
                     </div>
                 </div>
 
-                {/* Right Column: Price & Change with Live Tick Flash */}
                 <div className="text-right shrink-0 transition-opacity duration-150 group-hover:opacity-0 md:group-hover:opacity-0">
                     <div
                         className={`text-sm font-mono font-medium transition-colors duration-200 ${
@@ -87,12 +85,10 @@ export const StockCard: React.FC<StockCardProps> = ({
                 </div>
             </div>
 
-            {/* Zerodha Kite Style Floating Hover Action Toolbar */}
             <div
                 onClick={(e) => e.stopPropagation()}
                 className="absolute right-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1.5 bg-dash-card p-1 rounded border border-dash-border shadow-md z-10 animate-in fade-in zoom-in-95 duration-100"
             >
-                {/* Buy Button (Hidden for non-tradable Indices) */}
                 {!isIndex && stock.isTradable && (
                     <button
                         type="button"
@@ -104,7 +100,6 @@ export const StockCard: React.FC<StockCardProps> = ({
                     </button>
                 )}
 
-                {/* Sell Button (Hidden for non-tradable Indices) */}
                 {!isIndex && stock.isTradable && (
                     <button
                         type="button"
@@ -116,7 +111,6 @@ export const StockCard: React.FC<StockCardProps> = ({
                     </button>
                 )}
 
-                {/* Overview Button (Stock Fundamentals & Performance Overview) */}
                 <button
                     type="button"
                     onClick={() => (onOpenOverview ? onOpenOverview(item) : onSelect(item))}
@@ -140,7 +134,6 @@ export const StockCard: React.FC<StockCardProps> = ({
                     </svg>
                 </button>
 
-                {/* Chart Button (Candlestick Bars Icon) */}
                 <button
                     type="button"
                     onClick={() => onOpenChart(item)}
@@ -158,7 +151,6 @@ export const StockCard: React.FC<StockCardProps> = ({
                     </svg>
                 </button>
 
-                {/* Delete from Watchlist Button */}
                 <button
                     type="button"
                     disabled={isDeleting}

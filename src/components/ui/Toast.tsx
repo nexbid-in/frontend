@@ -50,7 +50,6 @@ export function Toast({
             role="alert"
         >
             <div className="p-4 flex items-center gap-3.5">
-                {/* Icon Badge (Vertically Centered) */}
                 <div
                     className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                         isSuccess
@@ -79,7 +78,6 @@ export function Toast({
                     )}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                         <h4 className="text-sm font-semibold text-dash-text tracking-tight truncate">
@@ -92,7 +90,6 @@ export function Toast({
                     </p>
                 </div>
 
-                {/* Dismiss Button */}
                 <button
                     onClick={handleClose}
                     className="text-dash-text-muted hover:text-white p-1 rounded-md hover:bg-dash-border/60 transition-colors shrink-0 cursor-pointer self-center"

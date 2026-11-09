@@ -28,11 +28,7 @@ interface ActiveSubscription {
     unsubWs?: () => void;
 }
 
-/**
- * Translates OpenAlgo interval tokens (e.g., '1m', '5m', '15m', '1h', '1d', '1w')
- * into the resolution strings expected by the Nexbid backend.
- */
-export function intervalToResolution(interval: string): string {
+function intervalToResolution(interval: string): string {
     const norm = interval.toLowerCase().trim();
     if (norm === "1m" || norm === "1") return "1";
     if (norm === "5m" || norm === "5") return "5";
@@ -45,10 +41,7 @@ export function intervalToResolution(interval: string): string {
     return "15";
 }
 
-/**
- * Returns bucket duration in seconds for candle aggregation.
- */
-export function intervalToSeconds(interval: string): number {
+function intervalToSeconds(interval: string): number {
     const norm = interval.toLowerCase().trim();
     if (norm === "1m" || norm === "1") return 60;
     if (norm === "5m" || norm === "5") return 300;
@@ -61,10 +54,6 @@ export function intervalToSeconds(interval: string): number {
     return 900;
 }
 
-/**
- * Checks whether the Indian stock market (NSE/BSE) is currently in an active trading session.
- * Regular trading session: Monday - Friday, 09:15 AM to 03:30 PM IST (UTC+5:30).
- */
 export function isIndianMarketOpen(timestampMs: number = Date.now()): boolean {
     const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
     const istDate = new Date(timestampMs + IST_OFFSET_MS);
@@ -87,7 +76,7 @@ export function isIndianMarketOpen(timestampMs: number = Date.now()): boolean {
  * Adequate history lookback window in milliseconds so 200+ bars are loaded
  * for indicators (such as 200 EMA, Supertrend, Bollinger Bands) to compute cleanly.
  */
-export function getHistoryLookbackMs(interval: string): number {
+function getHistoryLookbackMs(interval: string): number {
     const DAY_MS = 24 * 60 * 60 * 1000;
     const norm = interval.toLowerCase().trim();
     if (norm === "1m" || norm === "1") return 5 * DAY_MS;       // ~1,800 bars
@@ -192,7 +181,6 @@ export class NexbidOpenAlgoDataFeed implements DataFeed {
         const hasExistingBars = Boolean(cached && cached.bars.length > 0);
         const cacheAgeMs = cached ? Date.now() - cached.timestamp : Infinity;
 
-        // 1. Cache TTL (30 seconds):
         // If we already fetched candles for this symbol & interval recently (within 30s),
         // serve directly from memory without making a redundant 100 KB HTTP roundtrip!
         // This completely eliminates HTTP traffic on tab switches, window blur/focus, container resize, and rapid navigation.
