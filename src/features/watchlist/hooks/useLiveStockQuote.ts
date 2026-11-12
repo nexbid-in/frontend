@@ -7,6 +7,12 @@ import { getStockMarketQuote, type StockMarketQuote } from "../utils/stockPriceH
 
 export interface LiveQuote extends StockMarketQuote {
     flashDirection: "up" | "down" | null;
+    hasLiveTick: boolean;
+    open?: number;
+    high?: number;
+    low?: number;
+    prevClose?: number;
+    volume?: number;
     atp?: number;
     bidPrice?: number | null;
     askPrice?: number | null;
@@ -23,6 +29,12 @@ function getInitialQuote(symbol: string): LiveQuote {
             changePercent: cached.changePercent,
             isPositive: cached.change >= 0,
             flashDirection: null,
+            hasLiveTick: true,
+            open: cached.dayOpen,
+            high: cached.dayHigh !== undefined ? Math.max(cached.dayHigh, cached.ltp) : undefined,
+            low: cached.dayLow !== undefined ? Math.min(cached.dayLow, cached.ltp) : undefined,
+            prevClose: cached.prevClose,
+            volume: cached.volume,
             atp: cached.atp,
             bidPrice: cached.bidPrice,
             askPrice: cached.askPrice,
@@ -35,6 +47,7 @@ function getInitialQuote(symbol: string): LiveQuote {
     return {
         ...baseline,
         flashDirection: null,
+        hasLiveTick: false,
     };
 }
 
@@ -70,18 +83,28 @@ export function useLiveStockQuote(symbol: string): LiveQuote {
 
             prevPriceRef.current = currentPrice;
 
-            setQuote((prev) => ({
-                price: currentPrice,
-                change: tick.change,
-                changePercent: tick.changePercent,
-                isPositive: tick.change >= 0,
-                flashDirection: direction,
-                atp: tick.atp ?? prev.atp,
-                bidPrice: tick.bidPrice !== undefined ? tick.bidPrice : prev.bidPrice,
-                askPrice: tick.askPrice !== undefined ? tick.askPrice : prev.askPrice,
-                totalBuyQty: tick.totalBuyQty !== undefined ? tick.totalBuyQty : prev.totalBuyQty,
-                totalSellQty: tick.totalSellQty !== undefined ? tick.totalSellQty : prev.totalSellQty,
-            }));
+            setQuote((prev) => {
+                const nextHigh = tick.dayHigh ?? prev.high;
+                const nextLow = tick.dayLow ?? prev.low;
+                return {
+                    price: currentPrice,
+                    change: tick.change,
+                    changePercent: tick.changePercent,
+                    isPositive: tick.change >= 0,
+                    flashDirection: direction,
+                    hasLiveTick: true,
+                    open: tick.dayOpen ?? prev.open,
+                    high: nextHigh !== undefined ? Math.max(nextHigh, currentPrice) : undefined,
+                    low: nextLow !== undefined ? Math.min(nextLow, currentPrice) : undefined,
+                    prevClose: tick.prevClose ?? prev.prevClose,
+                    volume: tick.volume ?? prev.volume,
+                    atp: tick.atp ?? prev.atp,
+                    bidPrice: tick.bidPrice !== undefined ? tick.bidPrice : prev.bidPrice,
+                    askPrice: tick.askPrice !== undefined ? tick.askPrice : prev.askPrice,
+                    totalBuyQty: tick.totalBuyQty !== undefined ? tick.totalBuyQty : prev.totalBuyQty,
+                    totalSellQty: tick.totalSellQty !== undefined ? tick.totalSellQty : prev.totalSellQty,
+                };
+            });
 
             // Automatically decay flash direction back to normal after 400ms
             if (direction) {

@@ -7,6 +7,10 @@ export interface MarketTick {
     high: number;
     low: number;
     close: number;
+    dayOpen?: number;
+    dayHigh?: number;
+    dayLow?: number;
+    prevClose?: number;
     volume?: number;
     change: number;
     changePercent: number;
@@ -274,13 +278,25 @@ class MarketWebSocketService {
                 const ltp = Number(payload.data?.ltp ?? payload.ltp ?? payload.data?.price ?? payload.price);
                 if (isNaN(ltp) || ltp <= 0) return;
 
-                const open = typeof payload.data?.open === "number" ? payload.data.open : ltp;
-                const high = typeof payload.data?.high === "number" ? payload.data.high : ltp;
-                const low = typeof payload.data?.low === "number" ? payload.data.low : ltp;
-                const close = typeof payload.data?.close === "number" ? payload.data.close : ltp;
+                const pickPositive = (a: unknown, b: unknown): number | undefined => {
+                    if (typeof a === "number" && Number.isFinite(a) && a > 0) return a;
+                    if (typeof b === "number" && Number.isFinite(b) && b > 0) return b;
+                    return undefined;
+                };
+
+                const dayOpen = pickPositive(payload.data?.open, payload.open);
+                const dayHigh = pickPositive(payload.data?.high, payload.high);
+                const dayLow = pickPositive(payload.data?.low, payload.low);
+                const prevClose = pickPositive(payload.data?.close, payload.close);
+
+                const open = typeof payload.data?.open === "number" ? payload.data.open : dayOpen ?? ltp;
+                const high = typeof payload.data?.high === "number" ? payload.data.high : dayHigh ?? ltp;
+                const low = typeof payload.data?.low === "number" ? payload.data.low : dayLow ?? ltp;
+                const close = typeof payload.data?.close === "number" ? payload.data.close : prevClose ?? ltp;
+                const rawVolume = payload.data?.volume ?? payload.volume;
                 const volume =
-                    typeof payload.data?.volume === "number" && !isNaN(payload.data.volume)
-                        ? payload.data.volume
+                    typeof rawVolume === "number" && Number.isFinite(rawVolume)
+                        ? rawVolume
                         : undefined;
                 let change =
                     typeof payload.data?.change === "number"
@@ -356,6 +372,10 @@ class MarketWebSocketService {
                     high,
                     low,
                     close,
+                    dayOpen,
+                    dayHigh,
+                    dayLow,
+                    prevClose,
                     volume,
                     change,
                     changePercent,
