@@ -46,7 +46,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const [side, setSide] = useState<OrderSide>(initialSide);
     const [productType, setProductType] = useState<ProductType>(() => (isMisBlocked ? "CNC" : "MIS"));
     const [orderType, setOrderType] = useState<OrderType>("MARKET");
-    const [quantity, setQuantity] = useState<number>(1);
+    const [quantity, setQuantity] = useState<string>("1");
     const [limitPrice, setLimitPrice] = useState<string>(() =>
         currentPrice > 0 ? currentPrice.toFixed(2) : ""
     );
@@ -59,7 +59,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     useEffect(() => {
         const timer = setTimeout(() => {
             qtyInputRef.current?.focus();
-            qtyInputRef.current?.select();
         }, 50);
         return () => clearTimeout(timer);
     }, []);
@@ -83,15 +82,21 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
 
     const effectivePrice =
         orderType === "LIMIT" && Number(limitPrice) > 0 ? Number(limitPrice) : currentPrice;
-    const totalOrderValue = Math.max(0, quantity * effectivePrice);
+    const parsedQty = parseInt(quantity, 10);
+    const numericQty = !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : 0;
+    const totalOrderValue = Math.max(0, numericQty * effectivePrice);
 
     const marginRequired = productType === "MIS" ? totalOrderValue / 5 : totalOrderValue;
     const marginAvailable = wallet?.balance ?? 0;
     const isShortOnMargin = marginRequired > marginAvailable && marginAvailable > 0;
     const isZeroBalance = marginAvailable <= 0;
 
+    const isQtyEmpty = quantity.trim() === "";
+    const isQtyInvalid = isQtyEmpty || isNaN(parsedQty) || parsedQty < 1;
+
     const isFormValid = useMemo(() => {
-        if (quantity < 1 || !Number.isInteger(quantity)) return false;
+        const parsed = parseInt(quantity, 10);
+        if (!quantity.trim() || isNaN(parsed) || parsed < 1 || !Number.isInteger(parsed)) return false;
         if (orderType === "LIMIT" && (isNaN(Number(limitPrice)) || Number(limitPrice) <= 0))
             return false;
         if (isShortOnMargin || isZeroBalance) return false;
@@ -101,7 +106,8 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!isFormValid || placeOrderMutation.isPending) return;
+        const parsed = parseInt(quantity, 10);
+        if (!isFormValid || placeOrderMutation.isPending || isNaN(parsed) || parsed < 1) return;
 
         try {
             await placeOrderMutation.mutateAsync({
@@ -109,7 +115,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                 side,
                 orderType,
                 productType,
-                quantity,
+                quantity: parsed,
                 price: orderType === "LIMIT" ? Number(limitPrice) : undefined,
                 isAmo,
             });
@@ -262,7 +268,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                                 type="button"
                                 disabled={isMisBlocked}
                                 onClick={() => setProductType("MIS")}
-                                className={`flex flex-col p-2.5 rounded-lg border text-left transition-all ${
+                                className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-all ${
                                     isMisBlocked
                                         ? "opacity-50 cursor-not-allowed border-dash-border bg-dash-panel-2/40"
                                         : productType === "MIS"
@@ -270,34 +276,24 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                                         : "border-dash-border hover:bg-dash-panel-2 cursor-pointer"
                                 }`}
                             >
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-xs font-bold text-dash-text">Intraday MIS</span>
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary-green/20 text-primary-green">
-                                        5x
-                                    </span>
-                                </div>
-                                <span className="text-[10px] text-dash-text-muted mt-0.5">
-                                    {isMisBlocked ? "Blocked after 3:20 PM" : "Square off by 3:15 PM"}
+                                <span className="text-xs font-bold text-dash-text">Intraday MIS</span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary-green/20 text-primary-green">
+                                    5x
                                 </span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setProductType("CNC")}
-                                className={`flex flex-col p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                                className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                                     productType === "CNC"
                                         ? `${accentBorder} ${subtleBg}`
                                         : "border-dash-border hover:bg-dash-panel-2"
                                 }`}
                             >
-                                <div className="flex items-center justify-between w-full">
-                                    <span className="text-xs font-bold text-dash-text">Longterm CNC</span>
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-dash-card text-dash-text-muted">
-                                        1x
-                                    </span>
-                                </div>
-                                <span className="text-[10px] text-dash-text-muted mt-0.5">
-                                    Delivery / Holdings
+                                <span className="text-xs font-bold text-dash-text">Longterm CNC</span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-dash-card text-dash-text-muted">
+                                    1x
                                 </span>
                             </button>
                         </div>
@@ -361,7 +357,11 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                             <div className="relative flex items-center">
                                 <button
                                     type="button"
-                                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                                    onClick={() => {
+                                        const q = parseInt(quantity, 10);
+                                        const next = isNaN(q) ? 1 : Math.max(1, q - 1);
+                                        setQuantity(String(next));
+                                    }}
                                     className="absolute left-1 p-1 text-dash-text-muted hover:text-dash-text rounded hover:bg-dash-card transition-colors cursor-pointer"
                                     tabIndex={-1}
                                 >
@@ -377,15 +377,27 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                                     step="1"
                                     value={quantity}
                                     onChange={(e) => {
-                                        const val = parseInt(e.target.value, 10);
-                                        setQuantity(isNaN(val) ? 1 : Math.max(1, val));
+                                        const val = e.target.value;
+                                        if (val === "") {
+                                            setQuantity("");
+                                            return;
+                                        }
+                                        const parsed = parseInt(val, 10);
+                                        setQuantity(isNaN(parsed) ? "" : String(Math.max(0, parsed)));
                                     }}
-                                    className="w-full text-center bg-dash-panel-2 border border-dash-border rounded-lg py-2 px-7 text-xs font-mono font-semibold text-dash-text focus:outline-none focus:border-primary-green transition-colors"
-                                    required
+                                    className={`w-full text-center bg-dash-panel-2 border rounded-lg py-2 px-7 text-xs font-mono font-semibold text-dash-text focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                                        isQtyInvalid
+                                            ? "border-[#ef4444] focus:border-[#ef4444]"
+                                            : "border-dash-border focus:border-primary-green"
+                                    }`}
                                 />
                                 <button
                                     type="button"
-                                    onClick={() => setQuantity((q) => q + 1)}
+                                    onClick={() => {
+                                        const q = parseInt(quantity, 10);
+                                        const next = isNaN(q) ? 1 : q + 1;
+                                        setQuantity(String(next));
+                                    }}
                                     className="absolute right-1 p-1 text-dash-text-muted hover:text-dash-text rounded hover:bg-dash-card transition-colors cursor-pointer"
                                     tabIndex={-1}
                                 >
@@ -418,20 +430,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                                 required={orderType === "LIMIT"}
                             />
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-dash-text-muted mr-1">Quick Qty:</span>
-                        {[10, 25, 50, 100].map((addQty) => (
-                            <button
-                                key={addQty}
-                                type="button"
-                                onClick={() => setQuantity((q) => q + addQty)}
-                                className="px-2 py-0.5 text-[10px] font-mono rounded bg-dash-panel-2 border border-dash-border text-dash-text-muted hover:text-dash-text hover:border-dash-text-muted transition-colors cursor-pointer"
-                            >
-                                +{addQty}
-                            </button>
-                        ))}
                     </div>
 
                     <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg space-y-1.5 text-xs">
@@ -511,8 +509,8 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                             ) : (
                                 <span>
                                     {isAmo
-                                        ? `Place AMO ${side} (${quantity} Qty)`
-                                        : `${side} ${quantity} ${symbol}`}
+                                        ? `Place AMO ${side}${quantity.trim() ? ` (${quantity} Qty)` : ""}`
+                                        : `${side}${quantity.trim() ? ` ${quantity}` : ""} ${symbol}`}
                                 </span>
                             )}
                         </button>
