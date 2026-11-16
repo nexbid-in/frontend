@@ -242,23 +242,29 @@ html:has(::view-transition-old(root)) * {
    - Removes hover/active color shifts (color stays constant on hover and click)
    ========================================================================== */
 
-/* Universal custom-scrollbar class & Dashboard-wide scrollbar (WebKit / Chromium / Safari) */
+/* Universal custom-scrollbar class, Dashboard-wide & Admin Console scrollbar (WebKit / Chromium / Safari) */
 .custom-scrollbar::-webkit-scrollbar,
 .dashboard-root::-webkit-scrollbar,
-.dashboard-root *::-webkit-scrollbar {
+.dashboard-root *::-webkit-scrollbar,
+.admin-theme::-webkit-scrollbar,
+.admin-theme *::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track,
 .dashboard-root::-webkit-scrollbar-track,
-.dashboard-root *::-webkit-scrollbar-track {
+.dashboard-root *::-webkit-scrollbar-track,
+.admin-theme::-webkit-scrollbar-track,
+.admin-theme *::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb,
 .dashboard-root::-webkit-scrollbar-thumb,
-.dashboard-root *::-webkit-scrollbar-thumb {
+.dashboard-root *::-webkit-scrollbar-thumb,
+.admin-theme::-webkit-scrollbar-thumb,
+.admin-theme *::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
 }
@@ -269,13 +275,19 @@ html:has(::view-transition-old(root)) * {
 .dashboard-root::-webkit-scrollbar-thumb:hover,
 .dashboard-root *::-webkit-scrollbar-thumb:hover,
 .dashboard-root::-webkit-scrollbar-thumb:active,
-.dashboard-root *::-webkit-scrollbar-thumb:active {
-  background-color: rgba(255, 255, 255, 0.16);
+.dashboard-root *::-webkit-scrollbar-thumb:active,
+.admin-theme::-webkit-scrollbar-thumb:hover,
+.admin-theme *::-webkit-scrollbar-thumb:hover,
+.admin-theme::-webkit-scrollbar-thumb:active,
+.admin-theme *::-webkit-scrollbar-thumb:active {
+  background-color: rgba(255, 255, 255, 0.26);
 }
 
 .custom-scrollbar::-webkit-scrollbar-corner,
 .dashboard-root::-webkit-scrollbar-corner,
-.dashboard-root *::-webkit-scrollbar-corner {
+.dashboard-root *::-webkit-scrollbar-corner,
+.admin-theme::-webkit-scrollbar-corner,
+.admin-theme *::-webkit-scrollbar-corner {
   background: transparent;
 }
 
@@ -297,7 +309,19 @@ html:has(::view-transition-old(root)) * {
 .dashboard-root::-webkit-scrollbar-button:horizontal:decrement,
 .dashboard-root *::-webkit-scrollbar-button:horizontal:decrement,
 .dashboard-root::-webkit-scrollbar-button:horizontal:increment,
-.dashboard-root *::-webkit-scrollbar-button:horizontal:increment {
+.dashboard-root *::-webkit-scrollbar-button:horizontal:increment,
+.admin-theme::-webkit-scrollbar-button,
+.admin-theme *::-webkit-scrollbar-button,
+.admin-theme::-webkit-scrollbar-button:single-button,
+.admin-theme *::-webkit-scrollbar-button:single-button,
+.admin-theme::-webkit-scrollbar-button:vertical:decrement,
+.admin-theme *::-webkit-scrollbar-button:vertical:decrement,
+.admin-theme::-webkit-scrollbar-button:vertical:increment,
+.admin-theme *::-webkit-scrollbar-button:vertical:increment,
+.admin-theme::-webkit-scrollbar-button:horizontal:decrement,
+.admin-theme *::-webkit-scrollbar-button:horizontal:decrement,
+.admin-theme::-webkit-scrollbar-button:horizontal:increment,
+.admin-theme *::-webkit-scrollbar-button:horizontal:increment {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -328,7 +352,9 @@ html:has(::view-transition-old(root)) * {
 @supports not selector(::-webkit-scrollbar) {
   .custom-scrollbar,
   .dashboard-root,
-  .dashboard-root * {
+  .dashboard-root *,
+  .admin-theme,
+  .admin-theme * {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   }

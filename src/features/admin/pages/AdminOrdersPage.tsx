@@ -1,4 +1,4 @@
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Toast } from "@/components/ui/Toast";
 import { formatINR } from "@/features/watchlist";
@@ -31,12 +31,20 @@ export function AdminOrdersPage() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [page, setPage] = useState(1);
-    const limit = 10;
+    const limit = 20;
 
     // Modals / Drawers state
+    const tableContainerRef = useRef<HTMLDivElement>(null);
     const [inspectedOrder, setInspectedOrder] = useState<AdminOrderListItemDTO | null>(null);
     const [cancelModalOrder, setCancelModalOrder] = useState<AdminOrderListItemDTO | null>(null);
     const [toastMessage, setToastMessage] = useState<{ title: string; message: string; type: "success" | "error" } | null>(null);
+
+    // Reset table scroll position to top whenever page changes
+    useEffect(() => {
+        if (tableContainerRef.current) {
+            tableContainerRef.current.scrollTop = 0;
+        }
+    }, [page]);
 
     // Debounce search input
     useEffect(() => {
@@ -95,6 +103,17 @@ export function AdminOrdersPage() {
         setStartDate("");
         setEndDate("");
         setPage(1);
+        if (tableContainerRef.current) {
+            tableContainerRef.current.scrollTop = 0;
+        }
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage < 1 || newPage > totalPages || newPage === page) return;
+        setPage(newPage);
+        if (tableContainerRef.current) {
+            tableContainerRef.current.scrollTop = 0;
+        }
     };
 
     const hasActiveFilters = Boolean(
@@ -351,8 +370,11 @@ export function AdminOrdersPage() {
                 </div>
 
                 {/* Table Viewport with vertical scroll for 5 visible rows */}
-                <div className="overflow-x-auto overflow-y-auto max-h-[340px] relative">
-                    {isOrdersLoading && (
+                <div
+                    ref={tableContainerRef}
+                    className="overflow-x-auto overflow-y-auto h-[340px] custom-scrollbar relative"
+                >
+                    {isOrdersLoading && !ordersData && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center bg-card/60 backdrop-blur-xs transition-all duration-200">
                             <div className="flex flex-col items-center gap-2">
                                 <div className="w-7 h-7 border-2 border-primary-green/20 border-t-primary-green rounded-full animate-spin" />
@@ -362,7 +384,7 @@ export function AdminOrdersPage() {
                     )}
 
                     {ordersError ? (
-                        <div className="flex flex-col items-center justify-center h-56 text-red text-xs space-y-2">
+                        <div className="flex flex-col items-center justify-center h-full text-red text-xs space-y-2">
                             <svg className="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -378,7 +400,7 @@ export function AdminOrdersPage() {
                             </button>
                         </div>
                     ) : orders.length === 0 && !isOrdersLoading ? (
-                        <div className="flex flex-col items-center justify-center h-56 text-text-secondary text-xs space-y-2">
+                        <div className="flex flex-col items-center justify-center h-full text-text-secondary text-xs space-y-2">
                             <svg className="w-8 h-8 opacity-40 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
@@ -574,7 +596,7 @@ export function AdminOrdersPage() {
                     <div className="flex items-center gap-1.5">
                         <button
                             type="button"
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            onClick={() => handlePageChange(page - 1)}
                             disabled={page === 1}
                             className="p-1.5 rounded-lg border border-border-muted bg-panel-2 text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                             aria-label="Previous page"
@@ -588,7 +610,7 @@ export function AdminOrdersPage() {
 
                         <button
                             type="button"
-                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            onClick={() => handlePageChange(page + 1)}
                             disabled={page === totalPages || totalPages === 0}
                             className="p-1.5 rounded-lg border border-border-muted bg-panel-2 text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                             aria-label="Next page"

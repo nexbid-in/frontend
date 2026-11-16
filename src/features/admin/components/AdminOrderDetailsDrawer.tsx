@@ -122,7 +122,7 @@ export function AdminOrderDetailsDrawer({
                 </header>
 
                 {/* Body Content */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6 text-xs">
                     {/* Order ID Banner */}
                     <div className="flex items-center justify-between p-3 rounded-lg bg-panel-2 border border-border-muted">
                         <div>

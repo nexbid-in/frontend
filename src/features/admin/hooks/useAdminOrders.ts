@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { adminService } from "../services/adminService";
 import { QUERY_KEYS } from "@/constants/queryKeys";
 import type { AdminOrdersQueryDTO } from "../types";
@@ -7,6 +7,7 @@ export function useAdminOrdersQuery(query: AdminOrdersQueryDTO) {
     return useQuery({
         queryKey: QUERY_KEYS.admin.orders(query as unknown as Record<string, unknown>),
         queryFn: () => adminService.getOrders(query),
+        placeholderData: keepPreviousData,
     });
 }
 

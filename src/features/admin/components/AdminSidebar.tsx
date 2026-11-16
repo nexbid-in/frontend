@@ -46,7 +46,7 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                 </NavLink>
             </div>
 
-            <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6 text-sm">
+            <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 py-5 space-y-6 text-sm">
                 <div className="space-y-1">
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/60 mb-2">
                         Overview
