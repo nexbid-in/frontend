@@ -18,12 +18,10 @@ export function AdminNavbar({ title, onToggleMobileSidebar }: AdminNavbarProps) 
                 return "User Accounts";
             case APP_ROUTES.ADMIN.FUNDS:
                 return "Funds";
-            case APP_ROUTES.ADMIN.LEVERAGE_COSTS:
-                return "Leverage & Costs";
+            case APP_ROUTES.ADMIN.STOCKS:
+                return "Stocks";
             case APP_ROUTES.ADMIN.ORDERS:
                 return "Orders";
-            case APP_ROUTES.ADMIN.COMMUNITY:
-                return "Community";
             case APP_ROUTES.ADMIN.SUPPORT:
                 return "Support";
             default:

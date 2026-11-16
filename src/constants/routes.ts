@@ -30,9 +30,8 @@ export const APP_ROUTES = {
         DASHBOARD: '/admin/dashboard',
         USERS: '/admin/users',
         FUNDS: '/admin/funds',
-        LEVERAGE_COSTS: '/admin/leverage-costs',
+        STOCKS: '/admin/stocks',
         ORDERS: '/admin/orders',
-        COMMUNITY: '/admin/community',
         SUPPORT: '/admin/support',
     }
 } as const;
