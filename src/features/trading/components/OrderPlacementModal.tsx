@@ -23,6 +23,55 @@ interface OrderPlacementFormProps {
     initialPrice?: number;
 }
 
+interface ModalPosition {
+    x: number;
+    y: number;
+}
+
+const STORAGE_KEY = "nexbid_order_modal_position";
+
+let lastSessionPosition: ModalPosition | null = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
+                return parsed as ModalPosition;
+            }
+        }
+    } catch {
+        /* Ignore storage errors */
+    }
+    return null;
+})();
+
+const saveModalPosition = (pos: ModalPosition) => {
+    lastSessionPosition = pos;
+    try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+    } catch {
+        /* Ignore storage errors */
+    }
+};
+
+const getInitialPosition = (): ModalPosition => {
+    const modalWidth = typeof window !== "undefined" ? Math.min(window.innerWidth - 32, 576) : 576;
+    const modalHeight = 330;
+    const maxX = typeof window !== "undefined" ? Math.max(16, window.innerWidth - modalWidth - 16) : 500;
+    const maxY = typeof window !== "undefined" ? Math.max(16, window.innerHeight - modalHeight - 16) : 400;
+
+    if (lastSessionPosition && typeof window !== "undefined") {
+        const clampedX = Math.min(maxX, Math.max(16, lastSessionPosition.x));
+        const clampedY = Math.min(maxY, Math.max(16, lastSessionPosition.y));
+        return { x: clampedX, y: clampedY };
+    }
+
+    const x = typeof window !== "undefined" ? Math.max(16, Math.round((window.innerWidth - modalWidth) / 2)) : 100;
+    const y = typeof window !== "undefined" ? Math.max(20, Math.round((window.innerHeight - modalHeight) / 2)) : 100;
+    return { x, y };
+};
+
 const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     onClose,
     initialSymbol,
@@ -58,27 +107,23 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const qtyInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    const [position, setPosition] = useState<{ x: number; y: number }>(() => {
-        const modalWidth = typeof window !== "undefined" ? Math.min(window.innerWidth - 32, 576) : 576;
-        const modalHeight = 330;
-        const x = typeof window !== "undefined" ? Math.max(16, Math.round((window.innerWidth - modalWidth) / 2)) : 100;
-        const y = typeof window !== "undefined" ? Math.max(20, Math.round((window.innerHeight - modalHeight) / 2)) : 100;
-        return { x, y };
-    });
+    const [position, setPosition] = useState<ModalPosition>(getInitialPosition);
 
-    const posRef = useRef(position);
+    const posRef = useRef<ModalPosition>(position);
 
     useEffect(() => {
         posRef.current = position;
     }, [position]);
 
     useEffect(() => {
-        if (modalRef.current) {
+        if (!lastSessionPosition && modalRef.current) {
             const rect = modalRef.current.getBoundingClientRect();
             const x = Math.max(16, Math.round((window.innerWidth - rect.width) / 2));
             const y = Math.max(20, Math.round((window.innerHeight - rect.height) / 2));
-            posRef.current = { x, y };
-            setPosition({ x, y });
+            const centered = { x, y };
+            posRef.current = centered;
+            saveModalPosition(centered);
+            setPosition(centered);
         }
     }, []);
 
@@ -91,12 +136,14 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
             const clampedX = Math.min(maxX, Math.max(16, posRef.current.x));
             const clampedY = Math.min(maxY, Math.max(16, posRef.current.y));
 
-            posRef.current = { x: clampedX, y: clampedY };
+            const clamped = { x: clampedX, y: clampedY };
+            posRef.current = clamped;
+            saveModalPosition(clamped);
             if (modalRef.current) {
                 modalRef.current.style.left = `${clampedX}px`;
                 modalRef.current.style.top = `${clampedY}px`;
             }
-            setPosition({ x: clampedX, y: clampedY });
+            setPosition(clamped);
         };
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
@@ -104,6 +151,9 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
 
     useEffect(() => {
         return () => {
+            if (posRef.current) {
+                saveModalPosition(posRef.current);
+            }
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
         };
@@ -166,7 +216,9 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
             document.body.style.cursor = "";
             document.body.style.userSelect = "";
             setIsDragging(false);
-            setPosition({ ...posRef.current });
+            const finalPos = { ...posRef.current };
+            saveModalPosition(finalPos);
+            setPosition(finalPos);
         };
 
         const onPointerUp = () => {
@@ -281,16 +333,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         title="Drag to reposition window"
                     >
                         <div className="flex items-center gap-3 select-none cursor-grab active:cursor-grabbing">
-                            <div className="flex items-center text-dash-text-muted/50 transition-colors cursor-grab active:cursor-grabbing">
-                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                                    <circle cx="9" cy="6" r="1.5" />
-                                    <circle cx="15" cy="6" r="1.5" />
-                                    <circle cx="9" cy="12" r="1.5" />
-                                    <circle cx="15" cy="12" r="1.5" />
-                                    <circle cx="9" cy="18" r="1.5" />
-                                    <circle cx="15" cy="18" r="1.5" />
-                                </svg>
-                            </div>
                             <div className="flex flex-col cursor-grab active:cursor-grabbing">
                                 <div className="flex items-baseline gap-2 cursor-grab active:cursor-grabbing">
                                     <span className="text-base font-bold text-dash-text tracking-tight cursor-grab active:cursor-grabbing">
