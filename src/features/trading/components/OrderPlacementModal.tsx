@@ -54,7 +54,129 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
 
     const isAmo = isEnforcingHours ? isMarketClosed : manualAmo;
 
+    const modalRef = useRef<HTMLDivElement>(null);
     const qtyInputRef = useRef<HTMLInputElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const [position, setPosition] = useState<{ x: number; y: number }>(() => {
+        const modalWidth = typeof window !== "undefined" ? Math.min(window.innerWidth - 32, 576) : 576;
+        const modalHeight = 330;
+        const x = typeof window !== "undefined" ? Math.max(16, Math.round((window.innerWidth - modalWidth) / 2)) : 100;
+        const y = typeof window !== "undefined" ? Math.max(20, Math.round((window.innerHeight - modalHeight) / 2)) : 100;
+        return { x, y };
+    });
+
+    const posRef = useRef(position);
+
+    useEffect(() => {
+        posRef.current = position;
+    }, [position]);
+
+    useEffect(() => {
+        if (modalRef.current) {
+            const rect = modalRef.current.getBoundingClientRect();
+            const x = Math.max(16, Math.round((window.innerWidth - rect.width) / 2));
+            const y = Math.max(20, Math.round((window.innerHeight - rect.height) / 2));
+            posRef.current = { x, y };
+            setPosition({ x, y });
+        }
+    }, []);
+
+    useEffect(() => {
+        const handleResize = () => {
+            const modalWidth = modalRef.current?.offsetWidth ?? 576;
+            const modalHeight = modalRef.current?.offsetHeight ?? 330;
+            const maxX = Math.max(16, window.innerWidth - modalWidth - 16);
+            const maxY = Math.max(16, window.innerHeight - modalHeight - 16);
+            const clampedX = Math.min(maxX, Math.max(16, posRef.current.x));
+            const clampedY = Math.min(maxY, Math.max(16, posRef.current.y));
+
+            posRef.current = { x: clampedX, y: clampedY };
+            if (modalRef.current) {
+                modalRef.current.style.left = `${clampedX}px`;
+                modalRef.current.style.top = `${clampedY}px`;
+            }
+            setPosition({ x: clampedX, y: clampedY });
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+    }, []);
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (e.button !== 0) return;
+        const target = e.target as HTMLElement;
+        if (target.closest("button, input, select, textarea, a, label")) {
+            return;
+        }
+
+        e.preventDefault();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startPosX = posRef.current.x;
+        const startPosY = posRef.current.y;
+
+        setIsDragging(true);
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+
+        let animFrameId: number | null = null;
+
+        const onPointerMove = (moveEvent: PointerEvent) => {
+            const dx = moveEvent.clientX - startX;
+            const dy = moveEvent.clientY - startY;
+
+            const modalWidth = modalRef.current?.offsetWidth ?? 576;
+            const modalHeight = modalRef.current?.offsetHeight ?? 330;
+
+            const maxX = Math.max(16, window.innerWidth - modalWidth - 16);
+            const maxY = Math.max(16, window.innerHeight - modalHeight - 16);
+
+            const newX = Math.min(maxX, Math.max(16, startPosX + dx));
+            const newY = Math.min(maxY, Math.max(16, startPosY + dy));
+
+            posRef.current = { x: newX, y: newY };
+
+            if (animFrameId !== null) {
+                cancelAnimationFrame(animFrameId);
+            }
+
+            animFrameId = requestAnimationFrame(() => {
+                if (modalRef.current) {
+                    modalRef.current.style.left = `${newX}px`;
+                    modalRef.current.style.top = `${newY}px`;
+                }
+            });
+        };
+
+        const cleanup = () => {
+            if (animFrameId !== null) {
+                cancelAnimationFrame(animFrameId);
+            }
+            window.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("pointerup", onPointerUp);
+            window.removeEventListener("pointercancel", onPointerUp);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+            setIsDragging(false);
+            setPosition({ ...posRef.current });
+        };
+
+        const onPointerUp = () => {
+            cleanup();
+        };
+
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+        window.addEventListener("pointercancel", onPointerUp);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -131,53 +253,84 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const subtleBg = isBuy ? "bg-[#00873e]/10" : "bg-[#c83200]/10";
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-            <div
-                className="w-full max-w-xl bg-dash-panel border border-dash-border rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className={`px-5 py-3.5 border-b border-dash-border ${subtleBg} flex items-center justify-between`}>
-                    <div className="flex items-center gap-3">
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-base font-bold text-dash-text tracking-tight">
-                                    {symbol}
+        <>
+            {isDragging && (
+                <div
+                    className="fixed inset-0 z-[99] cursor-grabbing select-none pointer-events-auto"
+                    style={{ cursor: "grabbing" }}
+                />
+            )}
+
+            <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden animate-in fade-in duration-150">
+                <div
+                    ref={modalRef}
+                    style={{
+                        position: "fixed",
+                        left: `${position.x}px`,
+                        top: `${position.y}px`,
+                        width: "calc(100vw - 32px)",
+                        maxWidth: "36rem",
+                    }}
+                    className="pointer-events-auto bg-dash-panel border border-dash-border rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div
+                        onPointerDown={handlePointerDown}
+                        style={{ cursor: isDragging ? "grabbing" : "grab" }}
+                        className={`px-5 py-3.5 border-b border-dash-border ${subtleBg} flex items-center justify-between select-none touch-none cursor-grab active:cursor-grabbing`}
+                        title="Drag to reposition window"
+                    >
+                        <div className="flex items-center gap-3 select-none cursor-grab active:cursor-grabbing">
+                            <div className="flex items-center text-dash-text-muted/50 transition-colors cursor-grab active:cursor-grabbing">
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="9" cy="6" r="1.5" />
+                                    <circle cx="15" cy="6" r="1.5" />
+                                    <circle cx="9" cy="12" r="1.5" />
+                                    <circle cx="15" cy="12" r="1.5" />
+                                    <circle cx="9" cy="18" r="1.5" />
+                                    <circle cx="15" cy="18" r="1.5" />
+                                </svg>
+                            </div>
+                            <div className="flex flex-col cursor-grab active:cursor-grabbing">
+                                <div className="flex items-baseline gap-2 cursor-grab active:cursor-grabbing">
+                                    <span className="text-base font-bold text-dash-text tracking-tight cursor-grab active:cursor-grabbing">
+                                        {symbol}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-dash-text-muted px-1.5 py-0.5 rounded bg-dash-panel-2 border border-dash-border cursor-grab active:cursor-grabbing">
+                                        {initialExchange}
+                                    </span>
+                                </div>
+                                {stockName && (
+                                    <span className="text-[11px] text-dash-text-muted line-clamp-1 cursor-grab active:cursor-grabbing">
+                                        {stockName}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex items-baseline gap-1.5 font-mono ml-1 cursor-grab active:cursor-grabbing">
+                                <span
+                                    className={`text-sm font-bold transition-colors duration-200 cursor-grab active:cursor-grabbing ${
+                                        liveQuote.flashDirection === "up"
+                                            ? "text-[#22c55e]"
+                                            : liveQuote.flashDirection === "down"
+                                            ? "text-[#ef4444]"
+                                            : "text-dash-text"
+                                    }`}
+                                >
+                                    ₹{formatINR(currentPrice)}
                                 </span>
-                                <span className="text-[10px] font-semibold text-dash-text-muted px-1.5 py-0.5 rounded bg-dash-panel-2 border border-dash-border">
-                                    {initialExchange}
+                                <span
+                                    className={`text-[11px] font-mono font-medium cursor-grab active:cursor-grabbing ${
+                                        liveQuote.isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                                    }`}
+                                >
+                                    {liveQuote.isPositive ? `+${liveQuote.change.toFixed(2)}` : liveQuote.change.toFixed(2)}{" "}
+                                    ({liveQuote.isPositive ? `+${liveQuote.changePercent.toFixed(2)}%` : `${liveQuote.changePercent.toFixed(2)}%`})
                                 </span>
                             </div>
-                            {stockName && (
-                                <span className="text-[11px] text-dash-text-muted line-clamp-1">
-                                    {stockName}
-                                </span>
-                            )}
                         </div>
 
-                        <div className="flex items-baseline gap-1.5 font-mono">
-                            <span
-                                className={`text-sm font-bold transition-colors duration-200 ${
-                                    liveQuote.flashDirection === "up"
-                                        ? "text-[#22c55e]"
-                                        : liveQuote.flashDirection === "down"
-                                        ? "text-[#ef4444]"
-                                        : "text-dash-text"
-                                }`}
-                            >
-                                ₹{formatINR(currentPrice)}
-                            </span>
-                            <span
-                                className={`text-[11px] font-mono font-medium ${
-                                    liveQuote.isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                                }`}
-                            >
-                                {liveQuote.isPositive ? `+${liveQuote.change.toFixed(2)}` : liveQuote.change.toFixed(2)}{" "}
-                                ({liveQuote.isPositive ? `+${liveQuote.changePercent.toFixed(2)}%` : `${liveQuote.changePercent.toFixed(2)}%`})
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2.5">
                         <div className="flex items-center p-0.5 bg-dash-panel-2 rounded-lg border border-dash-border">
                             <button
                                 type="button"
@@ -526,6 +679,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                 </form>
             </div>
         </div>
+        </>
     );
 };
 
