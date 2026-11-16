@@ -65,6 +65,10 @@ export const API_ROUTES = {
     ADMIN: {
         USERS: '/admin/users',
         USER_STATUS: (userId: string) => `/admin/users/${userId}/status`,
+        ORDERS: '/admin/orders',
+        ORDER_METRICS: '/admin/orders/metrics',
+        ORDER_DETAILS: (orderId: string) => `/admin/orders/${orderId}`,
+        CANCEL_ORDER: (orderId: string) => `/admin/orders/${orderId}/cancel`,
     },
     STOCKS: {
         SEARCH: '/stocks/search',

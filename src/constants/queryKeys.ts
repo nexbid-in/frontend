@@ -20,6 +20,13 @@ export const QUERY_KEYS = {
             "users",
             params,
         ],
+        orders: (params: Record<string, unknown>) => [
+            "admin",
+            "orders",
+            params,
+        ],
+        orderMetrics: () => ["admin", "orders", "metrics"],
+        orderDetails: (orderId: string) => ["admin", "orders", "details", orderId],
     },
     profile: {
         details: () => ["profile"],
