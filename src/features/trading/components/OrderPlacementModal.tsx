@@ -126,7 +126,6 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     };
 
     const isBuy = side === "BUY";
-    const accentColor = isBuy ? "text-[#00873e]" : "text-[#c83200]";
     const accentBg = isBuy ? "bg-[#00873e]" : "bg-[#c83200]";
     const accentBorder = isBuy ? "border-[#00873e]" : "border-[#c83200]";
     const subtleBg = isBuy ? "bg-[#00873e]/10" : "bg-[#c83200]/10";
@@ -134,32 +133,30 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
             <div
-                className="w-full max-w-md bg-dash-panel border border-dash-border rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+                className="w-full max-w-xl bg-dash-panel border border-dash-border rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className={`p-4 border-b border-dash-border ${subtleBg} flex items-center justify-between`}>
+                <div className={`px-5 py-3.5 border-b border-dash-border ${subtleBg} flex items-center justify-between`}>
                     <div className="flex items-center gap-3">
                         <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-baseline gap-2">
                                 <span className="text-base font-bold text-dash-text tracking-tight">
                                     {symbol}
                                 </span>
-                                <span className="text-[10px] font-semibold text-dash-text-muted px-1.5 py-0.5 rounded bg-dash-panel border border-dash-border">
+                                <span className="text-[10px] font-semibold text-dash-text-muted px-1.5 py-0.5 rounded bg-dash-panel-2 border border-dash-border">
                                     {initialExchange}
                                 </span>
                             </div>
                             {stockName && (
-                                <span className="text-xs text-dash-text-muted line-clamp-1 mt-0.5">
+                                <span className="text-[11px] text-dash-text-muted line-clamp-1">
                                     {stockName}
                                 </span>
                             )}
                         </div>
-                    </div>
 
-                    <div className="flex flex-col items-end">
                         <div className="flex items-baseline gap-1.5 font-mono">
                             <span
-                                className={`text-base font-bold transition-colors duration-200 ${
+                                className={`text-sm font-bold transition-colors duration-200 ${
                                     liveQuote.flashDirection === "up"
                                         ? "text-[#22c55e]"
                                         : liveQuote.flashDirection === "down"
@@ -169,74 +166,72 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                             >
                                 ₹{formatINR(currentPrice)}
                             </span>
-                        </div>
-                        <div
-                            className={`text-xs font-mono font-medium ${
-                                liveQuote.isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                            }`}
-                        >
-                            {liveQuote.isPositive ? `+${liveQuote.change.toFixed(2)}` : liveQuote.change.toFixed(2)}{" "}
-                            ({liveQuote.isPositive ? `+${liveQuote.changePercent.toFixed(2)}%` : `${liveQuote.changePercent.toFixed(2)}%`})
+                            <span
+                                className={`text-[11px] font-mono font-medium ${
+                                    liveQuote.isPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                                }`}
+                            >
+                                {liveQuote.isPositive ? `+${liveQuote.change.toFixed(2)}` : liveQuote.change.toFixed(2)}{" "}
+                                ({liveQuote.isPositive ? `+${liveQuote.changePercent.toFixed(2)}%` : `${liveQuote.changePercent.toFixed(2)}%`})
+                            </span>
                         </div>
                     </div>
-                </div>
 
-                <div className="p-4 border-b border-dash-border">
-                    <div className="grid grid-cols-2 p-1 bg-dash-panel-2 rounded-lg border border-dash-border gap-1">
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex items-center p-0.5 bg-dash-panel-2 rounded-lg border border-dash-border">
+                            <button
+                                type="button"
+                                onClick={() => setSide("BUY")}
+                                className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                                    isBuy
+                                        ? "bg-[#00873e] text-white shadow-xs"
+                                        : "text-dash-text-muted hover:text-dash-text"
+                                }`}
+                            >
+                                BUY
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSide("SELL")}
+                                className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                                    !isBuy
+                                        ? "bg-[#c83200] text-white shadow-xs"
+                                        : "text-dash-text-muted hover:text-dash-text"
+                                }`}
+                            >
+                                SELL
+                            </button>
+                        </div>
+
                         <button
                             type="button"
-                            onClick={() => setSide("BUY")}
-                            className={`py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                                isBuy
-                                    ? "bg-[#00873e] text-white shadow-xs"
-                                    : "text-dash-text-muted hover:text-dash-text"
-                            }`}
+                            onClick={onClose}
+                            className="p-1 text-dash-text-muted hover:text-dash-text rounded-md hover:bg-dash-panel-2 transition-colors cursor-pointer"
+                            aria-label="Close"
                         >
-                            BUY
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setSide("SELL")}
-                            className={`py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                                !isBuy
-                                    ? "bg-[#c83200] text-white shadow-xs"
-                                    : "text-dash-text-muted hover:text-dash-text"
-                            }`}
-                        >
-                            SELL
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
                         </button>
                     </div>
                 </div>
 
                 {isAmo && (
-                    <div className="mx-4 mt-3 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-start gap-2.5">
-                        <div className="p-1 rounded bg-indigo-500/20 text-indigo-400 shrink-0 mt-0.5">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                            </svg>
-                        </div>
-                        <div className="flex-1 text-[11px] leading-relaxed">
-                            <div className="flex items-center gap-2">
-                                <span className="font-bold text-indigo-400 uppercase tracking-wide">
-                                    After Market Order (AMO)
-                                </span>
-                                {marketStatus?.currentIstTime && (
-                                    <span className="text-dash-text-muted text-[10px]">
-                                        ({marketStatus.currentIstTime})
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-dash-text-muted mt-0.5">
-                                {isMarketClosed
-                                    ? "Indian stock exchange (NSE/BSE) is closed. This order will be queued as an AMO and submitted upon market open at 09:15 AM IST."
-                                    : "This order will be queued as an After Market Order (AMO) and executed at market open."}
-                            </p>
+                    <div className="px-5 py-2 bg-indigo-500/10 border-b border-indigo-500/20 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 shrink-0">
+                                AMO
+                            </span>
+                            <span className="text-dash-text-muted text-[11px]">
+                                Market is closed{marketStatus?.currentIstTime ? ` (${marketStatus.currentIstTime})` : ""}. Order will be placed upon market open at 09:15 AM IST.
+                            </span>
                         </div>
                         {!isEnforcingHours && (
                             <button
                                 type="button"
                                 onClick={() => setManualAmo(false)}
-                                className="text-[10px] text-dash-text-muted hover:text-dash-text underline cursor-pointer shrink-0"
+                                className="text-[10px] text-dash-text-muted hover:text-dash-text underline cursor-pointer shrink-0 ml-2"
                             >
                                 Disable
                             </button>
@@ -245,111 +240,69 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                 )}
 
                 {isMisBlocked && (
-                    <div className="mx-4 mt-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 flex items-start gap-2">
-                        <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <div className="px-5 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-2 text-[11px] text-amber-400">
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <span>
-                            <strong>MIS Cutoff Reached</strong>: New intraday orders are blocked after 03:20 PM IST due to exchange auto-square-off cutoffs. Please select Longterm CNC.
-                        </span>
+                        <span>MIS Cutoff: Intraday blocked after 03:20 PM IST. Please select Longterm CNC.</span>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="p-4 space-y-4">
-                    <div>
-                        <div className="flex items-center justify-between text-xs font-medium text-dash-text-muted mb-2">
-                            <span>Product Type</span>
-                            <span className="text-[10px] text-dash-text-muted">
-                                {productType === "MIS" ? "5x Leverage active" : "Full Delivery"}
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button
-                                type="button"
-                                disabled={isMisBlocked}
-                                onClick={() => setProductType("MIS")}
-                                className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-all ${
-                                    isMisBlocked
-                                        ? "opacity-50 cursor-not-allowed border-dash-border bg-dash-panel-2/40"
-                                        : productType === "MIS"
-                                        ? `${accentBorder} ${subtleBg} cursor-pointer`
-                                        : "border-dash-border hover:bg-dash-panel-2 cursor-pointer"
+                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                            <label
+                                onClick={() => !isMisBlocked && setProductType("MIS")}
+                                className={`inline-flex items-center gap-2 cursor-pointer select-none ${
+                                    isMisBlocked ? "opacity-50 cursor-not-allowed" : ""
                                 }`}
                             >
-                                <span className="text-xs font-bold text-dash-text">Intraday MIS</span>
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary-green/20 text-primary-green">
+                                <span
+                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${
+                                        productType === "MIS"
+                                            ? `${accentBorder} bg-transparent`
+                                            : "border-dash-border"
+                                    }`}
+                                >
+                                    {productType === "MIS" && (
+                                        <span className={`w-1.5 h-1.5 rounded-full ${accentBg}`} />
+                                    )}
+                                </span>
+                                <span className={`text-xs font-semibold ${productType === "MIS" ? "text-dash-text" : "text-dash-text-muted"}`}>
+                                    Intraday <span className="text-[11px] font-normal text-dash-text-muted">MIS</span>
+                                </span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary-green/20 text-primary-green font-mono">
                                     5x
                                 </span>
-                            </button>
+                            </label>
 
-                            <button
-                                type="button"
+                            <label
                                 onClick={() => setProductType("CNC")}
-                                className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                                    productType === "CNC"
-                                        ? `${accentBorder} ${subtleBg}`
-                                        : "border-dash-border hover:bg-dash-panel-2"
-                                }`}
+                                className="inline-flex items-center gap-2 cursor-pointer select-none"
                             >
-                                <span className="text-xs font-bold text-dash-text">Longterm CNC</span>
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-dash-card text-dash-text-muted">
-                                    1x
+                                <span
+                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${
+                                        productType === "CNC"
+                                            ? `${accentBorder} bg-transparent`
+                                            : "border-dash-border"
+                                    }`}
+                                >
+                                    {productType === "CNC" && (
+                                        <span className={`w-1.5 h-1.5 rounded-full ${accentBg}`} />
+                                    )}
                                 </span>
-                            </button>
+                                <span className={`text-xs font-semibold ${productType === "CNC" ? "text-dash-text" : "text-dash-text-muted"}`}>
+                                    Longterm <span className="text-[11px] font-normal text-dash-text-muted">CNC</span>
+                                </span>
+                            </label>
                         </div>
-                    </div>
 
-                    <div>
-                        <span className="text-xs font-medium text-dash-text-muted block mb-2">
-                            Order Type
+                        <span className="text-[11px] text-dash-text-muted">
+                            {productType === "MIS" ? "5x Leverage active" : "Full Delivery (1x)"}
                         </span>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => handleOrderTypeChange("MARKET")}
-                                className={`py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all cursor-pointer ${
-                                    orderType === "MARKET"
-                                        ? `${accentBorder} ${subtleBg} ${accentColor}`
-                                        : "border-dash-border text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2"
-                                }`}
-                            >
-                                Market
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleOrderTypeChange("LIMIT")}
-                                className={`py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all cursor-pointer ${
-                                    orderType === "LIMIT"
-                                        ? `${accentBorder} ${subtleBg} ${accentColor}`
-                                        : "border-dash-border text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2"
-                                }`}
-                            >
-                                Limit
-                            </button>
-                        </div>
                     </div>
 
-                    {!isEnforcingHours && !isAmo && (
-                        <div className="flex items-center justify-between p-2.5 bg-dash-panel-2 border border-dash-border rounded-lg text-xs">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400">
-                                    AMO
-                                </span>
-                                <span className="text-dash-text-muted text-xs">
-                                    Test After Market Order (AMO)
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setManualAmo(true)}
-                                className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
-                            >
-                                Enable AMO
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="order-qty-input" className="block text-xs font-medium text-dash-text-muted mb-1.5">
                                 Quantity
@@ -432,88 +385,143 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
                         </div>
                     </div>
 
-                    <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-dash-text-muted">Margin Required:</span>
-                            <span className="font-mono font-bold text-dash-text">
-                                ₹{formatINR(marginRequired)}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-dash-text-muted">Margin Available:</span>
-                            <span className="font-mono font-medium text-dash-text">
-                                ₹{formatINR(marginAvailable)}
-                            </span>
+                    <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-6">
+                            <label
+                                onClick={() => handleOrderTypeChange("MARKET")}
+                                className="inline-flex items-center gap-2 cursor-pointer select-none"
+                            >
+                                <span
+                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${
+                                        orderType === "MARKET"
+                                            ? `${accentBorder} bg-transparent`
+                                            : "border-dash-border"
+                                    }`}
+                                >
+                                    {orderType === "MARKET" && (
+                                        <span className={`w-1.5 h-1.5 rounded-full ${accentBg}`} />
+                                    )}
+                                </span>
+                                <span className={`text-xs font-semibold ${orderType === "MARKET" ? "text-dash-text" : "text-dash-text-muted"}`}>
+                                    Market
+                                </span>
+                            </label>
+
+                            <label
+                                onClick={() => handleOrderTypeChange("LIMIT")}
+                                className="inline-flex items-center gap-2 cursor-pointer select-none"
+                            >
+                                <span
+                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${
+                                        orderType === "LIMIT"
+                                            ? `${accentBorder} bg-transparent`
+                                            : "border-dash-border"
+                                    }`}
+                                >
+                                    {orderType === "LIMIT" && (
+                                        <span className={`w-1.5 h-1.5 rounded-full ${accentBg}`} />
+                                    )}
+                                </span>
+                                <span className={`text-xs font-semibold ${orderType === "LIMIT" ? "text-dash-text" : "text-dash-text-muted"}`}>
+                                    Limit
+                                </span>
+                            </label>
                         </div>
 
-                        {isShortOnMargin && (
-                            <div className="pt-1 text-[11px] text-[#ef4444] font-medium flex items-center gap-1">
-                                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="8" x2="12" y2="12" />
-                                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                                </svg>
-                                <span>
-                                    Insufficient funds (Need ₹{formatINR(marginRequired - marginAvailable)} more)
-                                </span>
-                            </div>
-                        )}
-                        {isZeroBalance && (
-                            <div className="pt-1 text-[11px] text-[#ef4444] font-medium flex items-center gap-1">
-                                <span>No margin available. Please add funds to trade.</span>
-                            </div>
+                        {!isEnforcingHours && !isAmo && (
+                            <button
+                                type="button"
+                                onClick={() => setManualAmo(true)}
+                                className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                            >
+                                Test AMO
+                            </button>
                         )}
                     </div>
 
-                    <div className="flex items-center justify-end gap-2 pt-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-xs font-medium text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 rounded-lg border border-transparent transition-colors cursor-pointer"
-                        >
-                            Cancel
-                        </button>
+                    {isShortOnMargin && (
+                        <div className="text-[11px] text-[#ef4444] font-medium flex items-center gap-1.5 pt-1">
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <span>Insufficient funds (Need ₹{formatINR(marginRequired - marginAvailable)} more)</span>
+                        </div>
+                    )}
+                    {isZeroBalance && (
+                        <div className="text-[11px] text-[#ef4444] font-medium pt-1">
+                            No margin available. Please add funds to trade.
+                        </div>
+                    )}
 
-                        <button
-                            type="submit"
-                            disabled={!isFormValid || placeOrderMutation.isPending}
-                            className={`px-6 py-2 text-xs font-bold text-white rounded-lg transition-all shadow-md flex items-center gap-2 ${
-                                !isFormValid
-                                    ? "opacity-50 cursor-not-allowed bg-dash-card text-dash-text-muted"
-                                    : `${accentBg} hover:brightness-110 active:scale-98 cursor-pointer`
-                            }`}
-                        >
-                            {placeOrderMutation.isPending ? (
-                                <>
-                                    <svg
-                                        className="w-3.5 h-3.5 animate-spin text-white"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <circle
-                                            className="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            strokeWidth="4"
-                                        />
-                                        <path
-                                            className="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8v8H4z"
-                                        />
-                                    </svg>
-                                    <span>Placing {isAmo ? "AMO" : "Order"}...</span>
-                                </>
-                            ) : (
-                                <span>
-                                    {isAmo
-                                        ? `Place AMO ${side}${quantity.trim() ? ` (${quantity} Qty)` : ""}`
-                                        : `${side}${quantity.trim() ? ` ${quantity}` : ""} ${symbol}`}
+                    <div className="flex items-center justify-between pt-4 border-t border-dash-border/60">
+                        <div className="flex items-center gap-3 text-xs">
+                            <div>
+                                <span className="text-[11px] text-dash-text-muted mr-1.5">Margin:</span>
+                                <span className="font-mono font-bold text-dash-text">
+                                    ₹{formatINR(marginRequired)}
                                 </span>
-                            )}
-                        </button>
+                            </div>
+                            <span className="text-dash-border">|</span>
+                            <div>
+                                <span className="text-[11px] text-dash-text-muted mr-1.5">Available:</span>
+                                <span className="font-mono font-medium text-dash-text-muted">
+                                    ₹{formatINR(marginAvailable)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 text-xs font-medium text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 rounded-lg border border-transparent transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="submit"
+                                disabled={!isFormValid || placeOrderMutation.isPending}
+                                className={`px-5 py-2 text-xs font-bold text-white rounded-lg transition-all shadow-md flex items-center gap-2 ${
+                                    !isFormValid
+                                        ? "opacity-50 cursor-not-allowed bg-dash-card text-dash-text-muted"
+                                        : `${accentBg} hover:brightness-110 active:scale-98 cursor-pointer`
+                                }`}
+                            >
+                                {placeOrderMutation.isPending ? (
+                                    <>
+                                        <svg
+                                            className="w-3.5 h-3.5 animate-spin text-white"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            />
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8H4z"
+                                            />
+                                        </svg>
+                                        <span>Placing {isAmo ? "AMO" : "Order"}...</span>
+                                    </>
+                                ) : (
+                                    <span>
+                                        {isAmo
+                                            ? `Place AMO ${side}${quantity.trim() ? ` (${quantity} Qty)` : ""}`
+                                            : `${side}${quantity.trim() ? ` ${quantity}` : ""} ${symbol}`}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
