@@ -188,8 +188,14 @@ export const StatementModal: React.FC<StatementModalProps> = ({
         }
     };
 
-    const isCredit = (type: WalletTransactionType) => {
-        return type === "TOPUP" || type === "SELL" || type === "BONUS";
+    const getTransactionImpact = (tx: { amount: number; type: WalletTransactionType }): "CREDIT" | "DEBIT" | "ZERO" => {
+        if (tx.amount < 0 || (tx.type === "BUY" && tx.amount > 0)) {
+            return "DEBIT";
+        }
+        if (tx.amount > 0) {
+            return "CREDIT";
+        }
+        return "ZERO";
     };
 
     const startRecord = pagination.totalTransactions === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
@@ -493,7 +499,7 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                                 </thead>
                                 <tbody className="divide-y divide-dash-border">
                                     {transactions.map((tx) => {
-                                        const credit = isCredit(tx.type);
+                                        const impact = getTransactionImpact(tx);
                                         return (
                                             <tr key={tx.id} className="hover:bg-dash-panel-2/50 transition-colors">
                                                 <td className="px-5 py-3.5 text-dash-text whitespace-nowrap">
@@ -508,11 +514,18 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                                                 </td>
                                                 <td
                                                     className={`px-5 py-3.5 font-mono font-medium text-right whitespace-nowrap ${
-                                                        credit ? "text-primary-green" : "text-rose-400"
+                                                        impact === "CREDIT"
+                                                            ? "text-primary-green"
+                                                            : impact === "DEBIT"
+                                                            ? "text-rose-400"
+                                                            : "text-dash-text-muted"
                                                     }`}
                                                 >
-                                                    {credit ? "+" : "-"}
-                                                    {formatINR(Math.abs(tx.amount))}
+                                                    {impact === "CREDIT"
+                                                        ? `+ ${formatINR(Math.abs(tx.amount))}`
+                                                        : impact === "DEBIT"
+                                                        ? `- ${formatINR(Math.abs(tx.amount))}`
+                                                        : formatINR(0)}
                                                 </td>
                                                 <td className="px-5 py-3.5 font-mono font-semibold text-right text-dash-text whitespace-nowrap">
                                                     {formatINR(tx.balanceAfter)}
