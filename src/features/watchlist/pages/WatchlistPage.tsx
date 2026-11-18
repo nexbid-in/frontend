@@ -19,6 +19,7 @@ export function WatchlistPage() {
     const userId = useAppSelector((state) => state.auth.user?.id);
     const lastStockStorageKey = userId ? `nexbid_last_stock_${userId}` : "nexbid_last_stock_guest";
 
+    const [prevUserId, setPrevUserId] = useState(userId);
     const [selectedStockId, setSelectedStockId] = useState<string | null>(() => {
         if (typeof window === "undefined") return null;
         try {
@@ -27,6 +28,12 @@ export function WatchlistPage() {
             return null;
         }
     });
+
+    if (prevUserId !== userId) {
+        setPrevUserId(userId);
+        const savedStock = typeof window !== "undefined" ? localStorage.getItem(lastStockStorageKey) : null;
+        setSelectedStockId(savedStock);
+    }
 
     const [activeViewMode, setActiveViewMode] = useState<"chart" | "overview">("chart");
 

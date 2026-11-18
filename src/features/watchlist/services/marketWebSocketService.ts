@@ -136,6 +136,10 @@ class MarketWebSocketService {
     public subscribe(symbol: string, handler: TickHandler): () => void {
         const sym = symbol.toUpperCase().trim();
 
+        if (this.isExplicitlyDestroyed) {
+            this.isExplicitlyDestroyed = false;
+        }
+
         const pendingTimer = this.pendingUnsubscribes.get(sym);
         if (pendingTimer) {
             clearTimeout(pendingTimer);
@@ -413,6 +417,42 @@ class MarketWebSocketService {
         } catch (err) {
             console.warn("[MarketWebSocketService] Error parsing WS message:", err);
         }
+    }
+
+    /**
+     * Reset service state and disconnect socket upon user logout or account switch.
+     * Clears all stale cached ticks, active subscribers, and debounce timers so
+     * the next user session starts with clean, isolated market feed state.
+     */
+    public reset(): void {
+        for (const timer of this.pendingUnsubscribes.values()) {
+            clearTimeout(timer);
+        }
+        this.pendingUnsubscribes.clear();
+
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
+
+        if (this.resumeDebounceTimer) {
+            clearTimeout(this.resumeDebounceTimer);
+            this.resumeDebounceTimer = null;
+        }
+
+        if (this.ws) {
+            try {
+                this.ws.close();
+            } catch {
+                // Ignore socket close error
+            }
+            this.ws = null;
+        }
+
+        this.subscribers.clear();
+        this.latestTicks.clear();
+        this.reconnectAttempts = 0;
+        this.isExplicitlyDestroyed = false;
     }
 
     public destroy(): void {
