@@ -41,10 +41,11 @@ export const FundsPage: React.FC = () => {
     const [isPaymentOpen, setIsPaymentOpen] = useState<boolean>(false);
 
     const conversionRate = overview?.exchangeRate?.ratio ?? 10;
-    const availableBalance = overview?.balance ?? 0;
+    const ledgerBalance = overview?.balance ?? 0;
+    const availableMargin = overview?.availableMargin ?? (overview?.balance !== undefined ? overview.balance - (overview.usedMargin ?? 0) : 0);
     const numericReal = parseFloat(depositAmount) || 0;
     const virtualReceived = numericReal > 0 ? numericReal * conversionRate : 0;
-    const projectedBalance = availableBalance + virtualReceived;
+    const projectedMargin = availableMargin + virtualReceived;
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -241,10 +242,10 @@ export const FundsPage: React.FC = () => {
                         <div className="rounded-lg border border-dash-border bg-dash-panel-2 p-5 shrink-0">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-dash-text-muted uppercase tracking-wider">
-                                    Available Virtual Balance
+                                    Total Virtual Balance
                                 </span>
                                 <span className="text-[11px] font-medium text-primary-green bg-primary-green/10 px-2 py-0.5 rounded">
-                                    Active Margin
+                                    Ledger Balance
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2 mt-2">
@@ -255,13 +256,13 @@ export const FundsPage: React.FC = () => {
                                         id="availableVirtualDisplay"
                                         className="text-3xl font-semibold text-dash-text font-mono tracking-tight"
                                     >
-                                        {formatINR(availableBalance)}
+                                        {formatINR(ledgerBalance)}
                                     </p>
                                 )}
                                 <span className="text-xs text-dash-text-muted font-medium">V-INR</span>
                             </div>
                             <p className="text-xs text-dash-text-muted mt-1">
-                                Usable trading balance available for executing market orders and open positions.
+                                Total cash in account ledger
                             </p>
                         </div>
 
@@ -277,8 +278,8 @@ export const FundsPage: React.FC = () => {
                                         {isLoadingOverview && !overview ? (
                                             <div className="h-4 w-24 bg-dash-border/60 rounded animate-pulse"></div>
                                         ) : (
-                                            <span className="font-mono font-medium text-dash-text">
-                                                {formatINR(availableBalance)}
+                                            <span className="font-mono font-semibold text-primary-green">
+                                                {formatINR(availableMargin)}
                                             </span>
                                         )}
                                     </div>
@@ -419,7 +420,7 @@ export const FundsPage: React.FC = () => {
                                 <div className="flex justify-between items-center text-xs text-dash-text-muted pt-1">
                                     <span>Projected Available Margin:</span>
                                     <span id="projectedBalance" className="font-mono text-dash-text font-medium">
-                                        {formatINR(projectedBalance)}
+                                        {formatINR(projectedMargin)}
                                     </span>
                                 </div>
                             </div>

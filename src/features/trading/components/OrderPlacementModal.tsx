@@ -261,7 +261,7 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const totalOrderValue = Math.max(0, numericQty * effectivePrice);
 
     const marginRequired = productType === "MIS" ? totalOrderValue / 5 : totalOrderValue;
-    const marginAvailable = wallet?.balance ?? 0;
+    const marginAvailable = wallet?.availableMargin ?? wallet?.balance ?? 0;
     const isShortOnMargin = marginRequired > marginAvailable && marginAvailable > 0;
     const isZeroBalance = marginAvailable <= 0;
 

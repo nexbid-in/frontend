@@ -9,7 +9,7 @@ export const NavbarMarginAvailable: React.FC = () => {
         enabled: !!user,
     });
 
-    const availableMargin = walletOverview?.balance ?? 0;
+    const availableMargin = walletOverview?.availableMargin ?? walletOverview?.balance ?? 0;
 
     return (
         <div className="flex items-center gap-2">

@@ -303,7 +303,7 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                 </div>
 
                 {overview && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-6 py-3 bg-dash-panel-2/30 border-b border-dash-border shrink-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-6 py-3 bg-dash-panel-2/30 border-b border-dash-border shrink-0">
                         <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
                             <span className="text-dash-text-muted">Total Real Deposited:</span>
                             <span className="font-mono font-semibold text-dash-text">
@@ -312,14 +312,20 @@ export const StatementModal: React.FC<StatementModalProps> = ({
                         </div>
                         <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
                             <span className="text-dash-text-muted">Total Virtual Bought:</span>
-                            <span className="font-mono font-semibold text-primary-green">
+                            <span className="font-mono font-semibold text-dash-text">
                                 {formatINR(overview.totalVirtualMoneyBought)} V-INR
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
-                            <span className="text-dash-text-muted">Available Margin:</span>
+                            <span className="text-dash-text-muted">Ledger Balance:</span>
                             <span className="font-mono font-semibold text-dash-text">
                                 {formatINR(overview.balance)} V-INR
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs bg-dash-card/70 border border-dash-border/60 rounded-lg px-4 py-2.5">
+                            <span className="text-dash-text-muted">Available Margin:</span>
+                            <span className="font-mono font-semibold text-primary-green">
+                                {formatINR(overview.availableMargin ?? overview.balance)} V-INR
                             </span>
                         </div>
                     </div>
