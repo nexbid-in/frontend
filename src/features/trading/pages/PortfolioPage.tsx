@@ -1,11 +1,26 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { usePositionsQuery, useSquareOffPositionMutation } from "../hooks/useTrading";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+    usePositionsQuery,
+    useHoldingsQuery,
+    useSquareOffPositionMutation,
+} from "../hooks/useTrading";
+import { OrderPlacementModal } from "../components/OrderPlacementModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { marketWebSocketService, useLiveStockQuote, formatINR } from "@/features/watchlist";
 import { APP_ROUTES } from "@/constants/routes";
-import type { PositionResponseDTO, PositionsFilter } from "../types";
+import type {
+    PositionResponseDTO,
+    PositionsFilter,
+    HoldingItem,
+    PortfolioMainTab,
+    HoldingsFilter,
+    OrderSide,
+} from "../types";
 
+// ============================================================================
+// POSITIONS TABLE ROW (Intraday MIS)
+// ============================================================================
 interface PositionRowProps {
     position: PositionResponseDTO;
     onSquareOff: (position: PositionResponseDTO) => void;
@@ -41,12 +56,14 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
 
     return (
         <tr className="hover:bg-dash-panel-2/60 transition-colors group">
+            {/* Product */}
             <td className="py-3 px-3 whitespace-nowrap">
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-dash-panel-2 border border-dash-border text-dash-text">
-                    {position.productType}
+                    MIS
                 </span>
             </td>
 
+            {/* Instrument */}
             <td className="py-3 px-3 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
                     <span className="text-dash-text font-semibold">{position.symbol}</span>
@@ -56,6 +73,7 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </div>
             </td>
 
+            {/* Side */}
             <td className="py-3 px-3 whitespace-nowrap">
                 <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider inline-block ${
@@ -68,16 +86,19 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
+            {/* Net Qty */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span className={`font-semibold ${isOpen ? "text-dash-text" : "text-dash-text-muted"}`}>
                     {position.quantity}
                 </span>
             </td>
 
+            {/* Avg Price */}
             <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
                 ₹{formatINR(position.averagePrice)}
             </td>
 
+            {/* LTP */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span
                     className={`font-semibold transition-colors duration-200 ${
@@ -92,15 +113,21 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
+            {/* P&L (Unrealized) */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span className={`font-semibold ${pnlTextColor}`}>
-                    {liveUnrealizedPnL >= 0 ? `+₹${formatINR(liveUnrealizedPnL)}` : `-₹${formatINR(Math.abs(liveUnrealizedPnL))}`}
+                    {liveUnrealizedPnL >= 0
+                        ? `+₹${formatINR(liveUnrealizedPnL)}`
+                        : `-₹${formatINR(Math.abs(liveUnrealizedPnL))}`}
                 </span>
                 <span className={`text-[10px] block ${pnlTextColor}`}>
-                    {liveReturnPercent >= 0 ? `(+${liveReturnPercent.toFixed(2)}%)` : `(${liveReturnPercent.toFixed(2)}%)`}
+                    {liveReturnPercent >= 0
+                        ? `(+${liveReturnPercent.toFixed(2)}%)`
+                        : `(${liveReturnPercent.toFixed(2)}%)`}
                 </span>
             </td>
 
+            {/* Realized P&L */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span
                     className={`font-medium ${
@@ -119,17 +146,19 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
+            {/* Blocked Margin */}
             <td className="py-3 px-3 text-right font-mono text-dash-text-muted whitespace-nowrap">
                 {isOpen ? `₹${formatINR(position.blockedMargin)}` : "—"}
             </td>
 
+            {/* Action */}
             <td className="py-3 px-3 text-right whitespace-nowrap">
                 {isOpen ? (
                     <button
                         type="button"
                         disabled={isSquaringOff}
                         onClick={() => onSquareOff(position)}
-                        className="px-2.5 py-1 text-[11px] font-medium text-amber-500 hover:text-white hover:bg-amber-500 rounded border border-amber-500/30 transition-all cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1 text-[11px] font-medium text-red hover:text-white hover:bg-red rounded border border-red/30 transition-all cursor-pointer disabled:opacity-50"
                     >
                         Exit
                     </button>
@@ -143,25 +172,242 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
     );
 };
 
+// ============================================================================
+// HOLDINGS TABLE ROW (Long-term Delivery CNC)
+// ============================================================================
+interface HoldingRowProps {
+    item: HoldingItem;
+    onBuy: (item: HoldingItem) => void;
+    onSell: (item: HoldingItem) => void;
+}
+
+const HoldingTableRow: React.FC<HoldingRowProps> = ({ item, onBuy, onSell }) => {
+    const quote = useLiveStockQuote(item.symbol);
+
+    const liveLtp = quote.price > 0 ? quote.price : item.currentLtp;
+    const liveCurrentValue = +(liveLtp * item.quantity).toFixed(2);
+    const liveTotalPnL = +((liveLtp - item.buyAvgPrice) * item.quantity).toFixed(2);
+    const liveTotalPnLPercentage =
+        item.investedAmount > 0 ? +((liveTotalPnL / item.investedAmount) * 100).toFixed(2) : 0;
+
+    // Fix for Day's P&L and day change when stock was bought today
+    const liveDayPnL = item.isBoughtToday
+        ? liveTotalPnL
+        : quote.hasLiveTick
+        ? +((quote.change ?? 0) * item.quantity).toFixed(2)
+        : item.dayPnL;
+
+    const dayChange = item.isBoughtToday
+        ? +((liveLtp - item.buyAvgPrice)).toFixed(2)
+        : quote.hasLiveTick
+        ? (quote.change ?? 0)
+        : item.dayChange;
+
+    const dayChangePercentage = item.isBoughtToday
+        ? liveTotalPnLPercentage
+        : quote.hasLiveTick
+        ? (quote.changePercent ?? 0)
+        : item.dayChangePercentage;
+
+    const isTotalPnLPositive = liveTotalPnL >= 0;
+    const isDayPnLPositive = liveDayPnL >= 0;
+    const isDayChangePositive = dayChange >= 0;
+
+    return (
+        <tr className="hover:bg-dash-panel-2/60 transition-colors group">
+            {/* Symbol */}
+            <td className="py-3 px-3 font-medium whitespace-nowrap">
+                <div className="flex items-center gap-1.5">
+                    <span className="text-dash-text font-semibold">{item.symbol}</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-dash-panel-2 text-dash-text-muted border border-dash-border">
+                        NSE
+                    </span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
+                        CNC
+                    </span>
+                </div>
+            </td>
+
+            {/* Qty */}
+            <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
+                <span className="font-semibold text-dash-text">{item.quantity}</span>
+            </td>
+
+            {/* Buy Avg (₹) */}
+            <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
+                ₹{formatINR(item.buyAvgPrice)}
+            </td>
+
+            {/* LTP + Subtext {dayChange} ({dayChangePercentage}%) */}
+            <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
+                <span
+                    className={`font-semibold transition-colors duration-200 ${
+                        quote.flashDirection === "up"
+                            ? "text-[#22c55e]"
+                            : quote.flashDirection === "down"
+                            ? "text-[#ef4444]"
+                            : "text-dash-text"
+                    }`}
+                >
+                    ₹{formatINR(liveLtp)}
+                </span>
+                <span
+                    className={`text-[10px] block font-mono ${
+                        isDayChangePositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                    }`}
+                >
+                    {isDayChangePositive ? `+${dayChange.toFixed(2)}` : dayChange.toFixed(2)} (
+                    {isDayChangePositive
+                        ? `+${dayChangePercentage.toFixed(2)}%`
+                        : `${dayChangePercentage.toFixed(2)}%`}
+                    )
+                </span>
+            </td>
+
+            {/* Invested */}
+            <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
+                ₹{formatINR(item.investedAmount)}
+            </td>
+
+            {/* Current */}
+            <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
+                ₹{formatINR(liveCurrentValue)}
+            </td>
+
+            {/* Total P&L */}
+            <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
+                <span
+                    className={`font-semibold ${
+                        isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                    }`}
+                >
+                    {liveTotalPnL >= 0
+                        ? `+₹${formatINR(liveTotalPnL)}`
+                        : `-₹${formatINR(Math.abs(liveTotalPnL))}`}
+                </span>
+                <span
+                    className={`text-[10px] block ${
+                        isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                    }`}
+                >
+                    {liveTotalPnLPercentage >= 0
+                        ? `(+${liveTotalPnLPercentage.toFixed(2)}%)`
+                        : `(${liveTotalPnLPercentage.toFixed(2)}%)`}
+                </span>
+            </td>
+
+            {/* Day's P&L */}
+            <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
+                <span
+                    className={`font-semibold ${
+                        isDayPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                    }`}
+                >
+                    {liveDayPnL >= 0
+                        ? `+₹${formatINR(liveDayPnL)}`
+                        : `-₹${formatINR(Math.abs(liveDayPnL))}`}
+                </span>
+                <span
+                    className={`text-[10px] block ${
+                        isDayChangePositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                    }`}
+                >
+                    {dayChangePercentage >= 0
+                        ? `(+${dayChangePercentage.toFixed(2)}%)`
+                        : `(${dayChangePercentage.toFixed(2)}%)`}
+                </span>
+            </td>
+
+            {/* Actions: Green [B] and Red [S] */}
+            <td className="py-3 px-3 text-right whitespace-nowrap">
+                <div className="inline-flex items-center gap-1.5 justify-end">
+                    <button
+                        type="button"
+                        onClick={() => onBuy(item)}
+                        className="w-6 h-6 rounded bg-[#00873e]/15 text-[#00873e] hover:bg-[#00873e] hover:text-white border border-[#00873e]/30 font-bold text-[11px] flex items-center justify-center transition-all cursor-pointer"
+                        title={`Buy more ${item.symbol} (CNC)`}
+                    >
+                        B
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSell(item)}
+                        className="w-6 h-6 rounded bg-[#c83200]/15 text-[#c83200] hover:bg-[#c83200] hover:text-white border border-[#c83200]/30 font-bold text-[11px] flex items-center justify-center transition-all cursor-pointer"
+                        title={`Sell ${item.quantity} qty of ${item.symbol} (CNC)`}
+                    >
+                        S
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+};
+
+// ============================================================================
+// MAIN PORTFOLIO PAGE
+// ============================================================================
 export const PortfolioPage: React.FC = () => {
-    const [selectedFilter, setSelectedFilter] = useState<PositionsFilter>("OPEN");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabParam = searchParams.get("tab")?.toUpperCase();
+    const mainTab: PortfolioMainTab = tabParam === "HOLDINGS" ? "HOLDINGS" : "POSITIONS";
+
+    const setMainTab = (tab: PortfolioMainTab) => {
+        if (tab === "HOLDINGS") {
+            setSearchParams({ tab: "holdings" });
+        } else {
+            setSearchParams({});
+        }
+    };
+
+    // Global Search & Live Prices
     const [searchQuery, setSearchQuery] = useState("");
-    const [squaringOffPosition, setSquaringOffPosition] = useState<PositionResponseDTO | null>(null);
-
-    const { data, isLoading, isFetching, refetch } = usePositionsQuery(selectedFilter);
-    const squareOffMutation = useSquareOffPositionMutation();
-
     const [livePrices, setLivePrices] = useState<Record<string, number>>({});
 
-    useEffect(() => {
-        const openPositions = (data?.positions ?? []).filter((p) => p.quantity > 0);
-        if (openPositions.length === 0) return;
+    // Positions State
+    const [selectedPositionsFilter, setSelectedPositionsFilter] =
+        useState<PositionsFilter>("OPEN");
+    const [squaringOffPosition, setSquaringOffPosition] =
+        useState<PositionResponseDTO | null>(null);
 
-        const unsubs = openPositions.map((pos) =>
-            marketWebSocketService.subscribe(pos.symbol, (tick) => {
+    // Holdings State
+    const [holdingsFilter, setHoldingsFilter] = useState<HoldingsFilter>("ALL");
+
+    // Order Placement Modal State for Holdings [B] & [S]
+    const [orderModal, setOrderModal] = useState<{
+        isOpen: boolean;
+        symbol: string;
+        side: OrderSide;
+        quantity: number;
+    }>({
+        isOpen: false,
+        symbol: "",
+        side: "BUY",
+        quantity: 1,
+    });
+
+    // Queries & Mutations
+    const positionsQuery = usePositionsQuery(selectedPositionsFilter);
+    const holdingsQuery = useHoldingsQuery();
+    const squareOffMutation = useSquareOffPositionMutation();
+
+    // WebSocket Price Subscriptions
+    useEffect(() => {
+        const symbolsToSubscribe = new Set<string>();
+
+        (positionsQuery.data?.positions ?? [])
+            .filter((p) => p.quantity > 0)
+            .forEach((p) => symbolsToSubscribe.add(p.symbol));
+
+        (holdingsQuery.data?.holdings ?? [])
+            .forEach((h) => symbolsToSubscribe.add(h.symbol));
+
+        if (symbolsToSubscribe.size === 0) return;
+
+        const unsubs = Array.from(symbolsToSubscribe).map((symbol) =>
+            marketWebSocketService.subscribe(symbol, (tick) => {
                 setLivePrices((prev) => {
-                    if (prev[pos.symbol] === tick.ltp) return prev;
-                    return { ...prev, [pos.symbol]: tick.ltp };
+                    if (prev[symbol] === tick.ltp) return prev;
+                    return { ...prev, [symbol]: tick.ltp };
                 });
             })
         );
@@ -169,12 +415,13 @@ export const PortfolioPage: React.FC = () => {
         return () => {
             unsubs.forEach((unsub) => unsub());
         };
-    }, [data?.positions]);
+    }, [positionsQuery.data?.positions, holdingsQuery.data?.holdings]);
 
-    const summary = useMemo(() => {
-        const positions = data?.positions ?? [];
+    // Positions Real-Time Live Summary
+    const positionsSummary = useMemo(() => {
+        const positions = positionsQuery.data?.positions ?? [];
         const openPositions = positions.filter((p) => p.quantity > 0);
-        const totalRealizedPnL = data?.summary?.totalRealizedPnL ?? 0;
+        const totalRealizedPnL = positionsQuery.data?.summary?.totalRealizedPnL ?? 0;
 
         let totalInvestment = 0;
         let currentPortfolioValue = 0;
@@ -207,25 +454,128 @@ export const PortfolioPage: React.FC = () => {
             totalInvestment > 0 ? (totalUnrealizedPnL / totalInvestment) * 100 : 0;
 
         return {
-            totalInvestment: totalInvestment > 0 ? totalInvestment : (data?.summary?.totalInvestment ?? 0),
-            currentPortfolioValue: totalInvestment > 0 ? currentPortfolioValue : (data?.summary?.currentPortfolioValue ?? 0),
+            totalInvestment:
+                totalInvestment > 0
+                    ? totalInvestment
+                    : (positionsQuery.data?.summary?.totalInvestment ?? 0),
+            currentPortfolioValue:
+                totalInvestment > 0
+                    ? currentPortfolioValue
+                    : (positionsQuery.data?.summary?.currentPortfolioValue ?? 0),
             totalUnrealizedPnL,
             totalRealizedPnL,
             netPnL,
             overallReturnPercentage,
-            positionsCount: data?.summary?.positionsCount ?? { total: 0, open: 0, closed: 0 },
+            positionsCount:
+                positionsQuery.data?.summary?.positionsCount ?? { total: 0, open: 0, closed: 0 },
         };
-    }, [data?.positions, data?.summary, livePrices]);
+    }, [positionsQuery.data?.positions, positionsQuery.data?.summary, livePrices]);
 
+    // Holdings Real-Time Live Summary
+    const holdingsSummary = useMemo(() => {
+        const holdings = holdingsQuery.data?.holdings ?? [];
+        if (holdings.length === 0) {
+            return {
+                totalInvested: 0,
+                currentValue: 0,
+                totalPnL: 0,
+                totalPnLPercentage: 0,
+                todayPnL: 0,
+                todayPnLPercentage: 0,
+                holdingsCount: 0,
+                gainersCount: 0,
+                losersCount: 0,
+            };
+        }
+
+        let totalInvested = 0;
+        let totalCurrentValue = 0;
+        let totalTodayPnL = 0;
+        let gainersCount = 0;
+        let losersCount = 0;
+
+        for (const item of holdings) {
+            totalInvested += item.investedAmount;
+            const cachedTick = marketWebSocketService.getLatestTick(item.symbol);
+            const ltp =
+                livePrices[item.symbol] ?? cachedTick?.ltp ?? item.currentLtp ?? item.buyAvgPrice;
+
+            const currVal = +(ltp * item.quantity).toFixed(2);
+            totalCurrentValue += currVal;
+
+            const itemTotalPnL = +((ltp - item.buyAvgPrice) * item.quantity).toFixed(2);
+            const itemDayPnL = item.isBoughtToday
+                ? itemTotalPnL
+                : +((cachedTick?.change ?? item.dayChange) * item.quantity).toFixed(2);
+
+            totalTodayPnL += itemDayPnL;
+
+            if (currVal >= item.investedAmount) {
+                gainersCount++;
+            } else {
+                losersCount++;
+            }
+        }
+
+        totalInvested = +totalInvested.toFixed(2);
+        totalCurrentValue = +totalCurrentValue.toFixed(2);
+        totalTodayPnL = +totalTodayPnL.toFixed(2);
+
+        const totalPnL = +(totalCurrentValue - totalInvested).toFixed(2);
+        const totalPnLPercentage =
+            totalInvested > 0 ? +((totalPnL / totalInvested) * 100).toFixed(2) : 0;
+        const todayPnLPercentage =
+            totalInvested > 0 ? +((totalTodayPnL / totalInvested) * 100).toFixed(2) : 0;
+
+        return {
+            totalInvested,
+            currentValue: totalCurrentValue,
+            totalPnL,
+            totalPnLPercentage,
+            todayPnL: totalTodayPnL,
+            todayPnLPercentage,
+            holdingsCount: holdings.length,
+            gainersCount,
+            losersCount,
+        };
+    }, [holdingsQuery.data?.holdings, livePrices]);
+
+    // Filtered Positions
     const filteredPositions = useMemo(() => {
-        const list = data?.positions ?? [];
+        const list = positionsQuery.data?.positions ?? [];
         return list.filter((p) => {
-            const matchesQuery =
-                searchQuery.trim() === "" ||
-                p.symbol.toLowerCase().includes(searchQuery.toLowerCase().trim());
-            return matchesQuery;
+            if (
+                searchQuery.trim() !== "" &&
+                !p.symbol.toLowerCase().includes(searchQuery.toLowerCase().trim())
+            ) {
+                return false;
+            }
+            return true;
         });
-    }, [data?.positions, searchQuery]);
+    }, [positionsQuery.data?.positions, searchQuery]);
+
+    // Filtered Holdings
+    const filteredHoldings = useMemo(() => {
+        const list = holdingsQuery.data?.holdings ?? [];
+        return list.filter((item) => {
+            if (
+                searchQuery.trim() !== "" &&
+                !item.symbol.toLowerCase().includes(searchQuery.toLowerCase().trim())
+            ) {
+                return false;
+            }
+
+            const cachedTick = marketWebSocketService.getLatestTick(item.symbol);
+            const ltp =
+                livePrices[item.symbol] ?? cachedTick?.ltp ?? item.currentLtp ?? item.buyAvgPrice;
+            const currVal = ltp * item.quantity;
+            const isGainer = currVal >= item.investedAmount;
+
+            if (holdingsFilter === "GAINERS") return isGainer;
+            if (holdingsFilter === "LOSERS") return !isGainer;
+            return true;
+        });
+    }, [holdingsQuery.data?.holdings, searchQuery, holdingsFilter, livePrices]);
 
     const handleConfirmSquareOff = async () => {
         if (!squaringOffPosition) return;
@@ -237,24 +587,90 @@ export const PortfolioPage: React.FC = () => {
         }
     };
 
-    const isNetPositive = summary.netPnL >= 0;
+    const handleRefresh = () => {
+        if (mainTab === "POSITIONS") {
+            void positionsQuery.refetch();
+        } else {
+            void holdingsQuery.refetch();
+        }
+    };
+
+    const isFetching =
+        mainTab === "POSITIONS" ? positionsQuery.isFetching : holdingsQuery.isFetching;
 
     return (
         <div className="h-full p-2 overflow-hidden">
             <section className="h-full bg-dash-panel border border-dash-border rounded-md p-5 flex flex-col overflow-hidden">
+                {/* Header & Main Tab Switcher */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dash-border shrink-0">
-                    <div>
-                        <h1 className="text-base font-semibold text-dash-text tracking-tight">Portfolio Positions</h1>
-                        <p className="text-xs text-dash-text-muted mt-0.5">
-                            Real-time open intraday trades, delivery positions, and P&L breakdown
-                        </p>
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div>
+                            <h1 className="text-base font-semibold text-dash-text tracking-tight">
+                                Portfolio
+                            </h1>
+                            <p className="text-xs text-dash-text-muted mt-0.5">
+                                {mainTab === "POSITIONS"
+                                    ? "Intraday (MIS) real-time open positions & executed trades"
+                                    : "Long-term (CNC) delivery holdings & overall investment value"}
+                            </p>
+                        </div>
+
+                        {/* Top Sub-Tab Navigation [ Positions ] | [ Holdings ] */}
+                        <div className="flex items-center gap-1 p-1 bg-dash-panel-2 border border-dash-border rounded-lg">
+                            <button
+                                type="button"
+                                onClick={() => setMainTab("POSITIONS")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer select-none ${
+                                    mainTab === "POSITIONS"
+                                        ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border"
+                                        : "text-dash-text-muted hover:text-dash-text"
+                                }`}
+                            >
+                                <span>Positions</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        mainTab === "POSITIONS"
+                                            ? "bg-primary-green/20 text-primary-green"
+                                            : "bg-dash-panel text-dash-text-muted"
+                                    }`}
+                                >
+                                    {positionsSummary.positionsCount.open}
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setMainTab("HOLDINGS")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer select-none ${
+                                    mainTab === "HOLDINGS"
+                                        ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border"
+                                        : "text-dash-text-muted hover:text-dash-text"
+                                }`}
+                            >
+                                <span>Holdings</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        mainTab === "HOLDINGS"
+                                            ? "bg-primary-green/20 text-primary-green"
+                                            : "bg-dash-panel text-dash-text-muted"
+                                    }`}
+                                >
+                                    {holdingsSummary.holdingsCount}
+                                </span>
+                            </button>
+                        </div>
                     </div>
 
+                    {/* Search & Refresh */}
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <input
                                 type="text"
-                                placeholder="Search position..."
+                                placeholder={
+                                    mainTab === "POSITIONS"
+                                        ? "Search position..."
+                                        : "Search holdings..."
+                                }
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-48 sm:w-60 bg-dash-panel-2 border border-dash-border rounded-md pl-8 pr-3 py-1.5 text-xs text-dash-text placeholder-dash-text-muted focus:outline-none focus:border-primary-green transition-colors"
@@ -273,13 +689,15 @@ export const PortfolioPage: React.FC = () => {
 
                         <button
                             type="button"
-                            onClick={() => void refetch()}
+                            onClick={handleRefresh}
                             disabled={isFetching}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dash-border text-xs text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors cursor-pointer disabled:opacity-50"
                             title="Refresh portfolio"
                         >
                             <svg
-                                className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-primary-green" : ""}`}
+                                className={`w-3.5 h-3.5 ${
+                                    isFetching ? "animate-spin text-primary-green" : ""
+                                }`}
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -296,167 +714,433 @@ export const PortfolioPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 py-4 border-b border-dash-border shrink-0">
-                    <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
-                        <span className="text-[11px] text-dash-text-muted block">Total Invested</span>
-                        <span className="text-sm md:text-base font-bold font-mono text-dash-text mt-1 block">
-                            ₹{formatINR(summary.totalInvestment)}
-                        </span>
-                    </div>
-
-                    <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
-                        <span className="text-[11px] text-dash-text-muted block">Current Value</span>
-                        <span className="text-sm md:text-base font-bold font-mono text-dash-text mt-1 block">
-                            ₹{formatINR(summary.currentPortfolioValue)}
-                        </span>
-                    </div>
-
-                    <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
-                        <span className="text-[11px] text-dash-text-muted block">Unrealized P&L</span>
-                        <span
-                            className={`text-sm md:text-base font-bold font-mono mt-1 block ${
-                                summary.totalUnrealizedPnL >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"
-                            }`}
-                        >
-                            {summary.totalUnrealizedPnL >= 0
-                                ? `+₹${formatINR(summary.totalUnrealizedPnL)}`
-                                : `-₹${formatINR(Math.abs(summary.totalUnrealizedPnL))}`}
-                        </span>
-                    </div>
-
-                    <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
-                        <span className="text-[11px] text-dash-text-muted block">Realized P&L</span>
-                        <span
-                            className={`text-sm md:text-base font-bold font-mono mt-1 block ${
-                                summary.totalRealizedPnL >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"
-                            }`}
-                        >
-                            {summary.totalRealizedPnL >= 0
-                                ? `+₹${formatINR(summary.totalRealizedPnL)}`
-                                : `-₹${formatINR(Math.abs(summary.totalRealizedPnL))}`}
-                        </span>
-                    </div>
-
-                    <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg col-span-2 md:col-span-1">
-                        <span className="text-[11px] text-dash-text-muted block">Total P&L</span>
-                        <span
-                            className={`text-sm md:text-base font-bold font-mono mt-1 block ${
-                                isNetPositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                            }`}
-                        >
-                            {isNetPositive
-                                ? `+₹${formatINR(summary.netPnL)}`
-                                : `-₹${formatINR(Math.abs(summary.netPnL))}`}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 py-3 border-b border-dash-border shrink-0">
-                    <button
-                        type="button"
-                        onClick={() => setSelectedFilter("OPEN")}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
-                            selectedFilter === "OPEN"
-                                ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
-                                : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
-                        }`}
-                    >
-                        <span>Open Positions</span>
-                        <span
-                            className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                selectedFilter === "OPEN"
-                                    ? "bg-primary-green/20 text-primary-green"
-                                    : "bg-dash-panel-2 text-dash-text-muted"
-                            }`}
-                        >
-                            {summary.positionsCount.open}
-                        </span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setSelectedFilter("ALL")}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
-                            selectedFilter === "ALL"
-                                ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
-                                : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
-                        }`}
-                    >
-                        <span>All Positions</span>
-                        <span
-                            className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                selectedFilter === "ALL"
-                                    ? "bg-primary-green/20 text-primary-green"
-                                    : "bg-dash-panel-2 text-dash-text-muted"
-                            }`}
-                        >
-                            {summary.positionsCount.total}
-                        </span>
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-auto custom-scrollbar mt-3">
-                    {isLoading ? (
-                        <div className="h-full flex flex-col items-center justify-center text-dash-text-muted gap-2">
-                            <div className="w-6 h-6 border-2 border-primary-green/20 border-t-primary-green rounded-full animate-spin" />
-                            <span className="text-xs">Loading positions...</span>
-                        </div>
-                    ) : filteredPositions.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-6 text-dash-text-muted">
-                            <div className="w-12 h-12 rounded-full bg-dash-panel-2 border border-dash-border flex items-center justify-center mb-3 text-dash-text-muted">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
-                                </svg>
+                {/* ========================================================= */}
+                {/* POSITIONS TAB VIEW                                        */}
+                {/* ========================================================= */}
+                {mainTab === "POSITIONS" && (
+                    <>
+                        {/* Positions Summary Cards: Realized, Unrealized, Total P&L */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-4 border-b border-dash-border shrink-0">
+                            <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
+                                <span className="text-[11px] text-dash-text-muted block">
+                                    Today's Realized P&L
+                                </span>
+                                <span
+                                    className={`text-sm md:text-base font-bold font-mono mt-1 block ${
+                                        positionsSummary.totalRealizedPnL >= 0
+                                            ? "text-[#22c55e]"
+                                            : "text-[#ef4444]"
+                                    }`}
+                                >
+                                    {positionsSummary.totalRealizedPnL >= 0
+                                        ? `+₹${formatINR(positionsSummary.totalRealizedPnL)}`
+                                        : `-₹${formatINR(Math.abs(positionsSummary.totalRealizedPnL))}`}
+                                </span>
                             </div>
-                            <h3 className="text-sm font-semibold text-dash-text mb-1">
-                                No {selectedFilter === "OPEN" ? "open" : ""} positions found
-                            </h3>
-                            <p className="text-xs text-dash-text-muted max-w-sm mb-4">
-                                {searchQuery
-                                    ? `No positions matching "${searchQuery}".`
-                                    : "You don't have any active positions yet! Select instruments from your watchlist to open a position."}
-                            </p>
-                            <Link
-                                to={APP_ROUTES.USER.WATCHLIST}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-all cursor-pointer"
-                            >
-                                <span>Go to Watchlist</span>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                                </svg>
-                            </Link>
+
+                            <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
+                                <span className="text-[11px] text-dash-text-muted block">
+                                    Unrealized P&L
+                                </span>
+                                <span
+                                    className={`text-sm md:text-base font-bold font-mono mt-1 block ${
+                                        positionsSummary.totalUnrealizedPnL >= 0
+                                            ? "text-[#22c55e]"
+                                            : "text-[#ef4444]"
+                                    }`}
+                                >
+                                    {positionsSummary.totalUnrealizedPnL >= 0
+                                        ? `+₹${formatINR(positionsSummary.totalUnrealizedPnL)}`
+                                        : `-₹${formatINR(Math.abs(positionsSummary.totalUnrealizedPnL))}`}
+                                </span>
+                            </div>
+
+                            <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
+                                <span className="text-[11px] text-dash-text-muted block">
+                                    Total P&L
+                                </span>
+                                <span
+                                    className={`text-sm md:text-base font-bold font-mono mt-1 block ${
+                                        positionsSummary.netPnL >= 0
+                                            ? "text-[#22c55e]"
+                                            : "text-[#ef4444]"
+                                    }`}
+                                >
+                                    {positionsSummary.netPnL >= 0
+                                        ? `+₹${formatINR(positionsSummary.netPnL)}`
+                                        : `-₹${formatINR(Math.abs(positionsSummary.netPnL))}`}
+                                </span>
+                            </div>
                         </div>
-                    ) : (
-                        <table className="w-full text-left border-collapse text-xs">
-                            <thead className="sticky top-0 bg-dash-panel z-10 border-b border-dash-border">
-                                <tr className="text-dash-text-muted font-medium select-none">
-                                    <th className="py-2.5 px-3">Product</th>
-                                    <th className="py-2.5 px-3">Instrument</th>
-                                    <th className="py-2.5 px-3">Side</th>
-                                    <th className="py-2.5 px-3 text-right">Net Qty</th>
-                                    <th className="py-2.5 px-3 text-right">Avg. Price</th>
-                                    <th className="py-2.5 px-3 text-right">LTP</th>
-                                    <th className="py-2.5 px-3 text-right">P&L (Unrealized)</th>
-                                    <th className="py-2.5 px-3 text-right">Realized P&L</th>
-                                    <th className="py-2.5 px-3 text-right">Blocked Margin</th>
-                                    <th className="py-2.5 px-3 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-dash-border">
-                                {filteredPositions.map((pos) => (
-                                    <PositionTableRow
-                                        key={pos.id}
-                                        position={pos}
-                                        onSquareOff={(p) => setSquaringOffPosition(p)}
-                                        isSquaringOff={squareOffMutation.isPending}
-                                    />
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+
+                        {/* Sub-Tabs: Open Positions | All Positions */}
+                        <div className="flex items-center gap-2 py-3 border-b border-dash-border shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedPositionsFilter("OPEN")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                    selectedPositionsFilter === "OPEN"
+                                        ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
+                                        : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
+                                }`}
+                            >
+                                <span>Open Positions</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        selectedPositionsFilter === "OPEN"
+                                            ? "bg-primary-green/20 text-primary-green"
+                                            : "bg-dash-panel-2 text-dash-text-muted"
+                                    }`}
+                                >
+                                    {positionsSummary.positionsCount.open}
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setSelectedPositionsFilter("ALL")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                    selectedPositionsFilter === "ALL"
+                                        ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
+                                        : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
+                                }`}
+                            >
+                                <span>All Positions</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        selectedPositionsFilter === "ALL"
+                                            ? "bg-primary-green/20 text-primary-green"
+                                            : "bg-dash-panel-2 text-dash-text-muted"
+                                    }`}
+                                >
+                                    {positionsSummary.positionsCount.total}
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* Positions Table */}
+                        <div className="flex-1 overflow-auto custom-scrollbar mt-3">
+                            {positionsQuery.isLoading ? (
+                                <div className="h-full flex flex-col items-center justify-center text-dash-text-muted gap-2">
+                                    <div className="w-6 h-6 border-2 border-primary-green/20 border-t-primary-green rounded-full animate-spin" />
+                                    <span className="text-xs">Loading positions...</span>
+                                </div>
+                            ) : filteredPositions.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-dash-text-muted">
+                                    <div className="w-12 h-12 rounded-full bg-dash-panel-2 border border-dash-border flex items-center justify-center mb-3 text-dash-text-muted">
+                                        <svg
+                                            className="w-6 h-6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth="1.5"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-dash-text mb-1">
+                                        No {selectedPositionsFilter === "OPEN" ? "open" : ""} positions found
+                                    </h3>
+                                    <p className="text-xs text-dash-text-muted max-w-sm mb-4">
+                                        {searchQuery
+                                            ? `No positions matching "${searchQuery}".`
+                                            : "You don't have any active intraday positions yet! Select instruments from your watchlist to open an MIS position."}
+                                    </p>
+                                    <Link
+                                        to={APP_ROUTES.USER.WATCHLIST}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-all cursor-pointer"
+                                    >
+                                        <span>Go to Watchlist</span>
+                                        <svg
+                                            className="w-3.5 h-3.5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth="2"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                                            />
+                                        </svg>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left border-collapse text-xs">
+                                    <thead className="sticky top-0 bg-dash-panel z-10 border-b border-dash-border">
+                                        <tr className="text-dash-text-muted font-medium select-none">
+                                            <th className="py-2.5 px-3">Product</th>
+                                            <th className="py-2.5 px-3">Instrument</th>
+                                            <th className="py-2.5 px-3">Side</th>
+                                            <th className="py-2.5 px-3 text-right">Net Qty</th>
+                                            <th className="py-2.5 px-3 text-right">Avg Price</th>
+                                            <th className="py-2.5 px-3 text-right">LTP</th>
+                                            <th className="py-2.5 px-3 text-right">P&L (Unrealized)</th>
+                                            <th className="py-2.5 px-3 text-right">Realized P&L</th>
+                                            <th className="py-2.5 px-3 text-right">Blocked Margin</th>
+                                            <th className="py-2.5 px-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-dash-border">
+                                        {filteredPositions.map((pos) => (
+                                            <PositionTableRow
+                                                key={pos.id}
+                                                position={pos}
+                                                onSquareOff={(p) => setSquaringOffPosition(p)}
+                                                isSquaringOff={squareOffMutation.isPending}
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {/* ========================================================= */}
+                {/* HOLDINGS TAB VIEW (Matching Fyers Brokerage)               */}
+                {/* ========================================================= */}
+                {mainTab === "HOLDINGS" && (
+                    <>
+                        {/* Summary Metric Cards: Invested, Current Value, Today's P&L, Total P&L */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-4 border-b border-dash-border shrink-0">
+                            <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
+                                <span className="text-[11px] text-dash-text-muted block">
+                                    Invested
+                                </span>
+                                <span className="text-sm md:text-base font-bold font-mono text-dash-text mt-1 block">
+                                    ₹{formatINR(holdingsSummary.totalInvested)}
+                                </span>
+                            </div>
+
+                            <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
+                                <span className="text-[11px] text-dash-text-muted block">
+                                    Current Value
+                                </span>
+                                <span className="text-sm md:text-base font-bold font-mono text-dash-text mt-1 block">
+                                    ₹{formatINR(holdingsSummary.currentValue)}
+                                </span>
+                            </div>
+
+                            <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
+                                <span className="text-[11px] text-dash-text-muted block">
+                                    Today's P&L
+                                </span>
+                                <span
+                                    className={`text-sm md:text-base font-bold font-mono mt-1 block ${
+                                        holdingsSummary.todayPnL >= 0
+                                            ? "text-[#22c55e]"
+                                            : "text-[#ef4444]"
+                                    }`}
+                                >
+                                    {holdingsSummary.todayPnL >= 0
+                                        ? `+₹${formatINR(holdingsSummary.todayPnL)}`
+                                        : `-₹${formatINR(Math.abs(holdingsSummary.todayPnL))}`}{" "}
+                                    <span className="text-xs font-normal">
+                                        (
+                                        {holdingsSummary.todayPnLPercentage >= 0
+                                            ? `+${holdingsSummary.todayPnLPercentage.toFixed(2)}%`
+                                            : `${holdingsSummary.todayPnLPercentage.toFixed(2)}%`}
+                                        )
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
+                                <span className="text-[11px] text-dash-text-muted block">
+                                    Total P&L
+                                </span>
+                                <span
+                                    className={`text-sm md:text-base font-bold font-mono mt-1 block ${
+                                        holdingsSummary.totalPnL >= 0
+                                            ? "text-[#22c55e]"
+                                            : "text-[#ef4444]"
+                                    }`}
+                                >
+                                    {holdingsSummary.totalPnL >= 0
+                                        ? `+₹${formatINR(holdingsSummary.totalPnL)}`
+                                        : `-₹${formatINR(Math.abs(holdingsSummary.totalPnL))}`}{" "}
+                                    <span className="text-xs font-normal">
+                                        (
+                                        {holdingsSummary.totalPnLPercentage >= 0
+                                            ? `+${holdingsSummary.totalPnLPercentage.toFixed(2)}%`
+                                            : `${holdingsSummary.totalPnLPercentage.toFixed(2)}%`}
+                                        )
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Quick Filters: All | Gainers | Losers */}
+                        <div className="flex items-center gap-2 py-3 border-b border-dash-border shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setHoldingsFilter("ALL")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                    holdingsFilter === "ALL"
+                                        ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
+                                        : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
+                                }`}
+                            >
+                                <span>All</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        holdingsFilter === "ALL"
+                                            ? "bg-primary-green/20 text-primary-green"
+                                            : "bg-dash-panel-2 text-dash-text-muted"
+                                    }`}
+                                >
+                                    {holdingsSummary.holdingsCount}
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setHoldingsFilter("GAINERS")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                    holdingsFilter === "GAINERS"
+                                        ? "bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30"
+                                        : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
+                                }`}
+                            >
+                                <span>Gainers</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        holdingsFilter === "GAINERS"
+                                            ? "bg-[#22c55e]/20 text-[#22c55e]"
+                                            : "bg-dash-panel-2 text-dash-text-muted"
+                                    }`}
+                                >
+                                    {holdingsSummary.gainersCount}
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setHoldingsFilter("LOSERS")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                    holdingsFilter === "LOSERS"
+                                        ? "bg-[#ef4444]/15 text-[#ef4444] border border-[#ef4444]/30"
+                                        : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
+                                }`}
+                            >
+                                <span>Losers</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        holdingsFilter === "LOSERS"
+                                            ? "bg-[#ef4444]/20 text-[#ef4444]"
+                                            : "bg-dash-panel-2 text-dash-text-muted"
+                                    }`}
+                                >
+                                    {holdingsSummary.losersCount}
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* Holdings Table */}
+                        <div className="flex-1 overflow-auto custom-scrollbar mt-3">
+                            {holdingsQuery.isLoading ? (
+                                <div className="h-full flex flex-col items-center justify-center text-dash-text-muted gap-2">
+                                    <div className="w-6 h-6 border-2 border-primary-green/20 border-t-primary-green rounded-full animate-spin" />
+                                    <span className="text-xs">Loading holdings...</span>
+                                </div>
+                            ) : filteredHoldings.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-dash-text-muted">
+                                    <div className="w-12 h-12 rounded-full bg-dash-panel-2 border border-dash-border flex items-center justify-center mb-3 text-dash-text-muted">
+                                        <svg
+                                            className="w-6 h-6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth="1.5"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-dash-text mb-1">
+                                        No delivery holdings found
+                                    </h3>
+                                    <p className="text-xs text-dash-text-muted max-w-sm mb-4">
+                                        {searchQuery
+                                            ? `No holdings matching "${searchQuery}".`
+                                            : "You don't have any CNC delivery stocks in your portfolio yet. Buy stocks using CNC product type to build your long-term portfolio."}
+                                    </p>
+                                    <Link
+                                        to={APP_ROUTES.USER.WATCHLIST}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-all cursor-pointer"
+                                    >
+                                        <span>Explore Watchlist</span>
+                                        <svg
+                                            className="w-3.5 h-3.5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth="2"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                                            />
+                                        </svg>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left border-collapse text-xs">
+                                    <thead className="sticky top-0 bg-dash-panel z-10 border-b border-dash-border">
+                                        <tr className="text-dash-text-muted font-medium select-none">
+                                            <th className="py-2.5 px-3">Symbol</th>
+                                            <th className="py-2.5 px-3 text-right">Qty</th>
+                                            <th className="py-2.5 px-3 text-right">Buy Avg (₹)</th>
+                                            <th className="py-2.5 px-3 text-right">LTP</th>
+                                            <th className="py-2.5 px-3 text-right">Invested</th>
+                                            <th className="py-2.5 px-3 text-right">Current</th>
+                                            <th className="py-2.5 px-3 text-right">Total P&L</th>
+                                            <th className="py-2.5 px-3 text-right">Day's P&L</th>
+                                            <th className="py-2.5 px-3 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-dash-border">
+                                        {filteredHoldings.map((item) => (
+                                            <HoldingTableRow
+                                                key={item.id}
+                                                item={item}
+                                                onBuy={(h) =>
+                                                    setOrderModal({
+                                                        isOpen: true,
+                                                        symbol: h.symbol,
+                                                        side: "BUY",
+                                                        quantity: 1,
+                                                    })
+                                                }
+                                                onSell={(h) =>
+                                                    setOrderModal({
+                                                        isOpen: true,
+                                                        symbol: h.symbol,
+                                                        side: "SELL",
+                                                        quantity: h.quantity,
+                                                    })
+                                                }
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </>
+                )}
             </section>
 
+            {/* Confirm Square-Off Modal */}
             <ConfirmModal
                 isOpen={squaringOffPosition !== null}
                 title="Square Off Position"
@@ -465,12 +1149,22 @@ export const PortfolioPage: React.FC = () => {
                         <div className="space-y-2">
                             <p>
                                 Are you sure you want to exit your{" "}
-                                <strong className="text-dash-text">{squaringOffPosition.side}</strong> position for{" "}
-                                <strong className="text-dash-text">{squaringOffPosition.quantity}</strong> qty of{" "}
-                                <strong className="text-dash-text">{squaringOffPosition.symbol}</strong> at market price?
+                                <strong className="text-dash-text">
+                                    {squaringOffPosition.side}
+                                </strong>{" "}
+                                position for{" "}
+                                <strong className="text-dash-text">
+                                    {squaringOffPosition.quantity}
+                                </strong>{" "}
+                                qty of{" "}
+                                <strong className="text-dash-text">
+                                    {squaringOffPosition.symbol}
+                                </strong>{" "}
+                                at market price?
                             </p>
                             <p className="text-xs text-dash-text-muted">
-                                An opposing market order will be submitted immediately to close this position and release margin.
+                                An opposing market order will be submitted immediately to close this
+                                position and release margin.
                             </p>
                         </div>
                     ) : null
@@ -481,7 +1175,20 @@ export const PortfolioPage: React.FC = () => {
                 onConfirm={handleConfirmSquareOff}
                 onCancel={() => setSquaringOffPosition(null)}
             />
+
+            {/* Order Placement Modal (Triggered by [B] or [S] in Holdings) */}
+            {orderModal.isOpen && (
+                <OrderPlacementModal
+                    isOpen={orderModal.isOpen}
+                    onClose={() =>
+                        setOrderModal({ isOpen: false, symbol: "", side: "BUY", quantity: 1 })
+                    }
+                    initialSymbol={orderModal.symbol}
+                    initialSide={orderModal.side}
+                    initialProductType="CNC"
+                    initialQuantity={orderModal.quantity}
+                />
+            )}
         </div>
     );
 };
-

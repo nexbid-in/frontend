@@ -45,6 +45,14 @@ export function usePositionsQuery(filter: PositionsFilter = "OPEN") {
     });
 }
 
+export function useHoldingsQuery() {
+    return useQuery({
+        queryKey: QUERY_KEYS.portfolio.holdings(),
+        queryFn: () => tradingService.getHoldings(),
+        staleTime: 1000 * 5,
+    });
+}
+
 export function useMarketStatusQuery() {
     return useQuery({
         queryKey: QUERY_KEYS.orders.marketStatus(),

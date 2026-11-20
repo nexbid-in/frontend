@@ -89,6 +89,43 @@ export interface GetPositionsResponseDTO {
     summary: PortfolioSummaryDTO;
 }
 
+export interface HoldingItem {
+    id: string;
+    stockId: string;
+    symbol: string;
+    quantity: number;
+    buyAvgPrice: number;
+    currentLtp: number;
+    investedAmount: number;
+    currentValue: number;
+    totalPnL: number;
+    totalPnLPercentage: number;
+    dayChange: number;
+    dayChangePercentage: number;
+    dayPnL: number;
+    isBoughtToday?: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface HoldingsSummary {
+    totalInvested: number;
+    currentValue: number;
+    totalPnL: number;
+    totalPnLPercentage: number;
+    todayPnL: number;
+    todayPnLPercentage: number;
+    holdingsCount: number;
+}
+
+export interface GetHoldingsResponse {
+    holdings: HoldingItem[];
+    summary: HoldingsSummary;
+}
+
+export type PortfolioMainTab = 'POSITIONS' | 'HOLDINGS';
+export type HoldingsFilter = 'ALL' | 'GAINERS' | 'LOSERS';
+
 export type OrdersTabFilter = 'ALL' | 'PENDING' | 'EXECUTED' | 'CANCELLED';
 export type PositionsFilter = 'OPEN' | 'ALL';
 

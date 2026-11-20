@@ -12,6 +12,8 @@ export interface OrderPlacementModalProps {
     initialExchange?: string;
     stockName?: string;
     initialPrice?: number;
+    initialProductType?: ProductType;
+    initialQuantity?: number;
 }
 
 interface OrderPlacementFormProps {
@@ -21,6 +23,8 @@ interface OrderPlacementFormProps {
     initialExchange: string;
     stockName?: string;
     initialPrice?: number;
+    initialProductType?: ProductType;
+    initialQuantity?: number;
 }
 
 interface ModalPosition {
@@ -79,6 +83,8 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     initialExchange,
     stockName,
     initialPrice,
+    initialProductType,
+    initialQuantity,
 }) => {
     const symbol = initialSymbol.toUpperCase().trim();
     const liveQuote = useLiveStockQuote(symbol);
@@ -93,9 +99,13 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const currentPrice = liveQuote.price > 0 ? liveQuote.price : initialPrice ?? 0;
 
     const [side, setSide] = useState<OrderSide>(initialSide);
-    const [productType, setProductType] = useState<ProductType>(() => (isMisBlocked ? "CNC" : "MIS"));
+    const [productType, setProductType] = useState<ProductType>(
+        () => initialProductType ?? (isMisBlocked ? "CNC" : "MIS")
+    );
     const [orderType, setOrderType] = useState<OrderType>("MARKET");
-    const [quantity, setQuantity] = useState<string>("1");
+    const [quantity, setQuantity] = useState<string>(() =>
+        initialQuantity && initialQuantity > 0 ? String(initialQuantity) : "1"
+    );
     const [limitPrice, setLimitPrice] = useState<string>(() =>
         currentPrice > 0 ? currentPrice.toFixed(2) : ""
     );
@@ -733,18 +743,22 @@ export const OrderPlacementModal: React.FC<OrderPlacementModalProps> = ({
     initialExchange = "NSE",
     stockName,
     initialPrice,
+    initialProductType,
+    initialQuantity,
 }) => {
     if (!isOpen) return null;
 
     return (
         <OrderPlacementForm
-            key={`${initialSymbol}-${initialSide}-${initialPrice ?? 0}`}
+            key={`${initialSymbol}-${initialSide}-${initialProductType ?? "AUTO"}-${initialQuantity ?? 1}-${initialPrice ?? 0}`}
             onClose={onClose}
             initialSymbol={initialSymbol}
             initialSide={initialSide}
             initialExchange={initialExchange}
             stockName={stockName}
             initialPrice={initialPrice}
+            initialProductType={initialProductType}
+            initialQuantity={initialQuantity}
         />
     );
 };

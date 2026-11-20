@@ -8,6 +8,7 @@ import type {
     PositionResponseDTO,
     PositionsFilter,
     MarketStatusInfo,
+    GetHoldingsResponse,
 } from "../types";
 
 export const tradingService = {
@@ -57,6 +58,15 @@ export const tradingService = {
         }>(API_ROUTES.PORTFOLIO.POSITIONS, {
             params: { filter },
         });
+        return response.data.data;
+    },
+
+    getHoldings: async (): Promise<GetHoldingsResponse> => {
+        const response = await apiClient.get<{
+            success: boolean;
+            message: string;
+            data: GetHoldingsResponse;
+        }>(API_ROUTES.PORTFOLIO.HOLDINGS);
         return response.data.data;
     },
 

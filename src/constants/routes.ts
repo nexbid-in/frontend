@@ -88,6 +88,7 @@ export const API_ROUTES = {
     },
     PORTFOLIO: {
         POSITIONS: '/portfolio/positions',
+        HOLDINGS: '/portfolio/holdings',
         SQUARE_OFF: (id: string) => `/portfolio/positions/${id}/square-off`,
     },
 } as const;

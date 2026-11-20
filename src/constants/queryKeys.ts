@@ -60,5 +60,6 @@ export const QUERY_KEYS = {
     portfolio: {
         all: ["portfolio"],
         positions: (filter?: "OPEN" | "ALL") => ["portfolio", "positions", filter ?? "OPEN"],
+        holdings: () => ["portfolio", "holdings"],
     },
 };
