@@ -603,62 +603,49 @@ export const PortfolioPage: React.FC = () => {
             <section className="h-full bg-dash-panel border border-dash-border rounded-md p-5 flex flex-col overflow-hidden">
                 {/* Header & Main Tab Switcher */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dash-border shrink-0">
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div>
-                            <h1 className="text-base font-semibold text-dash-text tracking-tight">
-                                Portfolio
-                            </h1>
-                            <p className="text-xs text-dash-text-muted mt-0.5">
-                                {mainTab === "POSITIONS"
-                                    ? "Intraday (MIS) real-time open positions & executed trades"
-                                    : "Long-term (CNC) delivery holdings & overall investment value"}
-                            </p>
-                        </div>
-
-                        {/* Top Sub-Tab Navigation [ Positions ] | [ Holdings ] */}
-                        <div className="flex items-center gap-1 p-1 bg-dash-panel-2 border border-dash-border rounded-lg">
-                            <button
-                                type="button"
-                                onClick={() => setMainTab("POSITIONS")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer select-none ${
+                    {/* Top Sub-Tab Navigation [ Positions ] | [ Holdings ] */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setMainTab("POSITIONS")}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors duration-150 cursor-pointer select-none focus:outline-none ${
+                                mainTab === "POSITIONS"
+                                    ? "bg-primary-green/15 text-primary-green border-primary-green/30"
+                                    : "border-transparent text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2"
+                            }`}
+                        >
+                            <span>Positions</span>
+                            <span
+                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full transition-colors duration-150 ${
                                     mainTab === "POSITIONS"
-                                        ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border"
-                                        : "text-dash-text-muted hover:text-dash-text"
+                                        ? "bg-primary-green/20 text-primary-green"
+                                        : "bg-dash-panel-2 text-dash-text-muted"
                                 }`}
                             >
-                                <span>Positions</span>
-                                <span
-                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                        mainTab === "POSITIONS"
-                                            ? "bg-primary-green/20 text-primary-green"
-                                            : "bg-dash-panel text-dash-text-muted"
-                                    }`}
-                                >
-                                    {positionsSummary.positionsCount.open}
-                                </span>
-                            </button>
+                                {positionsSummary.positionsCount.open}
+                            </span>
+                        </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setMainTab("HOLDINGS")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer select-none ${
+                        <button
+                            type="button"
+                            onClick={() => setMainTab("HOLDINGS")}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors duration-150 cursor-pointer select-none focus:outline-none ${
+                                mainTab === "HOLDINGS"
+                                    ? "bg-primary-green/15 text-primary-green border-primary-green/30"
+                                    : "border-transparent text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2"
+                            }`}
+                        >
+                            <span>Holdings</span>
+                            <span
+                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full transition-colors duration-150 ${
                                     mainTab === "HOLDINGS"
-                                        ? "bg-dash-panel text-primary-green shadow-xs border border-dash-border"
-                                        : "text-dash-text-muted hover:text-dash-text"
+                                        ? "bg-primary-green/20 text-primary-green"
+                                        : "bg-dash-panel-2 text-dash-text-muted"
                                 }`}
                             >
-                                <span>Holdings</span>
-                                <span
-                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                        mainTab === "HOLDINGS"
-                                            ? "bg-primary-green/20 text-primary-green"
-                                            : "bg-dash-panel text-dash-text-muted"
-                                    }`}
-                                >
-                                    {holdingsSummary.holdingsCount}
-                                </span>
-                            </button>
-                        </div>
+                                {holdingsSummary.holdingsCount}
+                            </span>
+                        </button>
                     </div>
 
                     {/* Search & Refresh */}
