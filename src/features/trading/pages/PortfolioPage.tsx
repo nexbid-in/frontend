@@ -55,10 +55,18 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
     const pnlTextColor = isPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]";
 
     return (
-        <tr className={`transition-colors group ${isOpen ? "hover:bg-dash-panel-2/60" : "hover:bg-dash-panel-2/40 opacity-75"}`}>
+        <tr
+            className={`border-b border-dash-border transition-[background-color,opacity] duration-150 group ${
+                isOpen
+                    ? "hover:bg-dash-panel-2/60"
+                    : "hover:bg-dash-panel-2/30 opacity-60 hover:opacity-85"
+            }`}
+        >
             <td className="py-3 px-3 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
-                    <span className="text-dash-text font-semibold">{position.symbol}</span>
+                    <span className="font-semibold text-dash-text">
+                        {position.symbol}
+                    </span>
                     <span className="text-[9px] px-1 py-0.2 rounded bg-dash-panel-2 text-dash-text-muted border border-dash-border">
                         NSE
                     </span>
@@ -80,14 +88,12 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                         {position.side}
                     </span>
                 ) : (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider inline-block bg-dash-panel-2 text-dash-text-muted border border-dash-border">
-                        CLOSED
-                    </span>
+                    <span className="text-dash-text-muted font-mono pl-2 select-none">—</span>
                 )}
             </td>
 
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                <span className={`font-semibold ${isOpen ? "text-dash-text" : "text-dash-text-muted"}`}>
+                <span className="font-semibold text-dash-text">
                     {position.quantity}
                 </span>
             </td>
@@ -99,10 +105,12 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span
                     className={`font-semibold transition-colors duration-200 ${
-                        quote.flashDirection === "up"
-                            ? "text-[#22c55e]"
-                            : quote.flashDirection === "down"
-                            ? "text-[#ef4444]"
+                        isOpen
+                            ? quote.flashDirection === "up"
+                                ? "text-[#22c55e]"
+                                : quote.flashDirection === "down"
+                                ? "text-[#ef4444]"
+                                : "text-dash-text"
                             : "text-dash-text"
                     }`}
                 >
@@ -134,9 +142,7 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                         Exit
                     </button>
                 ) : (
-                    <span className="text-[10px] text-dash-text-muted px-2 py-0.5 rounded bg-dash-panel-2 border border-dash-border">
-                        Closed
-                    </span>
+                    <span className="text-dash-text-muted font-mono pr-2 select-none">—</span>
                 )}
             </td>
         </tr>
@@ -185,7 +191,7 @@ const HoldingTableRow: React.FC<HoldingRowProps> = ({ item, onBuy, onSell }) => 
     const isDayChangePositive = dayChange >= 0;
 
     return (
-        <tr className="hover:bg-dash-panel-2/60 transition-colors group">
+        <tr className="border-b border-dash-border hover:bg-dash-panel-2/60 transition-[background-color] duration-150 group">
             {/* Symbol */}
             <td className="py-3 px-3 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
@@ -357,7 +363,7 @@ export const PortfolioPage: React.FC = () => {
     });
 
     // Queries & Mutations
-    const positionsQuery = usePositionsQuery(selectedPositionsFilter);
+    const positionsQuery = usePositionsQuery("ALL");
     const holdingsQuery = useHoldingsQuery();
     const squareOffMutation = useSquareOffPositionMutation();
 
@@ -514,16 +520,31 @@ export const PortfolioPage: React.FC = () => {
     // Filtered Positions
     const filteredPositions = useMemo(() => {
         const list = positionsQuery.data?.positions ?? [];
-        return list.filter((p) => {
-            if (
-                searchQuery.trim() !== "" &&
-                !p.symbol.toLowerCase().includes(searchQuery.toLowerCase().trim())
-            ) {
-                return false;
-            }
-            return true;
-        });
-    }, [positionsQuery.data?.positions, searchQuery]);
+        return list
+            .filter((p) => {
+                if (selectedPositionsFilter === "OPEN" && p.quantity <= 0) {
+                    return false;
+                }
+                if (selectedPositionsFilter === "CLOSED" && p.quantity > 0) {
+                    return false;
+                }
+                if (
+                    searchQuery.trim() !== "" &&
+                    !p.symbol.toLowerCase().includes(searchQuery.toLowerCase().trim())
+                ) {
+                    return false;
+                }
+                return true;
+            })
+            .sort((a, b) => {
+                const aOpen = a.quantity > 0 ? 1 : 0;
+                const bOpen = b.quantity > 0 ? 1 : 0;
+                if (aOpen !== bOpen) {
+                    return bOpen - aOpen;
+                }
+                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+            });
+    }, [positionsQuery.data?.positions, selectedPositionsFilter, searchQuery]);
 
     // Filtered Holdings
     const filteredHoldings = useMemo(() => {
@@ -735,7 +756,7 @@ export const PortfolioPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setSelectedPositionsFilter("ALL")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
                                     selectedPositionsFilter === "ALL"
                                         ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -756,7 +777,7 @@ export const PortfolioPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setSelectedPositionsFilter("OPEN")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
                                     selectedPositionsFilter === "OPEN"
                                         ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -777,7 +798,7 @@ export const PortfolioPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setSelectedPositionsFilter("CLOSED")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
                                     selectedPositionsFilter === "CLOSED"
                                         ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -860,7 +881,7 @@ export const PortfolioPage: React.FC = () => {
                                             <th className="py-2.5 px-3 text-right">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-dash-border">
+                                    <tbody>
                                         {filteredPositions.map((pos) => (
                                             <PositionTableRow
                                                 key={pos.id}
@@ -955,7 +976,7 @@ export const PortfolioPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setHoldingsFilter("ALL")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
                                     holdingsFilter === "ALL"
                                         ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -976,7 +997,7 @@ export const PortfolioPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setHoldingsFilter("GAINERS")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
                                     holdingsFilter === "GAINERS"
                                         ? "bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30"
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -997,7 +1018,7 @@ export const PortfolioPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setHoldingsFilter("LOSERS")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
                                     holdingsFilter === "LOSERS"
                                         ? "bg-[#ef4444]/15 text-[#ef4444] border border-[#ef4444]/30"
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
@@ -1083,7 +1104,7 @@ export const PortfolioPage: React.FC = () => {
                                             <th className="py-2.5 px-3 text-right">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-dash-border">
+                                    <tbody className="">
                                         {filteredHoldings.map((item) => (
                                             <HoldingTableRow
                                                 key={item.id}
