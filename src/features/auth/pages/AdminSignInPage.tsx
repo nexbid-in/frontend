@@ -37,15 +37,12 @@ export default function AdminSignInPage() {
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans">
-            {/* background accents */}
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900"></div>
             <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl"></div>
             <div className="absolute bottom-0 right-0 h-[30rem] w-[30rem] rounded-full bg-indigo-500/10 blur-[200px]"></div>
 
             <main className="relative z-10 flex min-h-screen w-full overflow-hidden">
-                {/* Left Side: Intro & Features */}
                 <div className="hidden lg:flex lg:w-[55%] flex-col justify-between p-8 lg:p-12 xl:p-16 relative z-10">
-                    {/* Logo */}
                     <div>
                         <div className="inline-flex items-center gap-2 text-3xl font-semibold tracking-tight text-white cursor-default">
                             <span className="text-3xl font-extrabold text-primary-green tracking-tight">nexbid</span>
@@ -53,7 +50,6 @@ export default function AdminSignInPage() {
                         </div>
                     </div>
 
-                    {/* Main Text & Stats */}
                     <div className="space-y-6 max-w-lg mt-6">
                         <h1 className="text-4xl lg:text-[2.75rem] font-bold leading-[1.15] text-white tracking-tight">
                             Sign in to manage the <span className="text-primary-green">nexbid platform</span>
@@ -62,7 +58,6 @@ export default function AdminSignInPage() {
                             Review user accounts, approve leverage changes, monitor community, and keep trading operations healthy from one control plane. Your login is protected with enterprise-grade auditing.
                         </p>
 
-                        {/* Stats Row */}
                         <div className="grid grid-cols-3 gap-6 pt-4">
                             <div>
                                 <div className="text-2xl font-bold text-white mb-1">100+</div>
@@ -79,7 +74,6 @@ export default function AdminSignInPage() {
                         </div>
                     </div>
 
-                    {/* Features List */}
                     <div className="space-y-6 mt-10">
                         <div className="flex items-center gap-4">
                             <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-primary-green/10 text-primary-green border border-primary-green/20">
@@ -111,7 +105,6 @@ export default function AdminSignInPage() {
                     </div>
                 </div>
 
-                {/* Right Side: Login Form */}
                 <div className="w-full lg:w-[45%] flex items-center justify-center p-8 lg:p-12 bg-[#0B0C0E]/40 backdrop-blur-md lg:border-l border-white/5 relative z-10">
                     <div className="w-full max-w-[360px] relative z-10">
                         <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome back</h2>
@@ -143,7 +136,6 @@ export default function AdminSignInPage() {
                                 value="Admin@123"
                             />
 
-                            {/* Sign In Button */}
                             <Button 
                                 type="submit" 
                                 disabled={isSubmitting}
@@ -152,7 +144,6 @@ export default function AdminSignInPage() {
                                 {isSubmitting ? "Authenticating..." : "Sign In"}
                             </Button>
 
-                            {/* Security Note */}
                             <div className="mt-5 flex items-center justify-center space-x-1.5 text-[11px] font-medium text-slate-500">
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                 <span>256-bit SSL • Your data is always secure</span>

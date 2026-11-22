@@ -9,7 +9,6 @@ import { PaymentModal } from "../components/PaymentModal";
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 
-// Standard Indian Currency Number Formatter
 const formatINR = (number: number) => {
     return (
         "₹ " +
@@ -24,7 +23,6 @@ export const FundsPage: React.FC = () => {
     const dispatch = useAppDispatch();
     const queryClient = useQueryClient();
 
-    // Backend Wallet Overview Query via TanStack Query
     const {
         data: overview = null,
         isLoading: isLoadingOverview,
@@ -35,21 +33,19 @@ export const FundsPage: React.FC = () => {
 
     const overviewError = queryError instanceof Error ? queryError.message : null;
 
-    // Deposit Input State
     const [depositAmount, setDepositAmount] = useState<string>("1000");
     const [activePreset, setActivePreset] = useState<number | null>(1000);
 
-    // Modals
     const [isStatementOpen, setIsStatementOpen] = useState<boolean>(false);
     const [historyModalTab, setHistoryModalTab] = useState<StatementModalTab>("statement");
     const [isPaymentOpen, setIsPaymentOpen] = useState<boolean>(false);
 
-    // Live Calculations
     const conversionRate = overview?.exchangeRate?.ratio ?? 10;
-    const availableBalance = overview?.balance ?? 0;
+    const ledgerBalance = overview?.balance ?? 0;
+    const availableMargin = overview?.availableMargin ?? (overview?.balance !== undefined ? overview.balance - (overview.usedMargin ?? 0) : 0);
     const numericReal = parseFloat(depositAmount) || 0;
     const virtualReceived = numericReal > 0 ? numericReal * conversionRate : 0;
-    const projectedBalance = availableBalance + virtualReceived;
+    const projectedMargin = availableMargin + virtualReceived;
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -105,7 +101,6 @@ export const FundsPage: React.FC = () => {
     const handlePaymentSuccess = (virtualAmountAdded: number) => {
         setIsPaymentOpen(false);
 
-        // Invalidate all wallet queries to trigger automatic background revalidation
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
 
         dispatch(
@@ -147,7 +142,6 @@ export const FundsPage: React.FC = () => {
     return (
         <div className="h-full p-2 overflow-hidden">
             <section className="h-full bg-dash-panel border border-dash-border rounded-md p-5 flex flex-col overflow-hidden">
-                {/* Section Header */}
                 <div className="flex items-center justify-between pb-4 border-b border-dash-border shrink-0">
                     <div>
                         <h1 className="text-base font-semibold text-dash-text tracking-tight">Funds Management</h1>
@@ -156,7 +150,6 @@ export const FundsPage: React.FC = () => {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        {/* Refresh Button */}
                         <button
                             type="button"
                             onClick={() => void refetchOverview()}
@@ -180,7 +173,6 @@ export const FundsPage: React.FC = () => {
                             <span className="hidden sm:inline">Refresh</span>
                         </button>
 
-                        {/* View Topup History Button */}
                         <button
                             type="button"
                             id="openTopupHistoryBtn"
@@ -204,7 +196,6 @@ export const FundsPage: React.FC = () => {
                             <span className="hidden sm:inline">Top-up History</span>
                         </button>
 
-                        {/* View Statement Button */}
                         <button
                             type="button"
                             id="openStatementBtn"
@@ -233,7 +224,6 @@ export const FundsPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Optional Error Alert Banner */}
                 {overviewError && (
                     <div className="mt-3 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-center justify-between shrink-0">
                         <span>Failed to sync wallet data: {overviewError}</span>
@@ -247,18 +237,15 @@ export const FundsPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Main Body: Two Columns */}
                 <div className="flex-1 pt-4 grid grid-cols-1 lg:grid-cols-2 gap-5 overflow-hidden">
-                    {/* LEFT SIDE: Available Virtual Balance (Top) and Capital & Margin Details (Bottom) */}
                     <div className="flex flex-col gap-4 h-full overflow-hidden">
-                        {/* 1. Available Virtual Balance Card */}
                         <div className="rounded-lg border border-dash-border bg-dash-panel-2 p-5 shrink-0">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-dash-text-muted uppercase tracking-wider">
-                                    Available Virtual Balance
+                                    Total Virtual Balance
                                 </span>
                                 <span className="text-[11px] font-medium text-primary-green bg-primary-green/10 px-2 py-0.5 rounded">
-                                    Active Margin
+                                    Ledger Balance
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2 mt-2">
@@ -269,17 +256,16 @@ export const FundsPage: React.FC = () => {
                                         id="availableVirtualDisplay"
                                         className="text-3xl font-semibold text-dash-text font-mono tracking-tight"
                                     >
-                                        {formatINR(availableBalance)}
+                                        {formatINR(ledgerBalance)}
                                     </p>
                                 )}
                                 <span className="text-xs text-dash-text-muted font-medium">V-INR</span>
                             </div>
                             <p className="text-xs text-dash-text-muted mt-1">
-                                Usable trading balance available for executing market orders and open positions.
+                                Total cash in account ledger
                             </p>
                         </div>
 
-                        {/* 2. Capital & Margin Details Card */}
                         <div className="rounded-lg border border-dash-border bg-dash-panel-2 p-5 flex-1 flex flex-col justify-between overflow-hidden">
                             <div>
                                 <h2 className="text-sm font-semibold text-dash-text border-b border-dash-border pb-3">
@@ -292,8 +278,8 @@ export const FundsPage: React.FC = () => {
                                         {isLoadingOverview && !overview ? (
                                             <div className="h-4 w-24 bg-dash-border/60 rounded animate-pulse"></div>
                                         ) : (
-                                            <span className="font-mono font-medium text-dash-text">
-                                                {formatINR(availableBalance)}
+                                            <span className="font-mono font-semibold text-primary-green">
+                                                {formatINR(availableMargin)}
                                             </span>
                                         )}
                                     </div>
@@ -333,7 +319,6 @@ export const FundsPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Account & Settlement Status */}
                             <div className="pt-3 border-t border-dash-border space-y-2.5 text-xs text-dash-text-muted">
                                 <div className="flex items-center justify-between">
                                     <span>Trading Status</span>
@@ -351,7 +336,6 @@ export const FundsPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* RIGHT SIDE: Buy Virtual Money */}
                     <div className="rounded-lg border border-dash-border bg-dash-panel-2 p-5 h-full flex flex-col justify-between overflow-hidden">
                         <div className="space-y-4">
                             <div className="border-b border-dash-border pb-3">
@@ -361,7 +345,6 @@ export const FundsPage: React.FC = () => {
                                 </p>
                             </div>
 
-                            {/* Real Money Input & Quick Presets */}
                             <div className="space-y-2.5">
                                 <label
                                     htmlFor="realAmountInput"
@@ -389,7 +372,6 @@ export const FundsPage: React.FC = () => {
                                     </span>
                                 </div>
 
-                                {/* Preset Amount Buttons */}
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     {PRESET_AMOUNTS.map((amt) => {
                                         const isSelected = activePreset === amt;
@@ -411,7 +393,6 @@ export const FundsPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Automatic Live Calculation Ledger Table */}
                             <div className="rounded-md border border-dash-border bg-dash-card p-4 space-y-3">
                                 <div className="flex justify-between items-center text-xs text-dash-text-muted">
                                     <span>Exchange Rate:</span>
@@ -439,13 +420,12 @@ export const FundsPage: React.FC = () => {
                                 <div className="flex justify-between items-center text-xs text-dash-text-muted pt-1">
                                     <span>Projected Available Margin:</span>
                                     <span id="projectedBalance" className="font-mono text-dash-text font-medium">
-                                        {formatINR(projectedBalance)}
+                                        {formatINR(projectedMargin)}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Action Button */}
                         <div className="pt-3">
                             <button
                                 type="button"
@@ -463,7 +443,6 @@ export const FundsPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Statement Ledger History Modal (Live API integration) */}
             <StatementModal
                 isOpen={isStatementOpen}
                 onClose={() => setIsStatementOpen(false)}
@@ -472,7 +451,6 @@ export const FundsPage: React.FC = () => {
                 initialTab={historyModalTab}
             />
 
-            {/* Payment Checkout Modal (Razorpay) */}
             <PaymentModal
                 isOpen={isPaymentOpen}
                 onClose={() => setIsPaymentOpen(false)}

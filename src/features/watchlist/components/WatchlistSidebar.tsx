@@ -38,7 +38,6 @@ export const WatchlistSidebar: React.FC<WatchlistSidebarProps> = ({
         return new Set(items.map((item) => item.stock.id));
     }, [items]);
 
-    // Keyboard shortcut '/' to quickly open the Symbol Search modal (like TradingView)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (
@@ -57,7 +56,6 @@ export const WatchlistSidebar: React.FC<WatchlistSidebarProps> = ({
 
     return (
         <aside className="w-full lg:w-[320px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-hidden shrink-0">
-            {/* Header: Title, Counter & Search Modal Trigger */}
             <div className="p-3 px-3.5 border-b border-dash-border bg-dash-panel-2/40 flex items-center justify-between shrink-0">
                 <h2 className="text-sm font-semibold text-dash-text tracking-tight">
                     Watchlist
@@ -93,7 +91,6 @@ export const WatchlistSidebar: React.FC<WatchlistSidebarProps> = ({
                 </div>
             </div>
 
-            {/* TradingView-style Symbol Search Modal */}
             <StockSearchModal
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}
@@ -106,7 +103,6 @@ export const WatchlistSidebar: React.FC<WatchlistSidebarProps> = ({
                 isRemoving={isDeleting}
             />
 
-            {/* Watchlist Stock Cards List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {isLoading ? (
                     <div className="divide-y divide-dash-border/60">

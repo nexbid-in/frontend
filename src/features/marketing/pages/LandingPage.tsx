@@ -10,7 +10,6 @@ import communityPreviewImg from '../assets/landing/community-preview.png';
 export default function LandingPage() {
   return (
     <>
-      {/* Hero Section */}
       <header className="relative bg-gradient-to-br from-primary-green-light via-white to-blue-50 pt-24 pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -32,14 +31,12 @@ export default function LandingPage() {
             </div>
 
             <div className="hidden lg:flex justify-center">
-              {/* Ensure this image path is correct in your React public folder */}
               <img className="w-full max-w-md" src={heroIllustration} alt="NexBid Hero" />
             </div>
           </div>
         </div>
       </header>
 
-      {/* How It Works Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -88,7 +85,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Grid Features Section */}
       <section id="features" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -98,7 +94,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Feature 1 */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +104,6 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600">Live prices and tickers.</p>
             </div>
 
-            {/* Feature 2 */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +114,6 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600">Simulated charges replicate real-world trading.</p>
             </div>
 
-            {/* Feature 3 */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +124,6 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600">Practice margin and leverage strategies.</p>
             </div>
 
-            {/* Feature 4 */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +134,6 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600">Detailed P&L statements and trade book.</p>
             </div>
 
-            {/* Feature 5 */}
             <div className="feature-card bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +144,6 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600">Track positions, holdings, and returns.</p>
             </div>
 
-            {/* Feature 6 */}
             <div className="feature-card bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +154,6 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600">Virtual wallet & top-up flow.</p>
             </div>
 
-            {/* Feature 7 */}
             <div className="feature-card bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,7 +164,6 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600">Capture trade rationale and review performance.</p>
             </div>
 
-            {/* Feature 8 */}
             <div className="feature-card bg-white p-6 rounded-xl shadow-md">
               <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,7 +177,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Why Choose Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -254,7 +241,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Community Section */}
       <section className="bg-primary-green-light py-16 md:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex justify-center -space-x-4 mb-8">
@@ -273,7 +259,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -283,7 +268,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Testimonial 1 */}
             <div className="testimonial-card p-8 rounded-xl shadow-md">
               <p className="text-gray-700 mb-6 leading-relaxed">
                 "NexBid helped me understand trading without fear. The virtual money approach is perfect for beginners like me."
@@ -301,7 +285,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Testimonial 2 */}
             <div className="testimonial-card p-8 rounded-xl shadow-md">
               <p className="text-gray-700 mb-6 leading-relaxed">
                 "Feels just like real trading, but risk-free. I've tested strategies I would never try with real money. Brilliant!"
@@ -319,7 +302,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Testimonial 3 */}
             <div className="testimonial-card p-8 rounded-xl shadow-md">
               <p className="text-gray-700 mb-6 leading-relaxed">
                 "NexBid gave me the exact tools I needed to build my trading confidence without losing my hard-earned savings."
@@ -340,7 +322,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Banner Section */}
       <CtaBanner />
     </>
   );

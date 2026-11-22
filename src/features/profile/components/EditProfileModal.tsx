@@ -53,7 +53,6 @@ export function EditProfileModal({
     const [apiError, setApiError] = useState<string | null>(null);
     const [imageError, setImageError] = useState<string | null>(null);
 
-    // Profile photo upload states
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isImageRemoved, setIsImageRemoved] = useState(false);
@@ -88,7 +87,6 @@ export function EditProfileModal({
         }
     }, [isOpen, currentProfile, authUser, reset]);
 
-    // Clean up created object URLs
     useEffect(() => {
         return () => {
             if (previewUrl && previewUrl.startsWith("blob:")) {
@@ -118,7 +116,6 @@ export function EditProfileModal({
             return;
         }
 
-        // Revoke previous blob if any
         if (previewUrl && previewUrl.startsWith("blob:")) {
             URL.revokeObjectURL(previewUrl);
         }
@@ -164,7 +161,6 @@ export function EditProfileModal({
 
             const updatedProfile = await profileService.updateProfile(payload);
 
-            // Keep Redux auth user in sync
             if (authUser) {
                 dispatch(
                     setCredentials({
@@ -202,7 +198,6 @@ export function EditProfileModal({
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150">
             <div className="bg-dash-panel border border-dash-border rounded-xl p-6 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-                {/* Header */}
                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-dash-border">
                     <div>
                         <h3 className="text-lg font-semibold text-dash-text">Edit Profile</h3>
@@ -222,22 +217,18 @@ export function EditProfileModal({
                     </button>
                 </div>
 
-                {/* API Error Notification */}
                 {apiError && (
                     <div className="mb-4 p-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-md">
                         {apiError}
                     </div>
                 )}
 
-                {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Profile Photo Upload Section */}
                     <div>
                         <label className="block text-[10px] font-semibold uppercase tracking-wider text-dash-text-muted mb-2">
                             Profile Picture
                         </label>
                         <div className="flex items-center gap-4 p-3 bg-dash-panel-2 rounded-xl border border-dash-border">
-                            {/* Avatar Preview */}
                             <div className="relative group shrink-0">
                                 <UserAvatar
                                     src={previewUrl}
@@ -260,7 +251,6 @@ export function EditProfileModal({
                                 </button>
                             </div>
 
-                            {/* Actions & Hints */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 mb-1">
                                     <button
@@ -346,7 +336,6 @@ export function EditProfileModal({
                         error={errors.mobile?.message}
                     />
 
-                    {/* Actions */}
                     <div className="flex items-center justify-end gap-3 pt-4 border-t border-dash-border mt-6">
                         <button
                             type="button"

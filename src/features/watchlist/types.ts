@@ -81,10 +81,26 @@ export interface StockRange52WDTO {
     low: number;
 }
 
+export type PerformanceReturnKey =
+    | "oneDay"
+    | "oneWeek"
+    | "oneMonth"
+    | "threeMonths"
+    | "sixMonths"
+    | "ytd"
+    | "oneYear";
+
+export type StockPerformanceAnchorsDTO = Record<PerformanceReturnKey, number | null>;
+
 export interface StockPerformanceReturnsDTO {
+    oneDay: number | null;
     oneWeek: number | null;
     oneMonth: number | null;
+    threeMonths: number | null;
+    sixMonths: number | null;
+    ytd: number | null;
     oneYear: number | null;
+    anchors: StockPerformanceAnchorsDTO;
 }
 
 export interface StockOverviewResponseDTO {

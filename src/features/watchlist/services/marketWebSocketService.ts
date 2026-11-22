@@ -7,6 +7,10 @@ export interface MarketTick {
     high: number;
     low: number;
     close: number;
+    dayOpen?: number;
+    dayHigh?: number;
+    dayLow?: number;
+    prevClose?: number;
     volume?: number;
     change: number;
     changePercent: number;
@@ -25,7 +29,7 @@ interface ClientWsMessage {
     symbol: string;
 }
 
-export function getSymbolAliases(symbol: string): string[] {
+function getSymbolAliases(symbol: string): string[] {
     const sym = symbol.toUpperCase().trim();
     const spaceless = sym.replace(/\s+/g, "");
     const aliases = new Set<string>([sym, spaceless]);
@@ -41,18 +45,6 @@ export function getSymbolAliases(symbol: string): string[] {
     return Array.from(aliases);
 }
 
-/**
- * Shared Singleton WebSocket Service for Live Market Feeds.
- *
- * Key Architecture Highlights:
- * 1. Single Shared Connection: Prevents connection churning and connection limit exhaustion.
- * 2. Client-Side Reference Counting: Multiple components (or multiple chart indicators/intervals)
- *    can subscribe to the same ticker without stepping on each other.
- * 3. Debounced Unsubscribe (500ms): Defeats React StrictMode double-invocation and screen/tab navigation
- *    race conditions where unmount/remount triggers an immediate `unsubscribe` right after `subscribe`.
- * 4. Tab Visibility & Focus Resilience: Auto-resumes, verifies socket health, and re-confirms active
- *    subscriptions on `visibilitychange`, `window.focus`, and `online` events without requiring page reload.
- */
 class MarketWebSocketService {
     private ws: WebSocket | null = null;
     private subscribers = new Map<string, Set<TickHandler>>();
@@ -102,18 +94,15 @@ class MarketWebSocketService {
     private handleResume = (): void => {
         if (this.isExplicitlyDestroyed) return;
 
-        // 1. If socket dropped or closed while in background, reconnect immediately
         if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
             this.ensureConnected();
             return;
         }
 
-        // 2. If socket is connecting, ensureConnected will handle subscriptions onopen
         if (this.ws.readyState === WebSocket.CONNECTING) {
             return;
         }
 
-        // 3. If socket is already OPEN, it is healthy and active.
         // Simply cancel any pending unsubscriptions so active handlers keep receiving ticks.
         // DO NOT re-send "subscribe" messages to the backend! The backend is already streaming.
         if (this.ws.readyState === WebSocket.OPEN) {
@@ -147,14 +136,16 @@ class MarketWebSocketService {
     public subscribe(symbol: string, handler: TickHandler): () => void {
         const sym = symbol.toUpperCase().trim();
 
-        // 1. Cancel any pending unsubscription timer for this symbol immediately
+        if (this.isExplicitlyDestroyed) {
+            this.isExplicitlyDestroyed = false;
+        }
+
         const pendingTimer = this.pendingUnsubscribes.get(sym);
         if (pendingTimer) {
             clearTimeout(pendingTimer);
             this.pendingUnsubscribes.delete(sym);
         }
 
-        // 2. Register handler in subscriber set
         let set = this.subscribers.get(sym);
         const isFirstSubscriber = !set || set.size === 0;
         if (!set) {
@@ -163,10 +154,8 @@ class MarketWebSocketService {
         }
         set.add(handler);
 
-        // 3. Ensure WebSocket is active
         this.ensureConnected();
 
-        // 4. Send subscription packet if this is the first active handler
         if (isFirstSubscriber && this.ws?.readyState === WebSocket.OPEN) {
             this.send({ action: "subscribe", symbol: sym });
         }
@@ -293,13 +282,25 @@ class MarketWebSocketService {
                 const ltp = Number(payload.data?.ltp ?? payload.ltp ?? payload.data?.price ?? payload.price);
                 if (isNaN(ltp) || ltp <= 0) return;
 
-                const open = typeof payload.data?.open === "number" ? payload.data.open : ltp;
-                const high = typeof payload.data?.high === "number" ? payload.data.high : ltp;
-                const low = typeof payload.data?.low === "number" ? payload.data.low : ltp;
-                const close = typeof payload.data?.close === "number" ? payload.data.close : ltp;
+                const pickPositive = (a: unknown, b: unknown): number | undefined => {
+                    if (typeof a === "number" && Number.isFinite(a) && a > 0) return a;
+                    if (typeof b === "number" && Number.isFinite(b) && b > 0) return b;
+                    return undefined;
+                };
+
+                const dayOpen = pickPositive(payload.data?.open, payload.open);
+                const dayHigh = pickPositive(payload.data?.high, payload.high);
+                const dayLow = pickPositive(payload.data?.low, payload.low);
+                const prevClose = pickPositive(payload.data?.close, payload.close);
+
+                const open = typeof payload.data?.open === "number" ? payload.data.open : dayOpen ?? ltp;
+                const high = typeof payload.data?.high === "number" ? payload.data.high : dayHigh ?? ltp;
+                const low = typeof payload.data?.low === "number" ? payload.data.low : dayLow ?? ltp;
+                const close = typeof payload.data?.close === "number" ? payload.data.close : prevClose ?? ltp;
+                const rawVolume = payload.data?.volume ?? payload.volume;
                 const volume =
-                    typeof payload.data?.volume === "number" && !isNaN(payload.data.volume)
-                        ? payload.data.volume
+                    typeof rawVolume === "number" && Number.isFinite(rawVolume)
+                        ? rawVolume
                         : undefined;
                 let change =
                     typeof payload.data?.change === "number"
@@ -375,6 +376,10 @@ class MarketWebSocketService {
                     high,
                     low,
                     close,
+                    dayOpen,
+                    dayHigh,
+                    dayLow,
+                    prevClose,
                     volume,
                     change,
                     changePercent,
@@ -392,7 +397,6 @@ class MarketWebSocketService {
                     this.latestTicks.set(alias, tick);
                 }
 
-                // Dispatch to all subscribers matching any alias (prevent duplicate invocation)
                 const notified = new Set<TickHandler>();
                 for (const alias of aliases) {
                     const set = this.subscribers.get(alias);
@@ -413,6 +417,42 @@ class MarketWebSocketService {
         } catch (err) {
             console.warn("[MarketWebSocketService] Error parsing WS message:", err);
         }
+    }
+
+    /**
+     * Reset service state and disconnect socket upon user logout or account switch.
+     * Clears all stale cached ticks, active subscribers, and debounce timers so
+     * the next user session starts with clean, isolated market feed state.
+     */
+    public reset(): void {
+        for (const timer of this.pendingUnsubscribes.values()) {
+            clearTimeout(timer);
+        }
+        this.pendingUnsubscribes.clear();
+
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
+
+        if (this.resumeDebounceTimer) {
+            clearTimeout(this.resumeDebounceTimer);
+            this.resumeDebounceTimer = null;
+        }
+
+        if (this.ws) {
+            try {
+                this.ws.close();
+            } catch {
+                // Ignore socket close error
+            }
+            this.ws = null;
+        }
+
+        this.subscribers.clear();
+        this.latestTicks.clear();
+        this.reconnectAttempts = 0;
+        this.isExplicitlyDestroyed = false;
     }
 
     public destroy(): void {

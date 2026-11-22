@@ -8,15 +8,23 @@ export interface ToastProps {
     onClose: () => void;
 }
 
+const DEFAULT_DURATIONS: Record<"success" | "info" | "error", number> = {
+    success: 4000,
+    info: 5000,
+    error: 6000,
+};
+
 export function Toast({
     title,
     message,
     type = "success",
-    duration = 20000,
+    duration,
     onClose,
 }: ToastProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+
+    const effectiveDuration = duration !== undefined ? duration : DEFAULT_DURATIONS[type];
 
     useEffect(() => {
         const timer = setTimeout(() => setIsVisible(true), 20);
@@ -29,16 +37,17 @@ export function Toast({
     }, [onClose]);
 
     useEffect(() => {
-        if (duration <= 0 || isPaused) return;
+        if (effectiveDuration <= 0 || isPaused) return;
 
         const timer = setTimeout(() => {
             handleClose();
-        }, duration);
+        }, effectiveDuration);
 
         return () => clearTimeout(timer);
-    }, [duration, isPaused, handleClose]);
+    }, [effectiveDuration, isPaused, handleClose]);
 
     const isSuccess = type === "success";
+    const isError = type === "error";
 
     return (
         <div
@@ -50,11 +59,12 @@ export function Toast({
             role="alert"
         >
             <div className="p-4 flex items-center gap-3.5">
-                {/* Icon Badge (Vertically Centered) */}
                 <div
                     className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                         isSuccess
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : isError
+                            ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                             : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
                     }`}
                 >
@@ -65,6 +75,15 @@ export function Toast({
                                 strokeLinejoin="round"
                                 strokeWidth="2.2"
                                 d="M5 13l4 4L19 7"
+                            />
+                        </svg>
+                    ) : isError ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 7.5h.01"
                             />
                         </svg>
                     ) : (
@@ -79,20 +98,26 @@ export function Toast({
                     )}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                         <h4 className="text-sm font-semibold text-dash-text tracking-tight truncate">
                             {title}
                         </h4>
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span
+                            className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse shrink-0 ${
+                                isSuccess
+                                    ? "bg-emerald-400"
+                                    : isError
+                                    ? "bg-rose-400"
+                                    : "bg-blue-400"
+                            }`}
+                        />
                     </div>
                     <p className="text-xs text-dash-text-muted mt-1 leading-relaxed break-words">
                         {message}
                     </p>
                 </div>
 
-                {/* Dismiss Button */}
                 <button
                     onClick={handleClose}
                     className="text-dash-text-muted hover:text-white p-1 rounded-md hover:bg-dash-border/60 transition-colors shrink-0 cursor-pointer self-center"

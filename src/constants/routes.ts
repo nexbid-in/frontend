@@ -30,9 +30,8 @@ export const APP_ROUTES = {
         DASHBOARD: '/admin/dashboard',
         USERS: '/admin/users',
         FUNDS: '/admin/funds',
-        LEVERAGE_COSTS: '/admin/leverage-costs',
+        STOCKS: '/admin/stocks',
         ORDERS: '/admin/orders',
-        COMMUNITY: '/admin/community',
         SUPPORT: '/admin/support',
     }
 } as const;
@@ -66,6 +65,10 @@ export const API_ROUTES = {
     ADMIN: {
         USERS: '/admin/users',
         USER_STATUS: (userId: string) => `/admin/users/${userId}/status`,
+        ORDERS: '/admin/orders',
+        ORDER_METRICS: '/admin/orders/metrics',
+        ORDER_DETAILS: (orderId: string) => `/admin/orders/${orderId}`,
+        CANCEL_ORDER: (orderId: string) => `/admin/orders/${orderId}/cancel`,
     },
     STOCKS: {
         SEARCH: '/stocks/search',
@@ -77,5 +80,15 @@ export const API_ROUTES = {
     MARKET: {
         HISTORY: '/market/history',
         OVERVIEW: (symbol: string) => `/market/overview/${encodeURIComponent(symbol)}`,
+    },
+    ORDERS: {
+        ROOT: '/orders',
+        MARKET_STATUS: '/orders/market-status',
+        CANCEL: (id: string) => `/orders/${id}`,
+    },
+    PORTFOLIO: {
+        POSITIONS: '/portfolio/positions',
+        HOLDINGS: '/portfolio/holdings',
+        SQUARE_OFF: (id: string) => `/portfolio/positions/${id}/square-off`,
     },
 } as const;

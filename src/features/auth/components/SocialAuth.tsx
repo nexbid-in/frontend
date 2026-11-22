@@ -35,7 +35,6 @@ export function SocialAuth({ actionText, buttonText = "Continue with Google", on
             const isNewUser = response.data?.isNewUser;
             const isFromSignUp = actionText.toLowerCase().includes("sign up");
 
-            // Dispatch toast to Redux if new user or signing in through the signup page
             if (isNewUser) {
                 dispatch(showToast({
                     title: "Account Created Successfully",
@@ -68,7 +67,6 @@ export function SocialAuth({ actionText, buttonText = "Continue with Google", on
 
     return (
         <>
-            {/* Divider */}
             <div className="relative my-6 flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200" />
@@ -80,7 +78,6 @@ export function SocialAuth({ actionText, buttonText = "Continue with Google", on
                 </div>
             </div>
 
-            {/* Custom Google Button with Invisible GIS Overlay */}
             <div className="relative w-full">
                 <button
                     type="button"
@@ -120,7 +117,6 @@ export function SocialAuth({ actionText, buttonText = "Continue with Google", on
                     )}
                 </button>
 
-                {/* Invisible GoogleLogin overlay for secure GIS click-handling */}
                 {!isLoading && (
                     <div className="absolute inset-0 opacity-0 overflow-hidden cursor-pointer flex items-center justify-center [&>div]:w-full [&>div]:h-full [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:scale-125">
                         <GoogleLogin

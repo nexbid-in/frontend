@@ -17,7 +17,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                 isMobileOpen={isMobileOpen}
                 onCloseMobile={() => setIsMobileOpen(false)}
             />
-            <div className="flex-1 flex flex-col overflow-y-auto">             
+            <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">             
                 <AdminNavbar
                     title={title}
                     onToggleMobileSidebar={() => setIsMobileOpen((prev) => !prev)}

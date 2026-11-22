@@ -6,9 +6,6 @@ import { useAppDispatch } from "@/store/hooks";
 import { showToast } from "@/store/uiSlice";
 import type { SearchStocksResponseDTO } from "../types";
 
-/**
- * Hook to retrieve the user's watchlist with auto-caching.
- */
 export function useWatchlistQuery() {
     return useQuery({
         queryKey: QUERY_KEYS.watchlist.user(),
@@ -18,9 +15,6 @@ export function useWatchlistQuery() {
     });
 }
 
-/**
- * Hook to search stocks with dynamic enabled condition.
- */
 export function useStockSearchQuery(debouncedQuery: string) {
     const trimmed = debouncedQuery.trim();
     return useQuery({
@@ -31,10 +25,6 @@ export function useStockSearchQuery(debouncedQuery: string) {
     });
 }
 
-/**
- * Infinite query hook for paginated, filterable stock & index search/browse.
- * Automatically handles pageParam increments and cache partitioning by query & type.
- */
 export function useInfiniteStockSearchQuery(
     query: string = "",
     type: "ALL" | "EQUITY" | "INDEX" = "ALL",

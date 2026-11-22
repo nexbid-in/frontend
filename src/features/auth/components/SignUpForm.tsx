@@ -50,7 +50,6 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                 <h2 className="text-2xl font-bold mb-1.5 text-gray-900">Create your account</h2>
                 <p className="text-sm text-gray-500 mb-8">Free forever. No credit card required.</p>
 
-                {/* Display API Errors */}
                 {apiError && (
                     <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                         {apiError}
@@ -58,7 +57,6 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                 )}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Name Row */}
                     <div className="flex space-x-3">
                         <div className="w-1/2">
                             <Input
@@ -80,7 +78,6 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                         </div>
                     </div>
 
-                    {/* Email Address */}
                     <Input
                         label="Email Address"
                         type="email"
@@ -89,7 +86,6 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                         error={!!errors.email}
                     />
 
-                    {/* Password */}
                     <PasswordInput
                         label="Password"
                         placeholder="Minimum 8 characters"
@@ -97,7 +93,6 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                         error={errors.password?.message}
                     />
 
-                    {/* Confirm Password */}
                     <PasswordInput
                         label="Confirm Password"
                         placeholder="Repeat password"

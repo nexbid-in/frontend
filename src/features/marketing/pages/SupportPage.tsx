@@ -3,7 +3,6 @@ import heroIllustration from '../assets/support/hero-illustration.png';
 export default function SupportPage() {
     return (
         <>
-            {/* Hero Section */}
             <header className="relative bg-gradient-to-br from-primary-green-light via-white to-blue-50 py-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">

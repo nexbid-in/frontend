@@ -20,6 +20,13 @@ export const QUERY_KEYS = {
             "users",
             params,
         ],
+        orders: (params: Record<string, unknown>) => [
+            "admin",
+            "orders",
+            params,
+        ],
+        orderMetrics: () => ["admin", "orders", "metrics"],
+        orderDetails: (orderId: string) => ["admin", "orders", "details", orderId],
     },
     profile: {
         details: () => ["profile"],
@@ -44,5 +51,15 @@ export const QUERY_KEYS = {
     market: {
         all: ["market"],
         overview: (symbol: string) => ["market", "overview", symbol],
+    },
+    orders: {
+        all: ["orders"],
+        list: (status?: string) => ["orders", "list", status ?? "ALL"],
+        marketStatus: () => ["orders", "market-status"],
+    },
+    portfolio: {
+        all: ["portfolio"],
+        positions: (filter?: "OPEN" | "ALL" | "CLOSED") => ["portfolio", "positions", filter ?? "ALL"],
+        holdings: () => ["portfolio", "holdings"],
     },
 };

@@ -7,13 +7,16 @@ export interface WalletExchangeRate {
 }
 
 export interface WalletOverviewDTO {
-    balance: number;
-    usedMargin: number;
+    balance: number;               // True Ledger Cash Balance
+    availableMargin: number;       // Usable margin for placing new orders (balance - usedMargin)
+    usedMargin: number;            // Collateral locked in open intraday positions & open orders
     totalVirtualMoneyBought: number;
     totalRealMoneyUsed: number;
     tradingStatus: 'ACTIVE' | 'FROZEN' | 'SUSPENDED' | string;
     exchangeRate: WalletExchangeRate;
 }
+
+export type WalletOverview = WalletOverviewDTO;
 
 export interface WalletStatementItemDTO {
     id: string;
@@ -123,23 +126,4 @@ export interface RazorpaySuccessHandlerArgs {
     razorpay_payment_id: string;
     razorpay_order_id: string;
     razorpay_signature: string;
-}
-
-
-export interface TransactionRecord {
-    id: string;
-    txnNumber: string;
-    date: string;
-    type: string;
-    realAmount: number;
-    virtualAmount: number;
-    paymentMethod: string;
-    status: 'Completed' | 'Pending' | 'Failed';
-}
-
-export interface FundsSummary {
-    availableVirtual: number;
-    usedMargin: number;
-    totalVirtualBought: number;
-    totalRealUsed: number;
 }

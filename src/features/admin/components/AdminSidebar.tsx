@@ -39,7 +39,6 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
 
     const sidebarContent = (
         <aside className="w-64 flex flex-col bg-panel border-r border-border-muted shrink-0 h-full">
-            {/* Brand Header */}
             <div className="py-6 px-6 border-b border-border-muted flex flex-col items-center justify-center text-center">
                 <NavLink to={APP_ROUTES.ADMIN.DASHBOARD} onClick={onCloseMobile} className="flex flex-col items-center">
                     <span className="text-2xl font-bold tracking-tight text-primary-green">nexbid</span>
@@ -47,9 +46,7 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                 </NavLink>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6 text-sm">
-                {/* Main Group */}
+            <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 py-5 space-y-6 text-sm">
                 <div className="space-y-1">
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/60 mb-2">
                         Overview
@@ -105,7 +102,6 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                     </NavLink>
                 </div>
 
-                {/* Trading & Finance Group */}
                 <div className="space-y-1">
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/60 mb-2">
                         Trading & Finance
@@ -133,7 +129,7 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                         )}
                     </NavLink>
                     <NavLink
-                        to={APP_ROUTES.ADMIN.LEVERAGE_COSTS}
+                        to={APP_ROUTES.ADMIN.STOCKS}
                         onClick={onCloseMobile}
                         className={getLinkClass}
                     >
@@ -143,16 +139,16 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                                     className={`w-4 h-4 ${isActive ? "text-primary-green" : "text-current"}`}
                                     fill="none"
                                     stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                     viewBox="0 0 24 24"
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                                    />
+                                    <rect x="3" y="12" width="4" height="8" rx="1" />
+                                    <rect x="10" y="8" width="4" height="12" rx="1" />
+                                    <rect x="17" y="4" width="4" height="16" rx="1" />
                                 </svg>
-                                Leverage & Costs
+                                Stocks
                             </>
                         )}
                     </NavLink>
@@ -181,35 +177,10 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                     </NavLink>
                 </div>
 
-                {/* Operations Group */}
                 <div className="space-y-1">
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-text-secondary/60 mb-2">
                         Operations
                     </p>
-                    <NavLink
-                        to={APP_ROUTES.ADMIN.COMMUNITY}
-                        onClick={onCloseMobile}
-                        className={getLinkClass}
-                    >
-                        {({ isActive }) => (
-                            <>
-                                <svg
-                                    className={`w-4 h-4 ${isActive ? "text-primary-green" : "text-current"}`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
-                                    />
-                                </svg>
-                                Community
-                            </>
-                        )}
-                    </NavLink>
                     <NavLink
                         to={APP_ROUTES.ADMIN.SUPPORT}
                         onClick={onCloseMobile}
@@ -237,7 +208,6 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                 </div>
             </nav>
 
-            {/* Sidebar Footer */}
             <div className="p-3 border-t border-border-muted">
                 <button
                     onClick={() => setIsLogoutModalOpen(true)}
@@ -266,20 +236,16 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
 
     return (
         <>
-            {/* Desktop Sidebar */}
             <div className="hidden lg:flex shrink-0">
                 {sidebarContent}
             </div>
 
-            {/* Mobile Drawer */}
             {isMobileOpen && (
                 <div className="lg:hidden fixed inset-0 z-50 flex">
-                    {/* Backdrop */}
                     <div
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
                         onClick={onCloseMobile}
                     />
-                    {/* Drawer Content */}
                     <div className="relative z-10 w-64 max-w-[80vw] h-full shadow-2xl">
                         {sidebarContent}
                     </div>

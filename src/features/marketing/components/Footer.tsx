@@ -3,7 +3,6 @@ export default function Footer() {
     <footer className="bg-gray-900 text-gray-300 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
-          {/* Brand */}
           <div>
             <span className="text-3xl font-extrabold text-primary-green tracking-tight">nexbid</span>
             <p className="text-sm text-gray-400 mt-2">
@@ -11,7 +10,6 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Resources */}
           <div>
             <h4 className="font-bold text-white mb-4 text-sm">Resources</h4>
             <ul className="space-y-2 text-xs">
@@ -24,7 +22,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Company */}
           <div>
             <h4 className="font-bold text-white mb-4 text-sm">Company</h4>
             <ul className="space-y-2 text-xs">
@@ -37,7 +34,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Offerings */}
           <div>
             <h4 className="font-bold text-white mb-4 text-sm">Offerings</h4>
             <ul className="space-y-2 text-xs">
@@ -50,7 +46,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Policy */}
           <div>
             <h4 className="font-bold text-white mb-4 text-sm">Policy</h4>
             <ul className="space-y-2 text-xs">
@@ -65,7 +60,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Social Icons */}
         <div className="flex gap-6 mb-12 justify-center md:justify-start">
           <a aria-label="LinkedIn" href="#" className="text-gray-400 hover:text-white">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -84,7 +78,6 @@ export default function Footer() {
           </a>
         </div>
 
-        {/* Bottom */}
         <div className="border-t border-gray-700 pt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <p className="text-gray-400">

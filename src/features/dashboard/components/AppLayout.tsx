@@ -30,7 +30,6 @@ export function AppLayout() {
     const [showSignOutModal, setShowSignOutModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Close dropdown on route changes
     if (prevPathname !== location.pathname) {
         setPrevPathname(location.pathname);
         setIsDropdownOpen(false);
@@ -54,7 +53,6 @@ export function AppLayout() {
         }
     }, [location.state, dispatch]);
 
-    // Close dropdown on click outside or Escape key
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
@@ -92,7 +90,6 @@ export function AppLayout() {
     const addMutation = useAddToWatchlistMutation();
     const removeMutation = useRemoveFromWatchlistMutation();
 
-    // Global keyboard shortcut (press '/' to open symbol search from any page)
     useEffect(() => {
         const handleSearchShortcut = (e: KeyboardEvent) => {
             if (
@@ -131,7 +128,6 @@ export function AppLayout() {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Universal Search Modal Trigger Button */}
                     <button
                         type="button"
                         onClick={() => setIsSearchModalOpen(true)}
@@ -215,9 +211,7 @@ export function AppLayout() {
                         Add Funds
                     </Link>
 
-                    {/* Dynamic User Profile Avatar & Dropdown */}
                     <div className="relative flex items-center" ref={dropdownRef}>
-                        {/* Profile Avatar Button (Click to toggle dropdown) */}
                         <button
                             type="button"
                             onClick={() => setIsDropdownOpen((prev) => !prev)}
@@ -238,13 +232,11 @@ export function AppLayout() {
                             />
                         </button>
 
-                        {/* Dropdown Menu (Opened on click) */}
                         {isDropdownOpen && (
                             <div
                                 role="menu"
                                 className="absolute right-0 top-full mt-2 w-64 bg-dash-panel border border-dash-border rounded-xl shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
                             >
-                                {/* First Section: Profile image, Full name, Email (Google & GitHub style) */}
                                 <div className="px-4 py-3 border-b border-dash-border flex items-center gap-3">
                                     <UserAvatar
                                         src={user?.profileImage}
@@ -266,7 +258,6 @@ export function AppLayout() {
                                     </div>
                                 </div>
 
-                                {/* Menu Navigation Links */}
                                 <div className="py-1">
                                     <Link
                                         to={APP_ROUTES.USER.PROFILE}
@@ -289,7 +280,6 @@ export function AppLayout() {
                                     </Link>
                                 </div>
 
-                                {/* Sign out Section */}
                                 <div className="pt-1 border-t border-dash-border">
                                     <button
                                         type="button"
@@ -326,7 +316,6 @@ export function AppLayout() {
                 <Outlet />
             </main>
 
-            {/* Notification Toast */}
             {toast && (
                 <Toast
                     title={toast.title}
@@ -337,7 +326,6 @@ export function AppLayout() {
                 />
             )}
 
-            {/* Sign Out Confirmation Modal */}
             <ConfirmModal
                 isOpen={showSignOutModal}
                 title="Confirm Sign Out"
@@ -352,7 +340,6 @@ export function AppLayout() {
                 onCancel={() => setShowSignOutModal(false)}
             />
 
-            {/* Universal Stock & Instrument Search Modal */}
             <StockSearchModal
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}

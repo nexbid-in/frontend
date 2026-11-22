@@ -3,9 +3,10 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
 import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage, AccountSuspendedPage } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
-import { AdminDashboardPage, AdminUsersPage, AdminLayout } from "@/features/admin";
+import { AdminDashboardPage, AdminUsersPage, AdminOrdersPage, AdminLayout } from "@/features/admin";
 import { FundsPage } from "@/features/funds";
 import { WatchlistPage } from "@/features/watchlist";
+import { OrdersPage, PortfolioPage } from "@/features/trading";
 
 import { PrivateRoute, PublicRoute, AdminRoute } from "@/features/auth";
 import { AppLayout } from "@/features/dashboard/components/AppLayout";
@@ -73,6 +74,8 @@ const router = createBrowserRouter([
                 children: [
                     { index: true, element: <DashboardPage /> },
                     { path: "watchlist", element: <WatchlistPage /> },
+                    { path: "portfolio", element: <PortfolioPage /> },
+                    { path: "orders", element: <OrdersPage /> },
                     { path: "funds", element: <FundsPage /> },
                     {
                         path: "profile",
@@ -106,6 +109,10 @@ const router = createBrowserRouter([
                     {
                         path: APP_ROUTES.ADMIN.USERS,
                         element: <AdminUsersPage />
+                    },
+                    {
+                        path: APP_ROUTES.ADMIN.ORDERS,
+                        element: <AdminOrdersPage />
                     }
                 ]
             }

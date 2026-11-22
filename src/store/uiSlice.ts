@@ -21,7 +21,7 @@ const getInitialTheme = (): Theme => {
             return saved;
         }
     } catch {
-        // Fallback if localStorage is restricted
+        // Ignore storage read error
     }
     return 'dark';
 };
@@ -46,7 +46,7 @@ export const uiSlice = createSlice({
             try {
                 localStorage.setItem('nexbid_theme', action.payload);
             } catch {
-                // Ignore storage write errors
+                // Ignore storage write error
             }
         },
     },

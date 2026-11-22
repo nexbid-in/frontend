@@ -134,7 +134,6 @@ export function ChangePasswordModal({ isOpen, onClose, onSuccess }: ChangePasswo
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150">
             <div className="bg-dash-panel border border-dash-border rounded-xl p-6 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-                {/* Header */}
                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-dash-border">
                     <div>
                         <h3 className="text-lg font-semibold text-dash-text">Change Password</h3>
@@ -154,14 +153,12 @@ export function ChangePasswordModal({ isOpen, onClose, onSuccess }: ChangePasswo
                     </button>
                 </div>
 
-                {/* API Error Notification */}
                 {apiError && (
                     <div className="mb-4 p-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-md">
                         {apiError}
                     </div>
                 )}
 
-                {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <PasswordInput
                         label="Current Password"
@@ -184,7 +181,6 @@ export function ChangePasswordModal({ isOpen, onClose, onSuccess }: ChangePasswo
                             error={errors.newPassword?.message}
                         />
 
-                        {/* Password Requirements Guide */}
                         <div className="mt-2.5 p-3 rounded-lg bg-dash-panel-2 border border-dash-border/60 space-y-1.5">
                             <p className="text-[11px] font-medium text-dash-text-muted">Password must contain:</p>
                             <div className="grid grid-cols-1 gap-1 text-[11px]">
@@ -225,7 +221,6 @@ export function ChangePasswordModal({ isOpen, onClose, onSuccess }: ChangePasswo
                         error={errors.confirmPassword?.message}
                     />
 
-                    {/* Actions */}
                     <div className="flex items-center justify-end gap-3 pt-4 border-t border-dash-border mt-6">
                         <button
                             type="button"

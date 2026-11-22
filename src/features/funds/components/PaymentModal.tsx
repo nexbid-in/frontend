@@ -32,13 +32,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const modalRef = useRef<HTMLDivElement>(null);
 
-    // Track active order and outcome to manage modal dismissals & failure transitions
     const currentOrderIdRef = useRef<string | null>(null);
     const hasFailedRef = useRef<boolean>(false);
     const hasSucceededRef = useRef<boolean>(false);
     const latestFailureAttemptRef = useRef<{ paymentId?: string | null; reason: string } | null>(null);
 
-    // Reset state when modal is opened or closed
     useEffect(() => {
         if (isOpen) {
             setStep("idle");
@@ -50,7 +48,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
     }, [isOpen]);
 
-    // Handle ESC key (disabled when actively processing/verifying)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape" && step !== "verifying" && step !== "creating_order") {
@@ -79,20 +76,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             hasSucceededRef.current = false;
             latestFailureAttemptRef.current = null;
 
-            // 1. Ensure Razorpay SDK script is loaded
             const isLoaded = await loadRazorpayScript();
             if (!isLoaded || !window.Razorpay) {
                 throw new Error("Unable to load Razorpay payment gateway. Please check your internet connection.");
             }
 
-            // 2. Call backend to create Razorpay Order & internal PaymentOrder
             const order = await fundsService.createTopupOrder(Math.round(realAmount));
             currentOrderIdRef.current = order.orderId;
 
-            // 3. Prepare Razorpay Checkout Options
             const options: RazorpayOptions = {
                 key: order.keyId,
-                amount: order.amount, // amount in paise
+                amount: order.amount,
                 currency: order.currency || "INR",
                 name: "NexBid",
                 description: `Virtual Margin Top-up (+${order.virtualAmount.toLocaleString("en-IN")} V-INR)`,
@@ -102,12 +96,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     email: authUser?.email,
                 },
                 theme: {
-                    color: "#10b981", // primary green
+                    color: "#10b981",
                     backdrop_color: "rgba(0, 0, 0, 0.75)",
                 },
                 modal: {
                     ondismiss: async () => {
-                        // If already succeeded or verifying, ignore modal dismissal
                         if (hasSucceededRef.current || step === "verifying" || step === "success") {
                             return;
                         }
@@ -115,7 +108,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         const activeOrderId = currentOrderIdRef.current;
                         const failedAttempt = latestFailureAttemptRef.current;
 
-                        // 1. Notify backend so the PENDING order is transitioned to FAILED in DB
                         if (activeOrderId) {
                             const reason = failedAttempt?.reason || "Payment window closed by user";
                             const paymentId = failedAttempt?.paymentId || null;
@@ -131,9 +123,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             }
                         }
 
-                        // 2. Transition frontend UI
                         if (failedAttempt) {
-                            // User experienced a bank/card decline in the gateway and closed the modal
                             hasFailedRef.current = true;
                             setErrorMessage(failedAttempt.reason);
                             setStep("error");
@@ -146,7 +136,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 })
                             );
                         } else {
-                            // User closed the gateway before attempting payment
                             dispatch(
                                 showToast({
                                     type: "info",
@@ -164,7 +153,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         hasSucceededRef.current = true;
                         setStep("verifying");
 
-                        // 4. Verify payment signature with backend
                         const verification = await fundsService.verifyTopupPayment({
                             orderId: response.razorpay_order_id,
                             paymentId: response.razorpay_payment_id,
@@ -197,13 +185,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 },
             };
 
-            // 4. Instantiate and launch Razorpay Checkout modal
             const rzp = new window.Razorpay(options);
 
-            // Handle individual payment attempt decline/failure inside Razorpay.
-            // In industry-standard gateways, an attempt failure does NOT terminate the Order.
-            // Razorpay keeps the modal open to let the user retry with another method.
-            // We record the latest failure details and only finalize the failure if the user exits (ondismiss).
             rzp.on("payment.failed", (failure: RazorpayFailureResponse) => {
                 console.warn("Razorpay payment attempt declined/failed (retry available in modal):", failure);
 
@@ -232,14 +215,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/65 backdrop-blur-sm transition-opacity"
                 onClick={() => !isBusy && onClose()}
                 aria-hidden="true"
             />
 
-            {/* Modal Container */}
             <div
                 ref={modalRef}
                 className="relative w-full max-w-md bg-dash-panel border border-dash-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-10"
@@ -247,7 +228,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 aria-modal="true"
                 aria-labelledby="payment-title"
             >
-                {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-dash-border shrink-0 bg-dash-panel-2/50">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-primary-green/10 border border-primary-green/20 flex items-center justify-center text-primary-green">
@@ -284,9 +264,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     )}
                 </div>
 
-                {/* Body Content */}
                 <div className="p-5 space-y-4">
-                    {/* Error State Banner */}
                     {step === "error" && errorMessage && (
                         <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2.5 animate-in fade-in duration-200">
                             <div className="w-6 h-6 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
@@ -305,7 +283,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         </div>
                     )}
 
-                    {/* Verifying / Success State Banner */}
                     {step === "verifying" && (
                         <div className="p-4 rounded-lg bg-primary-green/10 border border-primary-green/20 text-center space-y-2">
                             <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-green/20 text-primary-green animate-spin mx-auto">
@@ -331,7 +308,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         </div>
                     )}
 
-                    {/* Amount Summary Breakdown Card */}
                     <div className="rounded-lg border border-dash-border bg-dash-card p-4 space-y-3">
                         <div className="flex justify-between items-center text-xs text-dash-text-muted">
                             <span>Amount to Pay (Real INR):</span>
@@ -353,7 +329,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Supported Methods Showcase */}
                     <div className="rounded-lg border border-dash-border bg-dash-panel-2 p-3 space-y-2">
                         <div className="flex items-center justify-between text-xs">
                             <span className="font-medium text-dash-text">Supported Payment Modes</span>
@@ -366,7 +341,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         </p>
                     </div>
 
-                    {/* Trust and Security Badge */}
                     <div className="flex items-center justify-center gap-2 text-[11px] text-dash-text-muted pt-1">
                         <svg className="w-3.5 h-3.5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                             <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
@@ -376,7 +350,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     </div>
                 </div>
 
-                {/* Footer Action */}
                 <div className="p-5 pt-0">
                     {step === "error" ? (
                         <div className="flex gap-2.5">

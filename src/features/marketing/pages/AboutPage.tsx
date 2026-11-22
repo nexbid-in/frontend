@@ -7,7 +7,6 @@ import financialChartsImg from '../assets/about/financial-charts.png';
 export default function AboutPage() {
     return (
         <>
-            {/* Hero Section */}
             <header className="relative bg-gradient-to-br from-primary-green-light via-white to-blue-50 pt-24 pb-32">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
@@ -27,7 +26,6 @@ export default function AboutPage() {
                 </div>
             </header>
 
-            {/* Our Story Section */}
             <section className="py-20 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -48,7 +46,6 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* nexbid Difference Section */}
             <section className="bg-gradient-to-br from-primary-green-light via-white to-blue-50 py-16 md:py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -86,7 +83,6 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* The People Behind nexbid section */}
             <section className="py-24 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
@@ -99,7 +95,6 @@ export default function AboutPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {/* <!-- Team Experts --> */}
                         <div className="rounded-xl shadow-md p-8 bg-gray-50 text-center">
                             <div className="flex justify-center mb-6">
                                 <svg className="w-12 h-12 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -110,7 +105,6 @@ export default function AboutPage() {
                             <p className="text-gray-600">Crafting real-world strategies and market insights.</p>
                         </div>
 
-                        {/* <!-- Design Thinkers --> */}
                         <div className="rounded-xl shadow-md p-8 bg-gray-50 text-center">
                             <div className="flex justify-center mb-6">
                                 <svg className="w-12 h-12 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -121,7 +115,6 @@ export default function AboutPage() {
                             <p className="text-gray-600">Building intuitive, human-centered experiences.</p>
                         </div>
 
-                        {/* <!-- Tech Innovators --> */}
                         <div className="rounded-xl shadow-md p-8 bg-gray-50 text-center">
                             <div className="flex justify-center mb-6">
                                 <svg className="w-12 h-12 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -135,7 +128,6 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* CTA Banner Section */}
             <CtaBanner />
         </>
     );

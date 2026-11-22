@@ -1,9 +1,7 @@
 export function AdminDashboardPage() {
     return (
         <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
-            {/* KPI Cards Grid */}
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {/* Card 1 */}
                 <article className="rounded-xl border border-border-muted bg-card p-5">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-text-secondary">Total Users</span>
@@ -15,7 +13,6 @@ export function AdminDashboardPage() {
                     <p className="text-xs text-text-secondary mt-1">+420 joined this week</p>
                 </article>
 
-                {/* Card 2 */}
                 <article className="rounded-xl border border-border-muted bg-card p-5">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-text-secondary">Active Users</span>
@@ -27,7 +24,6 @@ export function AdminDashboardPage() {
                     <p className="text-xs text-text-secondary mt-1">Daily active paper traders</p>
                 </article>
 
-                {/* Card 3 */}
                 <article className="rounded-xl border border-border-muted bg-card p-5">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-text-secondary">Total Trades</span>
@@ -39,7 +35,6 @@ export function AdminDashboardPage() {
                     <p className="text-xs text-text-secondary mt-1">Month over month volume</p>
                 </article>
 
-                {/* Card 4 */}
                 <article className="rounded-xl border border-border-muted bg-card p-5">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-text-secondary">Platform Revenue</span>
@@ -52,9 +47,7 @@ export function AdminDashboardPage() {
                 </article>
             </section>
 
-            {/* Charts Section */}
             <section className="grid gap-6 lg:grid-cols-2">
-                {/* Total Trades Chart Card */}
                 <article className="rounded-xl border border-border-muted bg-card p-5 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-6">
                         <div>
@@ -68,7 +61,6 @@ export function AdminDashboardPage() {
                         </select>
                     </div>
 
-                    {/* Clean Visual Bar Chart */}
                     <div className="h-60 flex items-end justify-between gap-2 pt-6 px-2 border-b border-border-muted/60">
                         <div className="w-full bg-muted/50 hover:bg-primary-green/60 transition-colors rounded-t h-[35%]"></div>
                         <div className="w-full bg-muted/50 hover:bg-primary-green/60 transition-colors rounded-t h-[45%]"></div>
@@ -99,7 +91,6 @@ export function AdminDashboardPage() {
                     </div>
                 </article>
 
-                {/* Revenue Chart Card */}
                 <article className="rounded-xl border border-border-muted bg-card p-5 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-6">
                         <div>
@@ -111,7 +102,6 @@ export function AdminDashboardPage() {
                         </span>
                     </div>
 
-                    {/* Clean Visual Area Chart */}
                     <div className="h-60 relative flex items-end border-b border-border-muted/60 overflow-hidden">
                         <svg className="w-full h-48 overflow-visible" preserveAspectRatio="none" viewBox="0 0 400 150">
                             <defs>
@@ -133,7 +123,6 @@ export function AdminDashboardPage() {
                 </article>
             </section>
 
-            {/* Standard Recent Orders Table */}
             <section className="rounded-xl border border-border-muted bg-card overflow-hidden">
                 <div className="px-5 py-4 border-b border-border-muted flex items-center justify-between">
                     <div>

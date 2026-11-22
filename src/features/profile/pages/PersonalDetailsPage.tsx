@@ -45,7 +45,6 @@ export function PersonalDetailsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
-    // TanStack Query: Profile Details Query with auto-caching
     const { data: profile = null, isLoading } = useQuery({
         queryKey: QUERY_KEYS.profile.details(),
         queryFn: profileService.getProfile,
@@ -117,7 +116,6 @@ export function PersonalDetailsPage() {
                 </div>
             )}
 
-            {/* Personal Details Information */}
             <section className="mb-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8 text-sm">
                     <div>
@@ -190,7 +188,6 @@ export function PersonalDetailsPage() {
                 </div>
             </section>
 
-            {/* Settings Section */}
             <section className="border-dash-border pt-8 mt-24">
                 <h2 className="text-2xl font-semibold mb-4 text-dash-text">Settings</h2>
                 <div className="border-t border-dash-border mb-6"></div>
@@ -273,7 +270,6 @@ export function PersonalDetailsPage() {
                 </div>
             </section>
 
-            {/* Edit Profile Modal */}
             <EditProfileModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
@@ -283,7 +279,6 @@ export function PersonalDetailsPage() {
                 }}
             />
 
-            {/* Change Password Modal */}
             <ChangePasswordModal
                 isOpen={isChangePasswordModalOpen}
                 onClose={() => setIsChangePasswordModalOpen(false)}

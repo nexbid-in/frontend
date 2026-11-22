@@ -8,9 +8,6 @@ import {
 
 let isRegistered = false;
 
-/**
- * Safely renders a rounded rectangle on a 2D canvas across all browser versions.
- */
 function drawRoundedRect(
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -37,9 +34,6 @@ function drawRoundedRect(
     }
 }
 
-/**
- * Draws the TradingView-style price pill badge on the far right edge of a horizontal drawing.
- */
 function drawTradingViewPriceBadge(t: DrawContext, y: number): void {
     if (t.style.showLabels === false) {
         return;
@@ -66,18 +60,15 @@ function drawTradingViewPriceBadge(t: DrawContext, y: number): void {
         const badgeWidth = Math.round(textWidth + paddingX * 2);
         const badgeHeight = Math.round(18 * dpr);
 
-        // Position pill flush against the right plot edge (immediately adjacent to price scale)
         const badgeX = Math.max(0, Math.round(rightEdge - badgeWidth - 2 * dpr));
         const badgeY = Math.round(y - badgeHeight / 2);
         const cornerRadius = Math.round(3 * dpr);
 
-        // Solid badge background matching line color
         const badgeColor = t.style.color || t.rc.theme.lineColor || "#2962ff";
         t.ctx.fillStyle = badgeColor;
         drawRoundedRect(t.ctx, badgeX, badgeY, badgeWidth, badgeHeight, cornerRadius);
         t.ctx.fill();
 
-        // White high-contrast price text
         t.ctx.fillStyle = "#ffffff";
         t.ctx.textAlign = "center";
         t.ctx.textBaseline = "middle";
@@ -97,7 +88,6 @@ function createRightAlignedTool(baseTool: DrawingTool): DrawingTool {
     return {
         ...baseTool,
         draw: (t: DrawContext) => {
-            // 1. Draw the line stroke using base implementation, suppressing the default left-side label
             if (typeof originalDraw === "function") {
                 originalDraw({
                     ...t,
@@ -108,7 +98,6 @@ function createRightAlignedTool(baseTool: DrawingTool): DrawingTool {
                 });
             }
 
-            // 2. Draw the price badge on the right edge
             const y = Math.round(t.pts[0].y) + 0.5;
             drawTradingViewPriceBadge(t, y);
         },
