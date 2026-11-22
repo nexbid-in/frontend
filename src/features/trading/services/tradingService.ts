@@ -50,7 +50,7 @@ export const tradingService = {
         return response.data.data;
     },
 
-    getPositions: async (filter: PositionsFilter = "OPEN"): Promise<GetPositionsResponseDTO> => {
+    getPositions: async (filter: PositionsFilter = "ALL"): Promise<GetPositionsResponseDTO> => {
         const response = await apiClient.get<{
             success: boolean;
             message: string;

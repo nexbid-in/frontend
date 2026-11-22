@@ -127,5 +127,5 @@ export type PortfolioMainTab = 'POSITIONS' | 'HOLDINGS';
 export type HoldingsFilter = 'ALL' | 'GAINERS' | 'LOSERS';
 
 export type OrdersTabFilter = 'ALL' | 'PENDING' | 'EXECUTED' | 'CANCELLED';
-export type PositionsFilter = 'OPEN' | 'ALL';
+export type PositionsFilter = 'OPEN' | 'ALL' | 'CLOSED';
 

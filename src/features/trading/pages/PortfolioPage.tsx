@@ -55,50 +55,47 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
     const pnlTextColor = isPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]";
 
     return (
-        <tr className="hover:bg-dash-panel-2/60 transition-colors group">
-            {/* Product */}
-            <td className="py-3 px-3 whitespace-nowrap">
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-dash-panel-2 border border-dash-border text-dash-text">
-                    MIS
-                </span>
-            </td>
-
-            {/* Instrument */}
+        <tr className={`transition-colors group ${isOpen ? "hover:bg-dash-panel-2/60" : "hover:bg-dash-panel-2/40 opacity-75"}`}>
             <td className="py-3 px-3 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
                     <span className="text-dash-text font-semibold">{position.symbol}</span>
                     <span className="text-[9px] px-1 py-0.2 rounded bg-dash-panel-2 text-dash-text-muted border border-dash-border">
                         NSE
                     </span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-dash-panel-2 text-dash-text border border-dash-border font-semibold">
+                        {position.productType}
+                    </span>
                 </div>
             </td>
 
-            {/* Side */}
             <td className="py-3 px-3 whitespace-nowrap">
-                <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider inline-block ${
-                        isLong
-                            ? "bg-[#00873e]/15 text-[#00873e] border border-[#00873e]/30"
-                            : "bg-[#c83200]/15 text-[#c83200] border border-[#c83200]/30"
-                    }`}
-                >
-                    {position.side}
-                </span>
+                {isOpen ? (
+                    <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider inline-block ${
+                            isLong
+                                ? "bg-[#00873e]/15 text-[#00873e] border border-[#00873e]/30"
+                                : "bg-[#c83200]/15 text-[#c83200] border border-[#c83200]/30"
+                        }`}
+                    >
+                        {position.side}
+                    </span>
+                ) : (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider inline-block bg-dash-panel-2 text-dash-text-muted border border-dash-border">
+                        CLOSED
+                    </span>
+                )}
             </td>
 
-            {/* Net Qty */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span className={`font-semibold ${isOpen ? "text-dash-text" : "text-dash-text-muted"}`}>
                     {position.quantity}
                 </span>
             </td>
 
-            {/* Avg Price */}
             <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
                 ₹{formatINR(position.averagePrice)}
             </td>
 
-            {/* LTP */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span
                     className={`font-semibold transition-colors duration-200 ${
@@ -113,12 +110,11 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
-            {/* P&L (Unrealized) */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span className={`font-semibold ${pnlTextColor}`}>
-                    {liveUnrealizedPnL >= 0
-                        ? `+₹${formatINR(liveUnrealizedPnL)}`
-                        : `-₹${formatINR(Math.abs(liveUnrealizedPnL))}`}
+                    {liveTotalPnL >= 0
+                        ? `+₹${formatINR(liveTotalPnL)}`
+                        : `-₹${formatINR(Math.abs(liveTotalPnL))}`}
                 </span>
                 <span className={`text-[10px] block ${pnlTextColor}`}>
                     {liveReturnPercent >= 0
@@ -127,31 +123,6 @@ const PositionTableRow: React.FC<PositionRowProps> = ({
                 </span>
             </td>
 
-            {/* Realized P&L */}
-            <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                <span
-                    className={`font-medium ${
-                        position.realizedPnL > 0
-                            ? "text-[#22c55e]"
-                            : position.realizedPnL < 0
-                            ? "text-[#ef4444]"
-                            : "text-dash-text-muted"
-                    }`}
-                >
-                    {position.realizedPnL > 0
-                        ? `+₹${formatINR(position.realizedPnL)}`
-                        : position.realizedPnL < 0
-                        ? `-₹${formatINR(Math.abs(position.realizedPnL))}`
-                        : "₹0.00"}
-                </span>
-            </td>
-
-            {/* Blocked Margin */}
-            <td className="py-3 px-3 text-right font-mono text-dash-text-muted whitespace-nowrap">
-                {isOpen ? `₹${formatINR(position.blockedMargin)}` : "—"}
-            </td>
-
-            {/* Action */}
             <td className="py-3 px-3 text-right whitespace-nowrap">
                 {isOpen ? (
                     <button
@@ -365,7 +336,7 @@ export const PortfolioPage: React.FC = () => {
 
     // Positions State
     const [selectedPositionsFilter, setSelectedPositionsFilter] =
-        useState<PositionsFilter>("OPEN");
+        useState<PositionsFilter>("ALL");
     const [squaringOffPosition, setSquaringOffPosition] =
         useState<PositionResponseDTO | null>(null);
 
@@ -760,8 +731,28 @@ export const PortfolioPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Sub-Tabs: Open Positions | All Positions */}
                         <div className="flex items-center gap-2 py-3 border-b border-dash-border shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedPositionsFilter("ALL")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
+                                    selectedPositionsFilter === "ALL"
+                                        ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
+                                        : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
+                                }`}
+                            >
+                                <span>All</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        selectedPositionsFilter === "ALL"
+                                            ? "bg-primary-green/20 text-primary-green"
+                                            : "bg-dash-panel-2 text-dash-text-muted"
+                                    }`}
+                                >
+                                    {positionsSummary.positionsCount.total}
+                                </span>
+                            </button>
+
                             <button
                                 type="button"
                                 onClick={() => setSelectedPositionsFilter("OPEN")}
@@ -771,7 +762,7 @@ export const PortfolioPage: React.FC = () => {
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
                                 }`}
                             >
-                                <span>Open Positions</span>
+                                <span>Open</span>
                                 <span
                                     className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                                         selectedPositionsFilter === "OPEN"
@@ -785,27 +776,26 @@ export const PortfolioPage: React.FC = () => {
 
                             <button
                                 type="button"
-                                onClick={() => setSelectedPositionsFilter("ALL")}
+                                onClick={() => setSelectedPositionsFilter("CLOSED")}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer select-none ${
-                                    selectedPositionsFilter === "ALL"
+                                    selectedPositionsFilter === "CLOSED"
                                         ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
                                         : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
                                 }`}
                             >
-                                <span>All Positions</span>
+                                <span>Closed</span>
                                 <span
                                     className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                        selectedPositionsFilter === "ALL"
+                                        selectedPositionsFilter === "CLOSED"
                                             ? "bg-primary-green/20 text-primary-green"
                                             : "bg-dash-panel-2 text-dash-text-muted"
                                     }`}
                                 >
-                                    {positionsSummary.positionsCount.total}
+                                    {positionsSummary.positionsCount.closed}
                                 </span>
                             </button>
                         </div>
 
-                        {/* Positions Table */}
                         <div className="flex-1 overflow-auto custom-scrollbar mt-3">
                             {positionsQuery.isLoading ? (
                                 <div className="h-full flex flex-col items-center justify-center text-dash-text-muted gap-2">
@@ -830,7 +820,7 @@ export const PortfolioPage: React.FC = () => {
                                         </svg>
                                     </div>
                                     <h3 className="text-sm font-semibold text-dash-text mb-1">
-                                        No {selectedPositionsFilter === "OPEN" ? "open" : ""} positions found
+                                        No {selectedPositionsFilter === "OPEN" ? "open" : selectedPositionsFilter === "CLOSED" ? "closed" : ""} positions found
                                     </h3>
                                     <p className="text-xs text-dash-text-muted max-w-sm mb-4">
                                         {searchQuery
@@ -861,15 +851,12 @@ export const PortfolioPage: React.FC = () => {
                                 <table className="w-full text-left border-collapse text-xs">
                                     <thead className="sticky top-0 bg-dash-panel z-10 border-b border-dash-border">
                                         <tr className="text-dash-text-muted font-medium select-none">
-                                            <th className="py-2.5 px-3">Product</th>
                                             <th className="py-2.5 px-3">Instrument</th>
                                             <th className="py-2.5 px-3">Side</th>
                                             <th className="py-2.5 px-3 text-right">Net Qty</th>
                                             <th className="py-2.5 px-3 text-right">Avg Price</th>
                                             <th className="py-2.5 px-3 text-right">LTP</th>
-                                            <th className="py-2.5 px-3 text-right">P&L (Unrealized)</th>
-                                            <th className="py-2.5 px-3 text-right">Realized P&L</th>
-                                            <th className="py-2.5 px-3 text-right">Blocked Margin</th>
+                                            <th className="py-2.5 px-3 text-right">Total P&L</th>
                                             <th className="py-2.5 px-3 text-right">Action</th>
                                         </tr>
                                     </thead>
@@ -1085,7 +1072,7 @@ export const PortfolioPage: React.FC = () => {
                                 <table className="w-full text-left border-collapse text-xs">
                                     <thead className="sticky top-0 bg-dash-panel z-10 border-b border-dash-border">
                                         <tr className="text-dash-text-muted font-medium select-none">
-                                            <th className="py-2.5 px-3">Symbol</th>
+                                            <th className="py-2.5 px-3">Instrument</th>
                                             <th className="py-2.5 px-3 text-right">Qty</th>
                                             <th className="py-2.5 px-3 text-right">Buy Avg (₹)</th>
                                             <th className="py-2.5 px-3 text-right">LTP</th>

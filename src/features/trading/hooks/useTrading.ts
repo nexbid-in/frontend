@@ -37,7 +37,7 @@ export function useOrdersQuery(status?: OrderStatus) {
     });
 }
 
-export function usePositionsQuery(filter: PositionsFilter = "OPEN") {
+export function usePositionsQuery(filter: PositionsFilter = "ALL") {
     return useQuery({
         queryKey: QUERY_KEYS.portfolio.positions(filter),
         queryFn: () => tradingService.getPositions(filter),
