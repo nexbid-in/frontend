@@ -69,6 +69,9 @@ export const API_ROUTES = {
         ORDER_METRICS: '/admin/orders/metrics',
         ORDER_DETAILS: (orderId: string) => `/admin/orders/${orderId}`,
         CANCEL_ORDER: (orderId: string) => `/admin/orders/${orderId}/cancel`,
+        STOCKS: '/admin/stocks',
+        STOCK_STATUS: (stockId: string) => `/admin/stocks/${stockId}/status`,
+        STOCK_DETAILS: (stockId: string) => `/admin/stocks/${stockId}`,
     },
     STOCKS: {
         SEARCH: '/stocks/search',

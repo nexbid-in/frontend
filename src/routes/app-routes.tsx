@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { LandingPage, AboutPage, ProductsPage, PricingPage, SupportPage, MarketingLayout } from '@/features/marketing';
 import { SignUpPage, SignInPage, AdminSignInPage, ForgotPasswordPage, AccountSuspendedPage } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
-import { AdminDashboardPage, AdminUsersPage, AdminOrdersPage, AdminLayout } from "@/features/admin";
+import { AdminDashboardPage, AdminUsersPage, AdminOrdersPage, AdminStocksPage, AdminLayout } from "@/features/admin";
 import { FundsPage } from "@/features/funds";
 import { WatchlistPage } from "@/features/watchlist";
 import { OrdersPage, PortfolioPage } from "@/features/trading";
@@ -109,6 +109,10 @@ const router = createBrowserRouter([
                     {
                         path: APP_ROUTES.ADMIN.USERS,
                         element: <AdminUsersPage />
+                    },
+                    {
+                        path: APP_ROUTES.ADMIN.STOCKS,
+                        element: <AdminStocksPage />
                     },
                     {
                         path: APP_ROUTES.ADMIN.ORDERS,
