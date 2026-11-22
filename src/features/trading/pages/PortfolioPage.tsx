@@ -799,8 +799,8 @@ export const PortfolioPage: React.FC = () => {
         if (holdingsFilter === "EXITED") {
             if (holdingsSummary.holdingsCount > 0) {
                 return {
-                    title: "No exited holdings",
-                    description: "You haven't exited or sold any delivery holdings yet. Fully exited CNC positions will appear here.",
+                    title: "No exited holdings today",
+                    description: "You haven't exited or sold any delivery holdings today. Fully exited CNC positions from today's session will appear here.",
                     action: (
                         <button
                             type="button"
@@ -813,8 +813,8 @@ export const PortfolioPage: React.FC = () => {
                 };
             }
             return {
-                title: "No exited holdings found",
-                description: "You haven't exited or sold any delivery holdings yet.",
+                title: "No exited holdings today",
+                description: "You haven't exited or sold any delivery holdings today.",
                 action: (
                     <Link
                         to={APP_ROUTES.USER.WATCHLIST}
@@ -833,14 +833,14 @@ export const PortfolioPage: React.FC = () => {
         if ((holdingsSummary.exitedCount ?? 0) > 0) {
             return {
                 title: "No active delivery holdings",
-                description: `You have exited all previous delivery holdings. You have ${holdingsSummary.exitedCount} exited stock(s) in your history.`,
+                description: `You have exited all previous delivery holdings. You have ${holdingsSummary.exitedCount} exited stock(s) from today's session.`,
                 action: (
                     <button
                         type="button"
                         onClick={() => setHoldingsFilter("EXITED")}
                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-dash-panel-2 hover:bg-dash-panel-3 text-dash-text border border-dash-border font-medium text-xs transition-colors cursor-pointer"
                     >
-                        <span>View Exited Holdings ({holdingsSummary.exitedCount})</span>
+                        <span>View Exited Today ({holdingsSummary.exitedCount})</span>
                     </button>
                 ),
             };
