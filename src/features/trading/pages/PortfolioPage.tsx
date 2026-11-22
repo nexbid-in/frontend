@@ -612,6 +612,257 @@ export const PortfolioPage: React.FC = () => {
         });
     }, [holdingsQuery.data?.holdings, holdingsQuery.data?.exitedHoldings, searchQuery, holdingsFilter, livePrices]);
 
+    // Contextual Empty States for Positions & Holdings
+    const positionsEmptyState = useMemo(() => {
+        if (searchQuery.trim() !== "") {
+            return {
+                title: `No positions matching "${searchQuery.trim()}"`,
+                description: "No positions match your search criteria. Try a different symbol or clear your search query.",
+                action: (
+                    <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                    >
+                        <span>Clear Search</span>
+                    </button>
+                ),
+            };
+        }
+
+        if (selectedPositionsFilter === "OPEN") {
+            if (positionsSummary.positionsCount.closed > 0) {
+                return {
+                    title: "No open positions",
+                    description: "All your intraday positions for today have been squared off.",
+                    action: (
+                        <button
+                            type="button"
+                            onClick={() => setSelectedPositionsFilter("ALL")}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-dash-panel-2 hover:bg-dash-panel-3 text-dash-text border border-dash-border font-medium text-xs transition-colors cursor-pointer"
+                        >
+                            <span>View All Positions ({positionsSummary.positionsCount.total})</span>
+                        </button>
+                    ),
+                };
+            }
+            return {
+                title: "No open positions found",
+                description: "You don't have any active intraday positions yet. Select instruments from your watchlist to open an MIS position.",
+                action: (
+                    <Link
+                        to={APP_ROUTES.USER.WATCHLIST}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                    >
+                        <span>Go to Watchlist</span>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </Link>
+                ),
+            };
+        }
+
+        if (selectedPositionsFilter === "CLOSED") {
+            if (positionsSummary.positionsCount.open > 0) {
+                return {
+                    title: "No closed positions",
+                    description: "You haven't squared off or exited any intraday positions today.",
+                    action: (
+                        <button
+                            type="button"
+                            onClick={() => setSelectedPositionsFilter("OPEN")}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-dash-panel-2 hover:bg-dash-panel-3 text-dash-text border border-dash-border font-medium text-xs transition-colors cursor-pointer"
+                        >
+                            <span>View Open Positions ({positionsSummary.positionsCount.open})</span>
+                        </button>
+                    ),
+                };
+            }
+            return {
+                title: "No closed positions found",
+                description: "You don't have any closed intraday positions today.",
+                action: (
+                    <Link
+                        to={APP_ROUTES.USER.WATCHLIST}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                    >
+                        <span>Go to Watchlist</span>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </Link>
+                ),
+            };
+        }
+
+        return {
+            title: "No intraday positions found",
+            description: "You don't have any active intraday positions yet! Select instruments from your watchlist to open an MIS position.",
+            action: (
+                <Link
+                    to={APP_ROUTES.USER.WATCHLIST}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                >
+                    <span>Go to Watchlist</span>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                </Link>
+            ),
+        };
+    }, [searchQuery, selectedPositionsFilter, positionsSummary.positionsCount]);
+
+    const holdingsEmptyState = useMemo(() => {
+        if (searchQuery.trim() !== "") {
+            return {
+                title: `No holdings matching "${searchQuery.trim()}"`,
+                description: "No stocks match your search criteria. Try a different symbol or clear your search query.",
+                action: (
+                    <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                    >
+                        <span>Clear Search</span>
+                    </button>
+                ),
+            };
+        }
+
+        if (holdingsFilter === "GAINERS") {
+            if (holdingsSummary.holdingsCount > 0) {
+                return {
+                    title: "No gainers in holdings",
+                    description: "None of your delivery holdings are currently in profit. Once a stock trades above its buy price, it will show up here.",
+                    action: (
+                        <button
+                            type="button"
+                            onClick={() => setHoldingsFilter("ALL")}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-dash-panel-2 hover:bg-dash-panel-3 text-dash-text border border-dash-border font-medium text-xs transition-colors cursor-pointer"
+                        >
+                            <span>View All Holdings ({holdingsSummary.holdingsCount})</span>
+                        </button>
+                    ),
+                };
+            }
+            return {
+                title: "No delivery holdings found",
+                description: "You don't have any CNC delivery stocks in your portfolio yet. Buy stocks using CNC product type to build your long-term portfolio.",
+                action: (
+                    <Link
+                        to={APP_ROUTES.USER.WATCHLIST}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                    >
+                        <span>Explore Watchlist</span>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </Link>
+                ),
+            };
+        }
+
+        if (holdingsFilter === "LOSERS") {
+            if (holdingsSummary.holdingsCount > 0) {
+                return {
+                    title: "No losers in holdings",
+                    description: "Great news! None of your delivery holdings are currently in loss. All stocks are trading in profit or at break-even.",
+                    action: (
+                        <button
+                            type="button"
+                            onClick={() => setHoldingsFilter("ALL")}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-dash-panel-2 hover:bg-dash-panel-3 text-dash-text border border-dash-border font-medium text-xs transition-colors cursor-pointer"
+                        >
+                            <span>View All Holdings ({holdingsSummary.holdingsCount})</span>
+                        </button>
+                    ),
+                };
+            }
+            return {
+                title: "No delivery holdings found",
+                description: "You don't have any CNC delivery stocks in your portfolio yet. Buy stocks using CNC product type to build your long-term portfolio.",
+                action: (
+                    <Link
+                        to={APP_ROUTES.USER.WATCHLIST}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                    >
+                        <span>Explore Watchlist</span>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </Link>
+                ),
+            };
+        }
+
+        if (holdingsFilter === "EXITED") {
+            if (holdingsSummary.holdingsCount > 0) {
+                return {
+                    title: "No exited holdings",
+                    description: "You haven't exited or sold any delivery holdings yet. Fully exited CNC positions will appear here.",
+                    action: (
+                        <button
+                            type="button"
+                            onClick={() => setHoldingsFilter("ALL")}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-dash-panel-2 hover:bg-dash-panel-3 text-dash-text border border-dash-border font-medium text-xs transition-colors cursor-pointer"
+                        >
+                            <span>View Active Holdings ({holdingsSummary.holdingsCount})</span>
+                        </button>
+                    ),
+                };
+            }
+            return {
+                title: "No exited holdings found",
+                description: "You haven't exited or sold any delivery holdings yet.",
+                action: (
+                    <Link
+                        to={APP_ROUTES.USER.WATCHLIST}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                    >
+                        <span>Explore Watchlist</span>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </Link>
+                ),
+            };
+        }
+
+        // Default: ALL filter
+        if ((holdingsSummary.exitedCount ?? 0) > 0) {
+            return {
+                title: "No active delivery holdings",
+                description: `You have exited all previous delivery holdings. You have ${holdingsSummary.exitedCount} exited stock(s) in your history.`,
+                action: (
+                    <button
+                        type="button"
+                        onClick={() => setHoldingsFilter("EXITED")}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-dash-panel-2 hover:bg-dash-panel-3 text-dash-text border border-dash-border font-medium text-xs transition-colors cursor-pointer"
+                    >
+                        <span>View Exited Holdings ({holdingsSummary.exitedCount})</span>
+                    </button>
+                ),
+            };
+        }
+
+        return {
+            title: "No delivery holdings found",
+            description: "You don't have any CNC delivery stocks in your portfolio yet. Buy stocks using CNC product type to build your long-term portfolio.",
+            action: (
+                <Link
+                    to={APP_ROUTES.USER.WATCHLIST}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-colors cursor-pointer"
+                >
+                    <span>Explore Watchlist</span>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                </Link>
+            ),
+        };
+    }, [searchQuery, holdingsFilter, holdingsSummary.holdingsCount, holdingsSummary.exitedCount]);
+
     const handleConfirmSquareOff = async () => {
         if (!squaringOffPosition) return;
         try {
@@ -884,32 +1135,12 @@ export const PortfolioPage: React.FC = () => {
                                         </svg>
                                     </div>
                                     <h3 className="text-sm font-semibold text-dash-text mb-1">
-                                        No {selectedPositionsFilter === "OPEN" ? "open" : selectedPositionsFilter === "CLOSED" ? "closed" : ""} positions found
+                                        {positionsEmptyState.title}
                                     </h3>
                                     <p className="text-xs text-dash-text-muted max-w-sm mb-4">
-                                        {searchQuery
-                                            ? `No positions matching "${searchQuery}".`
-                                            : "You don't have any active intraday positions yet! Select instruments from your watchlist to open an MIS position."}
+                                        {positionsEmptyState.description}
                                     </p>
-                                    <Link
-                                        to={APP_ROUTES.USER.WATCHLIST}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-all cursor-pointer"
-                                    >
-                                        <span>Go to Watchlist</span>
-                                        <svg
-                                            className="w-3.5 h-3.5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                            strokeWidth="2"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                                            />
-                                        </svg>
-                                    </Link>
+                                    {positionsEmptyState.action}
                                 </div>
                             ) : (
                                 <table className="w-full text-left border-collapse text-xs">
@@ -1126,36 +1357,12 @@ export const PortfolioPage: React.FC = () => {
                                         </svg>
                                     </div>
                                     <h3 className="text-sm font-semibold text-dash-text mb-1">
-                                        {holdingsFilter === "EXITED"
-                                            ? "No exited holdings found"
-                                            : "No delivery holdings found"}
+                                        {holdingsEmptyState.title}
                                     </h3>
                                     <p className="text-xs text-dash-text-muted max-w-sm mb-4">
-                                        {searchQuery
-                                            ? `No holdings matching "${searchQuery}".`
-                                            : holdingsFilter === "EXITED"
-                                            ? "You haven't exited any CNC delivery holdings yet."
-                                            : "You don't have any CNC delivery stocks in your portfolio yet. Buy stocks using CNC product type to build your long-term portfolio."}
+                                        {holdingsEmptyState.description}
                                     </p>
-                                    <Link
-                                        to={APP_ROUTES.USER.WATCHLIST}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary-green text-black font-semibold text-xs hover:brightness-110 transition-all cursor-pointer"
-                                    >
-                                        <span>Explore Watchlist</span>
-                                        <svg
-                                            className="w-3.5 h-3.5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                            strokeWidth="2"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                                            />
-                                        </svg>
-                                    </Link>
+                                    {holdingsEmptyState.action}
                                 </div>
                             ) : (
                                 <table className="w-full text-left border-collapse text-xs">
