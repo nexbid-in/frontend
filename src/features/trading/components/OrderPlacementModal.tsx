@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { usePlaceOrderMutation, useMarketStatusQuery } from "../hooks/useTrading";
+import { usePlaceOrderMutation, useMarketStatusQuery, useHoldingsQuery } from "../hooks/useTrading";
 import { useWalletOverview } from "@/features/funds";
 import { useLiveStockQuote, formatINR } from "@/features/watchlist";
 import type { OrderSide, OrderType, ProductType } from "../types";
@@ -90,7 +90,13 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const liveQuote = useLiveStockQuote(symbol);
     const { data: wallet } = useWalletOverview({ enabled: true });
     const { data: marketStatus } = useMarketStatusQuery();
+    const { data: holdingsData } = useHoldingsQuery();
     const placeOrderMutation = usePlaceOrderMutation();
+
+    const currentHolding = holdingsData?.holdings?.find(
+        (h) => h.symbol.toUpperCase() === symbol
+    );
+    const holdingQty = currentHolding?.quantity ?? 0;
 
     const isEnforcingHours = Boolean(marketStatus?.enforceMarketHours);
     const isMarketClosed = isEnforcingHours && marketStatus ? !marketStatus.isOpen : false;
@@ -270,10 +276,17 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
     const numericQty = !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : 0;
     const totalOrderValue = Math.max(0, numericQty * effectivePrice);
 
-    const marginRequired = productType === "MIS" ? totalOrderValue / 5 : totalOrderValue;
+    const isDeliverySell = side === "SELL" && productType === "CNC";
+
+    const marginRequired = isDeliverySell
+        ? 0
+        : productType === "MIS"
+        ? totalOrderValue / 5
+        : totalOrderValue;
+
     const marginAvailable = wallet?.availableMargin ?? wallet?.balance ?? 0;
-    const isShortOnMargin = marginRequired > marginAvailable && marginAvailable > 0;
-    const isZeroBalance = marginAvailable <= 0;
+    const isShortOnMargin = !isDeliverySell && marginRequired > marginAvailable && marginAvailable > 0;
+    const isZeroBalance = !isDeliverySell && marginAvailable <= 0;
 
     const isQtyEmpty = quantity.trim() === "";
     const isQtyInvalid = isQtyEmpty || isNaN(parsedQty) || parsedQty < 1;
@@ -283,10 +296,10 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
         if (!quantity.trim() || isNaN(parsed) || parsed < 1 || !Number.isInteger(parsed)) return false;
         if (orderType === "LIMIT" && (isNaN(Number(limitPrice)) || Number(limitPrice) <= 0))
             return false;
-        if (isShortOnMargin || isZeroBalance) return false;
+        if (!isDeliverySell && (isShortOnMargin || isZeroBalance)) return false;
         if (isMisBlocked && productType === "MIS") return false;
         return true;
-    }, [quantity, orderType, limitPrice, isShortOnMargin, isZeroBalance, isMisBlocked, productType]);
+    }, [quantity, orderType, limitPrice, isShortOnMargin, isZeroBalance, isMisBlocked, productType, isDeliverySell]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -662,19 +675,43 @@ const OrderPlacementForm: React.FC<OrderPlacementFormProps> = ({
 
                     <div className="flex items-center justify-between pt-4 border-t border-dash-border/60">
                         <div className="flex items-center gap-3 text-xs">
-                            <div>
-                                <span className="text-[11px] text-dash-text-muted mr-1.5">Margin:</span>
-                                <span className="font-mono font-bold text-dash-text">
-                                    ₹{formatINR(marginRequired)}
-                                </span>
-                            </div>
-                            <span className="text-dash-border">|</span>
-                            <div>
-                                <span className="text-[11px] text-dash-text-muted mr-1.5">Available:</span>
-                                <span className="font-mono font-medium text-dash-text-muted">
-                                    ₹{formatINR(marginAvailable)}
-                                </span>
-                            </div>
+                            {isDeliverySell ? (
+                                <>
+                                    {holdingQty > 0 && (
+                                        <>
+                                            <div>
+                                                <span className="text-[11px] text-dash-text-muted mr-1.5">Holding:</span>
+                                                <span className="font-mono font-bold text-dash-text">
+                                                    {holdingQty} Qty
+                                                </span>
+                                            </div>
+                                            <span className="text-dash-border">|</span>
+                                        </>
+                                    )}
+                                    <div>
+                                        <span className="text-[11px] text-dash-text-muted mr-1.5">Available:</span>
+                                        <span className="font-mono font-medium text-dash-text-muted">
+                                            ₹{formatINR(marginAvailable)}
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div>
+                                        <span className="text-[11px] text-dash-text-muted mr-1.5">Margin:</span>
+                                        <span className="font-mono font-bold text-dash-text">
+                                            ₹{formatINR(marginRequired)}
+                                        </span>
+                                    </div>
+                                    <span className="text-dash-border">|</span>
+                                    <div>
+                                        <span className="text-[11px] text-dash-text-muted mr-1.5">Available:</span>
+                                        <span className="font-mono font-medium text-dash-text-muted">
+                                            ₹{formatINR(marginAvailable)}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2">
