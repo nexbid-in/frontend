@@ -996,7 +996,7 @@ export const PortfolioPage: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-4 border-b border-dash-border shrink-0">
                             <div className="p-3 bg-dash-panel-2 border border-dash-border rounded-lg">
                                 <span className="text-[11px] text-dash-text-muted block">
-                                    Today's Realized P&L
+                                    Realized P&L
                                 </span>
                                 <span
                                     className={`text-sm md:text-base font-bold font-mono mt-1 block ${
