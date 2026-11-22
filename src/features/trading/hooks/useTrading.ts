@@ -91,6 +91,7 @@ export function usePlaceOrderMutation() {
             );
         },
         onError: (error) => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders.all });
             const message = extractErrorMessage(error, "Failed to place order.");
             dispatch(
                 showToast({
