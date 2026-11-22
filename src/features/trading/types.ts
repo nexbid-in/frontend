@@ -104,6 +104,7 @@ export interface HoldingItem {
     dayChangePercentage: number;
     dayPnL: number;
     isBoughtToday?: boolean;
+    isExited?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -116,15 +117,17 @@ export interface HoldingsSummary {
     todayPnL: number;
     todayPnLPercentage: number;
     holdingsCount: number;
+    exitedCount?: number;
 }
 
 export interface GetHoldingsResponse {
     holdings: HoldingItem[];
+    exitedHoldings?: HoldingItem[];
     summary: HoldingsSummary;
 }
 
 export type PortfolioMainTab = 'POSITIONS' | 'HOLDINGS';
-export type HoldingsFilter = 'ALL' | 'GAINERS' | 'LOSERS';
+export type HoldingsFilter = 'ALL' | 'GAINERS' | 'LOSERS' | 'EXITED';
 
 export type OrdersTabFilter = 'ALL' | 'PENDING' | 'EXECUTED' | 'CANCELLED';
 export type PositionsFilter = 'OPEN' | 'ALL' | 'CLOSED';

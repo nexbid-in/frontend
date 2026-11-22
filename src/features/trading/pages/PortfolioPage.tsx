@@ -162,28 +162,32 @@ const HoldingTableRow: React.FC<HoldingRowProps> = ({ item, onBuy, onSell }) => 
     const quote = useLiveStockQuote(item.symbol);
 
     const liveLtp = quote.price > 0 ? quote.price : item.currentLtp;
-    const liveCurrentValue = +(liveLtp * item.quantity).toFixed(2);
-    const liveTotalPnL = +((liveLtp - item.buyAvgPrice) * item.quantity).toFixed(2);
-    const liveTotalPnLPercentage =
-        item.investedAmount > 0 ? +((liveTotalPnL / item.investedAmount) * 100).toFixed(2) : 0;
+    const liveCurrentValue = item.isExited ? item.currentValue : +(liveLtp * item.quantity).toFixed(2);
+    const liveTotalPnL = item.isExited ? item.totalPnL : +((liveLtp - item.buyAvgPrice) * item.quantity).toFixed(2);
+    const liveTotalPnLPercentage = item.isExited
+        ? item.totalPnLPercentage
+        : item.investedAmount > 0
+        ? +((liveTotalPnL / item.investedAmount) * 100).toFixed(2)
+        : 0;
 
-    // Fix for Day's P&L and day change when stock was bought today
-    const liveDayPnL = item.isBoughtToday
+    const liveDayPnL = item.isExited
+        ? item.dayPnL
+        : item.isBoughtToday
         ? liveTotalPnL
         : quote.hasLiveTick
         ? +((quote.change ?? 0) * item.quantity).toFixed(2)
         : item.dayPnL;
 
-    const dayChange = item.isBoughtToday
-        ? +((liveLtp - item.buyAvgPrice)).toFixed(2)
-        : quote.hasLiveTick
-        ? (quote.change ?? 0)
+    const dayChange = quote.hasLiveTick
+        ? quote.change ?? 0
+        : item.isBoughtToday
+        ? +(liveLtp - item.buyAvgPrice).toFixed(2)
         : item.dayChange;
 
-    const dayChangePercentage = item.isBoughtToday
+    const dayChangePercentage = quote.hasLiveTick
+        ? quote.changePercent ?? 0
+        : item.isBoughtToday
         ? liveTotalPnLPercentage
-        : quote.hasLiveTick
-        ? (quote.changePercent ?? 0)
         : item.dayChangePercentage;
 
     const isTotalPnLPositive = liveTotalPnL >= 0;
@@ -192,7 +196,6 @@ const HoldingTableRow: React.FC<HoldingRowProps> = ({ item, onBuy, onSell }) => 
 
     return (
         <tr className="border-b border-dash-border hover:bg-dash-panel-2/60 transition-[background-color] duration-150 group">
-            {/* Symbol */}
             <td className="py-3 px-3 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
                     <span className="text-dash-text font-semibold">{item.symbol}</span>
@@ -205,17 +208,14 @@ const HoldingTableRow: React.FC<HoldingRowProps> = ({ item, onBuy, onSell }) => 
                 </div>
             </td>
 
-            {/* Qty */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span className="font-semibold text-dash-text">{item.quantity}</span>
             </td>
 
-            {/* Buy Avg (₹) */}
             <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
                 ₹{formatINR(item.buyAvgPrice)}
             </td>
 
-            {/* LTP + Subtext {dayChange} ({dayChangePercentage}%) */}
             <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
                 <span
                     className={`font-semibold transition-colors duration-200 ${
@@ -241,79 +241,101 @@ const HoldingTableRow: React.FC<HoldingRowProps> = ({ item, onBuy, onSell }) => 
                 </span>
             </td>
 
-            {/* Invested */}
             <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
                 ₹{formatINR(item.investedAmount)}
             </td>
 
-            {/* Current */}
             <td className="py-3 px-3 text-right font-mono text-dash-text whitespace-nowrap">
                 ₹{formatINR(liveCurrentValue)}
             </td>
 
-            {/* Total P&L */}
-            <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                <span
-                    className={`font-semibold ${
-                        isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                    }`}
-                >
-                    {liveTotalPnL >= 0
-                        ? `+₹${formatINR(liveTotalPnL)}`
-                        : `-₹${formatINR(Math.abs(liveTotalPnL))}`}
-                </span>
-                <span
-                    className={`text-[10px] block ${
-                        isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                    }`}
-                >
-                    {liveTotalPnLPercentage >= 0
-                        ? `(+${liveTotalPnLPercentage.toFixed(2)}%)`
-                        : `(${liveTotalPnLPercentage.toFixed(2)}%)`}
-                </span>
-            </td>
+            {item.isExited ? (
+                <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
+                    <span
+                        className={`font-semibold ${
+                            isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                        }`}
+                    >
+                        {liveTotalPnL >= 0
+                            ? `+₹${formatINR(liveTotalPnL)}`
+                            : `-₹${formatINR(Math.abs(liveTotalPnL))}`}
+                    </span>
+                    <span
+                        className={`text-[10px] block ${
+                            isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                        }`}
+                    >
+                        {liveTotalPnLPercentage >= 0
+                            ? `(+${liveTotalPnLPercentage.toFixed(2)}%)`
+                            : `(${liveTotalPnLPercentage.toFixed(2)}%)`}
+                    </span>
+                </td>
+            ) : (
+                <>
+                    <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
+                        <span
+                            className={`font-semibold ${
+                                isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                            }`}
+                        >
+                            {liveTotalPnL >= 0
+                                ? `+₹${formatINR(liveTotalPnL)}`
+                                : `-₹${formatINR(Math.abs(liveTotalPnL))}`}
+                        </span>
+                        <span
+                            className={`text-[10px] block ${
+                                isTotalPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                            }`}
+                        >
+                            {liveTotalPnLPercentage >= 0
+                                ? `(+${liveTotalPnLPercentage.toFixed(2)}%)`
+                                : `(${liveTotalPnLPercentage.toFixed(2)}%)`}
+                        </span>
+                    </td>
 
-            {/* Day's P&L */}
-            <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                <span
-                    className={`font-semibold ${
-                        isDayPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                    }`}
-                >
-                    {liveDayPnL >= 0
-                        ? `+₹${formatINR(liveDayPnL)}`
-                        : `-₹${formatINR(Math.abs(liveDayPnL))}`}
-                </span>
-                <span
-                    className={`text-[10px] block ${
-                        isDayChangePositive ? "text-[#22c55e]" : "text-[#ef4444]"
-                    }`}
-                >
-                    {dayChangePercentage >= 0
-                        ? `(+${dayChangePercentage.toFixed(2)}%)`
-                        : `(${dayChangePercentage.toFixed(2)}%)`}
-                </span>
-            </td>
+                    <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
+                        <span
+                            className={`font-semibold ${
+                                isDayPnLPositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                            }`}
+                        >
+                            {liveDayPnL >= 0
+                                ? `+₹${formatINR(liveDayPnL)}`
+                                : `-₹${formatINR(Math.abs(liveDayPnL))}`}
+                        </span>
+                        <span
+                            className={`text-[10px] block ${
+                                isDayChangePositive ? "text-[#22c55e]" : "text-[#ef4444]"
+                            }`}
+                        >
+                            {dayChangePercentage >= 0
+                                ? `(+${dayChangePercentage.toFixed(2)}%)`
+                                : `(${dayChangePercentage.toFixed(2)}%)`}
+                        </span>
+                    </td>
+                </>
+            )}
 
-            {/* Actions: Green [B] and Red [S] */}
             <td className="py-3 px-3 text-right whitespace-nowrap">
                 <div className="inline-flex items-center gap-1.5 justify-end">
                     <button
                         type="button"
                         onClick={() => onBuy(item)}
                         className="w-6 h-6 rounded bg-[#00873e]/15 text-[#00873e] hover:bg-[#00873e] hover:text-white border border-[#00873e]/30 font-bold text-[11px] flex items-center justify-center transition-all cursor-pointer"
-                        title={`Buy more ${item.symbol} (CNC)`}
+                        title={item.isExited ? `Buy ${item.symbol} again (CNC)` : `Buy more ${item.symbol} (CNC)`}
                     >
                         B
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => onSell(item)}
-                        className="w-6 h-6 rounded bg-[#c83200]/15 text-[#c83200] hover:bg-[#c83200] hover:text-white border border-[#c83200]/30 font-bold text-[11px] flex items-center justify-center transition-all cursor-pointer"
-                        title={`Sell ${item.quantity} qty of ${item.symbol} (CNC)`}
-                    >
-                        S
-                    </button>
+                    {!item.isExited && (
+                        <button
+                            type="button"
+                            onClick={() => onSell(item)}
+                            className="w-6 h-6 rounded bg-[#c83200]/15 text-[#c83200] hover:bg-[#c83200] hover:text-white border border-[#c83200]/30 font-bold text-[11px] flex items-center justify-center transition-all cursor-pointer"
+                            title={`Sell ${item.quantity} qty of ${item.symbol} (CNC)`}
+                        >
+                            S
+                        </button>
+                    )}
                 </div>
             </td>
         </tr>
@@ -378,6 +400,9 @@ export const PortfolioPage: React.FC = () => {
         (holdingsQuery.data?.holdings ?? [])
             .forEach((h) => symbolsToSubscribe.add(h.symbol));
 
+        (holdingsQuery.data?.exitedHoldings ?? [])
+            .forEach((h) => symbolsToSubscribe.add(h.symbol));
+
         if (symbolsToSubscribe.size === 0) return;
 
         const unsubs = Array.from(symbolsToSubscribe).map((symbol) =>
@@ -392,7 +417,7 @@ export const PortfolioPage: React.FC = () => {
         return () => {
             unsubs.forEach((unsub) => unsub());
         };
-    }, [positionsQuery.data?.positions, holdingsQuery.data?.holdings]);
+    }, [positionsQuery.data?.positions, holdingsQuery.data?.holdings, holdingsQuery.data?.exitedHoldings]);
 
     // Positions Real-Time Live Summary
     const positionsSummary = useMemo(() => {
@@ -448,9 +473,13 @@ export const PortfolioPage: React.FC = () => {
         };
     }, [positionsQuery.data?.positions, positionsQuery.data?.summary, livePrices]);
 
-    // Holdings Real-Time Live Summary
     const holdingsSummary = useMemo(() => {
         const holdings = holdingsQuery.data?.holdings ?? [];
+        const exitedCount =
+            holdingsQuery.data?.exitedHoldings?.length ??
+            holdingsQuery.data?.summary?.exitedCount ??
+            0;
+
         if (holdings.length === 0) {
             return {
                 totalInvested: 0,
@@ -462,6 +491,7 @@ export const PortfolioPage: React.FC = () => {
                 holdingsCount: 0,
                 gainersCount: 0,
                 losersCount: 0,
+                exitedCount,
             };
         }
 
@@ -514,8 +544,9 @@ export const PortfolioPage: React.FC = () => {
             holdingsCount: holdings.length,
             gainersCount,
             losersCount,
+            exitedCount,
         };
-    }, [holdingsQuery.data?.holdings, livePrices]);
+    }, [holdingsQuery.data?.holdings, holdingsQuery.data?.exitedHoldings, holdingsQuery.data?.summary, livePrices]);
 
     // Filtered Positions
     const filteredPositions = useMemo(() => {
@@ -546,8 +577,20 @@ export const PortfolioPage: React.FC = () => {
             });
     }, [positionsQuery.data?.positions, selectedPositionsFilter, searchQuery]);
 
-    // Filtered Holdings
     const filteredHoldings = useMemo(() => {
+        if (holdingsFilter === "EXITED") {
+            const list = holdingsQuery.data?.exitedHoldings ?? [];
+            return list.filter((item) => {
+                if (
+                    searchQuery.trim() !== "" &&
+                    !item.symbol.toLowerCase().includes(searchQuery.toLowerCase().trim())
+                ) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
         const list = holdingsQuery.data?.holdings ?? [];
         return list.filter((item) => {
             if (
@@ -567,7 +610,7 @@ export const PortfolioPage: React.FC = () => {
             if (holdingsFilter === "LOSERS") return !isGainer;
             return true;
         });
-    }, [holdingsQuery.data?.holdings, searchQuery, holdingsFilter, livePrices]);
+    }, [holdingsQuery.data?.holdings, holdingsQuery.data?.exitedHoldings, searchQuery, holdingsFilter, livePrices]);
 
     const handleConfirmSquareOff = async () => {
         if (!squaringOffPosition) return;
@@ -1035,6 +1078,27 @@ export const PortfolioPage: React.FC = () => {
                                     {holdingsSummary.losersCount}
                                 </span>
                             </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setHoldingsFilter("EXITED")}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
+                                    holdingsFilter === "EXITED"
+                                        ? "bg-primary-green/15 text-primary-green border border-primary-green/30"
+                                        : "text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 border border-transparent"
+                                }`}
+                            >
+                                <span>Exited</span>
+                                <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                        holdingsFilter === "EXITED"
+                                            ? "bg-primary-green/20 text-primary-green"
+                                            : "bg-dash-panel-2 text-dash-text-muted"
+                                    }`}
+                                >
+                                    {holdingsSummary.exitedCount}
+                                </span>
+                            </button>
                         </div>
 
                         {/* Holdings Table */}
@@ -1062,11 +1126,15 @@ export const PortfolioPage: React.FC = () => {
                                         </svg>
                                     </div>
                                     <h3 className="text-sm font-semibold text-dash-text mb-1">
-                                        No delivery holdings found
+                                        {holdingsFilter === "EXITED"
+                                            ? "No exited holdings found"
+                                            : "No delivery holdings found"}
                                     </h3>
                                     <p className="text-xs text-dash-text-muted max-w-sm mb-4">
                                         {searchQuery
                                             ? `No holdings matching "${searchQuery}".`
+                                            : holdingsFilter === "EXITED"
+                                            ? "You haven't exited any CNC delivery holdings yet."
                                             : "You don't have any CNC delivery stocks in your portfolio yet. Buy stocks using CNC product type to build your long-term portfolio."}
                                     </p>
                                     <Link
@@ -1099,8 +1167,14 @@ export const PortfolioPage: React.FC = () => {
                                             <th className="py-2.5 px-3 text-right">LTP</th>
                                             <th className="py-2.5 px-3 text-right">Invested</th>
                                             <th className="py-2.5 px-3 text-right">Current</th>
-                                            <th className="py-2.5 px-3 text-right">Total P&L</th>
-                                            <th className="py-2.5 px-3 text-right">Day's P&L</th>
+                                            {holdingsFilter === "EXITED" ? (
+                                                <th className="py-2.5 px-3 text-right">Realized P&L</th>
+                                            ) : (
+                                                <>
+                                                    <th className="py-2.5 px-3 text-right">Total P&L</th>
+                                                    <th className="py-2.5 px-3 text-right">Day's P&L</th>
+                                                </>
+                                            )}
                                             <th className="py-2.5 px-3 text-right">Actions</th>
                                         </tr>
                                     </thead>
