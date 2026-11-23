@@ -932,6 +932,15 @@ export const PortfolioPage: React.FC = () => {
                                 {holdingsSummary.holdingsCount}
                             </span>
                         </button>
+
+                        <Link
+                            to={APP_ROUTES.USER.PROFILE_PNL}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-dash-border text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors duration-150 cursor-pointer select-none ml-1"
+                            title="Open Profit & Loss Statement and trade charges transparency"
+                        >
+                            <span>P&L Statement</span>
+                            <span className="text-[10px] text-dash-text-muted">↗</span>
+                        </Link>
                     </div>
 
                     {/* Search & Refresh */}

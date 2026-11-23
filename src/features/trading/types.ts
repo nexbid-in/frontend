@@ -132,3 +132,96 @@ export type HoldingsFilter = 'ALL' | 'GAINERS' | 'LOSERS' | 'EXITED';
 export type OrdersTabFilter = 'ALL' | 'PENDING' | 'EXECUTED' | 'CANCELLED';
 export type PositionsFilter = 'OPEN' | 'ALL' | 'CLOSED';
 
+// ============================================================================
+// P&L STATEMENT TYPES (Zerodha-Standard FIFO Architecture)
+// ============================================================================
+export type PnlViewType = "COMBINED" | "REALIZED" | "UNREALIZED";
+export type PnlSegment = "ALL" | "CNC" | "MIS";
+
+export interface PnlChargesBreakdown {
+  brokerage: number;
+  stt: number;
+  exchangeTurnoverCharges: number;
+  sebiCharges: number;
+  stampDuty: number;
+  gst: number;
+  totalCharges: number;
+}
+
+export interface PnlHeatmapDay {
+  date: string; // 'YYYY-MM-DD'
+  grossPnL: number;
+  netPnL: number;
+  tradesCount: number;
+}
+
+export interface PnlHeatmapSummary {
+  greenDays: number;
+  redDays: number;
+  neutralDays: number;
+  days: PnlHeatmapDay[];
+}
+
+export interface PnlSummary {
+  realizedPnL: number;      // Gross Realized P&L
+  charges: number;          // Total charges & taxes
+  netRealizedPnL: number;   // Net Realized P&L (realizedPnL - charges)
+  unrealizedPnL: number;    // Open positions MTM P&L
+  chargesBreakdown: PnlChargesBreakdown;
+}
+
+export interface PnlFifoLeg {
+  status: "Closed" | "Open";
+  productType: ProductType; // "CNC" | "MIS"
+  buyDate: string;          // ISO date or YYYY-MM-DD
+  sellDate: string | null;  // ISO date or null (displayed as "—" when Open)
+  quantity: number;
+  buyPrice: number;
+  sellPrice: number;        // Exit fill price if Closed, or current LTP if Open
+  isLtp: boolean;           // True if Open leg evaluated at market LTP
+  tradePnL: number;         // Realized P&L if Closed, Unrealized P&L if Open
+  charges: PnlChargesBreakdown;
+  netPnL: number;           // tradePnL - totalCharges
+}
+
+export interface PnlSymbolSummary {
+  symbol: string;
+  exchange: string;         // e.g. "NSE"
+  productType: ProductType; // "CNC" | "MIS"
+  quantity: number;         // Matched closed quantity
+  buyAvg: number;
+  buyValue: number;
+  sellAvg: number;
+  sellValue: number;
+  grossRealizedPnL: number;
+  charges: number;
+  netRealizedPnL: number;   // Net Realized P&L (Zerodha primary column)
+  chargesBreakdown: PnlChargesBreakdown;
+  unrealizedPnL: number;    // MTM on open quantity
+  openQuantity: number;     // Open inventory still holding
+  currentLtp: number;
+  legs: PnlFifoLeg[];       // Granular FIFO trade breakdown
+  tags?: string[];
+}
+
+export interface PnlStatementResponse {
+  success: boolean;
+  message: string;
+  data: {
+    summary: PnlSummary;
+    heatmap: PnlHeatmapSummary;
+    symbols: PnlSymbolSummary[];
+    fromDate?: string;
+    toDate?: string;
+    segment: PnlSegment;
+  };
+}
+
+export interface PnlStatementQueryParams {
+  from?: string;
+  to?: string;
+  symbol?: string;
+  pnlType?: PnlViewType;
+  segment?: PnlSegment;
+}
+

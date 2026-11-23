@@ -7,6 +7,7 @@ import type {
     PlaceOrderRequestDTO,
     OrderStatus,
     PositionsFilter,
+    PnlStatementQueryParams,
 } from "../types";
 import { AxiosError } from "axios";
 
@@ -50,6 +51,14 @@ export function useHoldingsQuery() {
         queryKey: QUERY_KEYS.portfolio.holdings(),
         queryFn: () => tradingService.getHoldings(),
         staleTime: 1000 * 5,
+    });
+}
+
+export function usePnlStatementQuery(params?: PnlStatementQueryParams) {
+    return useQuery({
+        queryKey: QUERY_KEYS.portfolio.pnl(params as Record<string, unknown>),
+        queryFn: () => tradingService.getPnlStatement(params),
+        staleTime: 1000 * 15,
     });
 }
 

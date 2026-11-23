@@ -9,6 +9,8 @@ import type {
     PositionsFilter,
     MarketStatusInfo,
     GetHoldingsResponse,
+    PnlStatementQueryParams,
+    PnlStatementResponse,
 } from "../types";
 
 export const tradingService = {
@@ -76,6 +78,13 @@ export const tradingService = {
             message: string;
             data: PositionResponseDTO;
         }>(API_ROUTES.PORTFOLIO.SQUARE_OFF(positionId));
+        return response.data.data;
+    },
+
+    getPnlStatement: async (params?: PnlStatementQueryParams): Promise<PnlStatementResponse["data"]> => {
+        const response = await apiClient.get<PnlStatementResponse>(API_ROUTES.PORTFOLIO.PNL, {
+            params,
+        });
         return response.data.data;
     },
 };
