@@ -290,7 +290,7 @@ export function AdminStocksPage() {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-base font-semibold text-text-primary tracking-tight">
-                                    Platform Stock Directory
+                                    Platform Instrument Directory
                                 </h2>
                                 {isFetching && !isLoading && (
                                     <span className="w-2 h-2 rounded-full bg-primary-green animate-ping" />
@@ -324,6 +324,10 @@ export function AdminStocksPage() {
                                 <span>Refresh</span>
                             </button>
 
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel-2 border border-border-muted text-xs text-text-secondary font-medium">
+                                <strong className="font-semibold text-text-primary">{totalStocks}</strong> Total Instruments
+                            </div>
+
                             <button
                                 type="button"
                                 onClick={() => setModalState({ isOpen: true, mode: "create", stock: null })}
@@ -334,10 +338,6 @@ export function AdminStocksPage() {
                                 </svg>
                                 <span>Add Instrument</span>
                             </button>
-
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel-2 border border-border-muted text-xs text-text-secondary font-medium">
-                                <strong className="font-semibold text-text-primary">{totalStocks}</strong> Total Instruments
-                            </div>
                         </div>
                     </div>
 
