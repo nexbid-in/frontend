@@ -225,3 +225,74 @@ export interface PnlStatementQueryParams {
   segment?: PnlSegment;
 }
 
+// ============================================================================
+// TRADEBOOK TYPES (Zerodha-Standard Execution Ledger)
+// ============================================================================
+export type TradebookSegment = "ALL" | "CNC" | "MIS" | "COMBINED" | "DELIVERY" | "INTRADAY";
+export type TradebookSide = "ALL" | "BUY" | "SELL";
+
+export interface TradeChargesItem {
+  brokerage: number;
+  stt: number;
+  exchangeTurnoverCharges: number;
+  sebiCharges: number;
+  stampDuty: number;
+  gst: number;
+  total: number;
+}
+
+export interface TradebookItem {
+  id: string;
+  orderId: string;
+  symbol: string;
+  exchange: string;
+  productType: ProductType;
+  side: OrderSide;
+  quantity: number;
+  price: number;
+  tradeValue: number;
+  charges: TradeChargesItem;
+  executedAt: string;
+}
+
+export interface TradebookSummary {
+  totalTrades: number;
+  buyTradesCount: number;
+  sellTradesCount: number;
+  totalBuyQty: number;
+  totalSellQty: number;
+  totalBuyTurnover: number;
+  totalSellTurnover: number;
+  totalCharges: number;
+}
+
+export interface TradebookPagination {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface TradebookQueryParams {
+  from?: string;
+  to?: string;
+  symbol?: string;
+  segment?: TradebookSegment;
+  side?: TradebookSide;
+  page?: number;
+  limit?: number;
+}
+
+export interface GetTradebookResponse {
+  trades: TradebookItem[];
+  summary: TradebookSummary;
+  pagination: TradebookPagination;
+}
+
+export interface TradebookApiResponse {
+  success: boolean;
+  message: string;
+  data: GetTradebookResponse;
+}
+
+

@@ -11,6 +11,9 @@ import type {
     GetHoldingsResponse,
     PnlStatementQueryParams,
     PnlStatementResponse,
+    TradebookQueryParams,
+    GetTradebookResponse,
+    TradebookApiResponse,
 } from "../types";
 
 export const tradingService = {
@@ -83,6 +86,13 @@ export const tradingService = {
 
     getPnlStatement: async (params?: PnlStatementQueryParams): Promise<PnlStatementResponse["data"]> => {
         const response = await apiClient.get<PnlStatementResponse>(API_ROUTES.PORTFOLIO.PNL, {
+            params,
+        });
+        return response.data.data;
+    },
+
+    getTradebook: async (params?: TradebookQueryParams): Promise<GetTradebookResponse> => {
+        const response = await apiClient.get<TradebookApiResponse>(API_ROUTES.PORTFOLIO.TRADEBOOK, {
             params,
         });
         return response.data.data;

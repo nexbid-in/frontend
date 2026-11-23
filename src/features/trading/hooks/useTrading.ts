@@ -8,6 +8,7 @@ import type {
     OrderStatus,
     PositionsFilter,
     PnlStatementQueryParams,
+    TradebookQueryParams,
 } from "../types";
 import { AxiosError } from "axios";
 
@@ -59,6 +60,14 @@ export function usePnlStatementQuery(params?: PnlStatementQueryParams) {
         queryKey: QUERY_KEYS.portfolio.pnl(params as Record<string, unknown>),
         queryFn: () => tradingService.getPnlStatement(params),
         staleTime: 1000 * 15,
+    });
+}
+
+export function useTradebookQuery(params?: TradebookQueryParams) {
+    return useQuery({
+        queryKey: QUERY_KEYS.portfolio.tradebook(params as Record<string, unknown>),
+        queryFn: () => tradingService.getTradebook(params),
+        staleTime: 1000 * 10,
     });
 }
 

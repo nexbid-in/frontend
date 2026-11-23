@@ -67,5 +67,6 @@ export const QUERY_KEYS = {
         positions: (filter?: "OPEN" | "ALL" | "CLOSED") => ["portfolio", "positions", filter ?? "ALL"],
         holdings: () => ["portfolio", "holdings"],
         pnl: (params?: Record<string, unknown>) => ["portfolio", "pnl", params ?? {}],
+        tradebook: (params?: Record<string, unknown>) => ["portfolio", "tradebook", params ?? {}],
     },
 };

@@ -941,6 +941,15 @@ export const PortfolioPage: React.FC = () => {
                             <span>P&L Statement</span>
                             <span className="text-[10px] text-dash-text-muted">↗</span>
                         </Link>
+
+                        <Link
+                            to={APP_ROUTES.USER.PROFILE_TRADE_BOOK}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-dash-border text-dash-text-muted hover:text-dash-text hover:bg-dash-panel-2 transition-colors duration-150 cursor-pointer select-none"
+                            title="Open Trade Execution Book"
+                        >
+                            <span>Trade Book</span>
+                            <span className="text-[10px] text-dash-text-muted">↗</span>
+                        </Link>
                     </div>
 
                     {/* Search & Refresh */}

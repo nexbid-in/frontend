@@ -1,29 +1,240 @@
-export function TradeBookPage() {
-    return (
-        <div className="flex flex-col flex-1 h-full">
-            <h1 className="text-2xl font-semibold text-dash-text">Trade Book</h1>
+import { useState, useMemo, type FC } from "react";
+import {
+    useTradebookQuery,
+    TradebookFilterBar,
+    TradebookSummaryRow,
+    TradebookTable,
+    PnlChargesModal,
+    getIndianFinancialYearPresets,
+    type TradebookFilterState,
+    type TradeChargesItem,
+    type PnlChargesBreakdown,
+} from "@/features/trading";
 
-            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto py-12">
-                <div className="w-16 h-16 rounded-full bg-dash-panel-2 flex items-center justify-center text-primary-green mb-4">
-                    <svg
-                        className="w-8 h-8"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
-                        />
-                    </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-dash-text mb-2">Trade Execution History</h2>
-                <p className="text-sm text-dash-text-muted">
-                    Detailed records of all completed and pending executions will be displayed here.
-                </p>
+export const TradeBookPage: FC = () => {
+    const fyPresets = useMemo(() => getIndianFinancialYearPresets(), []);
+
+    // 1. Form Filter State
+    const [filterForm, setFilterForm] = useState<TradebookFilterState>({
+        segment: "COMBINED",
+        side: "ALL",
+        symbol: "",
+        fromDate: fyPresets.currentFy.from,
+        toDate: fyPresets.currentFy.to,
+    });
+
+    // 2. Applied Query State
+    const [appliedFilters, setAppliedFilters] = useState<TradebookFilterState>({ ...filterForm });
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [pageLimit, setPageLimit] = useState<number>(20);
+
+    // 3. Charges Transparency Modal State
+    const [isChargesModalOpen, setIsChargesModalOpen] = useState(false);
+    const [modalChargesData, setModalChargesData] = useState<{
+        breakdown: PnlChargesBreakdown;
+        title: string;
+        subtitle: string;
+    }>({
+        breakdown: {
+            brokerage: 0,
+            stt: 0,
+            exchangeTurnoverCharges: 0,
+            sebiCharges: 0,
+            stampDuty: 0,
+            gst: 0,
+            totalCharges: 0,
+        },
+        title: "Trade Charges Breakdown",
+        subtitle: "Itemized statutory levies and platform fees deducted for this trade execution.",
+    });
+
+    // 4. API Query Parameters Construction
+    const queryParams = useMemo(() => {
+        const fromIso = appliedFilters.fromDate
+            ? new Date(`${appliedFilters.fromDate}T00:00:00.000Z`).toISOString()
+            : undefined;
+        const toIso = appliedFilters.toDate
+            ? new Date(`${appliedFilters.toDate}T23:59:59.999Z`).toISOString()
+            : undefined;
+
+        return {
+            from: fromIso,
+            to: toIso,
+            segment: appliedFilters.segment,
+            side: appliedFilters.side,
+            symbol: appliedFilters.symbol.trim() || undefined,
+            page: currentPage,
+            limit: pageLimit,
+        };
+    }, [appliedFilters, currentPage, pageLimit]);
+
+    const {
+        data: tradebookData,
+        isLoading,
+        isFetching,
+        isError,
+        error,
+        refetch,
+    } = useTradebookQuery(queryParams);
+
+    const handleFormSubmit = () => {
+        setCurrentPage(1);
+        setAppliedFilters({ ...filterForm });
+    };
+
+    const handleResetFilters = () => {
+        const resetState: TradebookFilterState = {
+            segment: "COMBINED",
+            side: "ALL",
+            symbol: "",
+            fromDate: fyPresets.currentFy.from,
+            toDate: fyPresets.currentFy.to,
+        };
+        setFilterForm(resetState);
+        setAppliedFilters(resetState);
+        setCurrentPage(1);
+    };
+
+    // Calculate aggregated charges breakdown across currently fetched trades
+    const totalChargesBreakdown: PnlChargesBreakdown = useMemo(() => {
+        const trades = tradebookData?.trades;
+        if (!trades || trades.length === 0) {
+            return {
+                brokerage: 0,
+                stt: 0,
+                exchangeTurnoverCharges: 0,
+                sebiCharges: 0,
+                stampDuty: 0,
+                gst: 0,
+                totalCharges: tradebookData?.summary?.totalCharges ?? 0,
+            };
+        }
+
+        return trades.reduce(
+            (acc, t) => {
+                acc.brokerage += t.charges?.brokerage ?? 0;
+                acc.stt += t.charges?.stt ?? 0;
+                acc.exchangeTurnoverCharges += t.charges?.exchangeTurnoverCharges ?? 0;
+                acc.sebiCharges += t.charges?.sebiCharges ?? 0;
+                acc.stampDuty += t.charges?.stampDuty ?? 0;
+                acc.gst += t.charges?.gst ?? 0;
+                acc.totalCharges += t.charges?.total ?? 0;
+                return acc;
+            },
+            {
+                brokerage: 0,
+                stt: 0,
+                exchangeTurnoverCharges: 0,
+                sebiCharges: 0,
+                stampDuty: 0,
+                gst: 0,
+                totalCharges: 0,
+            }
+        );
+    }, [tradebookData]);
+
+    const handleOpenTotalCharges = () => {
+        setModalChargesData({
+            breakdown: totalChargesBreakdown,
+            title: "Total Charges & Taxes Breakdown",
+            subtitle: "Itemized statutory levies and platform fees deducted across your executions.",
+        });
+        setIsChargesModalOpen(true);
+    };
+
+    const handleOpenIndividualTradeCharges = (charges: TradeChargesItem, tradeTitle: string) => {
+        setModalChargesData({
+            breakdown: {
+                brokerage: charges.brokerage,
+                stt: charges.stt,
+                exchangeTurnoverCharges: charges.exchangeTurnoverCharges,
+                sebiCharges: charges.sebiCharges,
+                stampDuty: charges.stampDuty,
+                gst: charges.gst,
+                totalCharges: charges.total,
+            },
+            title: tradeTitle,
+            subtitle: "Itemized statutory levies and platform fees applied to this execution.",
+        });
+        setIsChargesModalOpen(true);
+    };
+
+    const paginationData = tradebookData?.pagination ?? {
+        page: currentPage,
+        limit: pageLimit,
+        totalCount: 0,
+        totalPages: 1,
+    };
+
+    return (
+        <div className="flex flex-col space-y-5 animate-in fade-in duration-150 pb-10">
+            {/* Header: Matches Sidebar "Trade Book" */}
+            <div className="flex items-center justify-between pb-1 shrink-0">
+                <h1 className="text-xl md:text-2xl font-bold text-dash-text tracking-tight select-none">
+                    Trade Book
+                </h1>
             </div>
+
+            {/* Error Message if query fails */}
+            {isError && (
+                <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-between text-xs shrink-0">
+                    <span>
+                        {error instanceof Error ? error.message : "Failed to load tradebook executions."}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => void refetch()}
+                        className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 font-semibold cursor-pointer"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+
+            {/* 1. Filter Bar (Segment, Side, Symbol, Date Range + Actions) */}
+            <div className="shrink-0">
+                <TradebookFilterBar
+                    filters={filterForm}
+                    onChange={setFilterForm}
+                    onSubmit={handleFormSubmit}
+                    onReset={handleResetFilters}
+                    isLoading={isFetching}
+                />
+            </div>
+
+            {/* 2. Macro Summary Metrics Strip */}
+            <div className="shrink-0">
+                <TradebookSummaryRow
+                    summary={tradebookData?.summary}
+                    isLoading={isLoading}
+                    onOpenChargesBreakdown={handleOpenTotalCharges}
+                />
+            </div>
+
+            {/* 3. Trades Execution Ledger Table */}
+            <div className="shrink-0">
+                <TradebookTable
+                    trades={tradebookData?.trades ?? []}
+                    pagination={paginationData}
+                    onPageChange={(newPage) => setCurrentPage(newPage)}
+                    onLimitChange={(newLimit) => {
+                        setPageLimit(newLimit);
+                        setCurrentPage(1);
+                    }}
+                    isLoading={isLoading}
+                    onSelectTradeCharges={handleOpenIndividualTradeCharges}
+                    onResetFilters={handleResetFilters}
+                />
+            </div>
+
+            {/* Charges Breakdown Transparency Modal */}
+            <PnlChargesModal
+                isOpen={isChargesModalOpen}
+                onClose={() => setIsChargesModalOpen(false)}
+                breakdown={modalChargesData.breakdown}
+                title={modalChargesData.title}
+                subtitle={modalChargesData.subtitle}
+            />
         </div>
     );
-}
+};
