@@ -102,7 +102,7 @@ export const PnLStatementPage: FC = () => {
     };
 
     return (
-        <div className="flex flex-col flex-1 h-full space-y-5 animate-in fade-in duration-150 pb-8">
+        <div className="flex flex-col space-y-5 animate-in fade-in duration-150 pb-10">
             {/* Header: Zerodha Console Style (📈 P&L on left, View Verified P&L on right) */}
             <div className="flex items-center justify-between pb-1 shrink-0">
                 <div className="flex items-center gap-2.5">
@@ -131,7 +131,7 @@ export const PnLStatementPage: FC = () => {
 
             {/* Error Message if query fails */}
             {isError && (
-                <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-between text-xs">
+                <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-between text-xs shrink-0">
                     <span>
                         {error instanceof Error ? error.message : "Failed to load P&L report."}
                     </span>
@@ -146,12 +146,14 @@ export const PnLStatementPage: FC = () => {
             )}
 
             {/* 1. Filter Bar (Zerodha Console 5 inputs + Blue Arrow button) */}
-            <PnlFilterBar
-                filters={filterForm}
-                onChange={setFilterForm}
-                onSubmit={handleFormSubmit}
-                isLoading={isFetching}
-            />
+            <div className="shrink-0">
+                <PnlFilterBar
+                    filters={filterForm}
+                    onChange={setFilterForm}
+                    onSubmit={handleFormSubmit}
+                    isLoading={isFetching}
+                />
+            </div>
 
             {/* 2. Interactive Daily Heatmap Calendar */}
             <PnlHeatmap
@@ -162,14 +164,16 @@ export const PnLStatementPage: FC = () => {
             />
 
             {/* 3. Horizontal Summary Metrics Row (Zerodha 5 Columns) */}
-            <PnlSummaryRow
-                summary={pnlData?.summary}
-                isLoading={isLoading}
-                onOpenChargesBreakdown={() => setIsChargesModalOpen(true)}
-            />
+            <div className="shrink-0">
+                <PnlSummaryRow
+                    summary={pnlData?.summary}
+                    isLoading={isLoading}
+                    onOpenChargesBreakdown={() => setIsChargesModalOpen(true)}
+                />
+            </div>
 
             {/* 4. Symbol Table with Search, Tag Filter, FIFO Expansion & Pagination */}
-            <div className="flex-1">
+            <div className="shrink-0">
                 <PnlSymbolTable
                     symbols={visibleSymbols}
                     isLoading={isLoading}

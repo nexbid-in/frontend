@@ -121,6 +121,29 @@ export function formatTradeDateTime(dateInput: string | Date): string {
 }
 
 /**
+ * Formats a calendar date string (YYYY-MM-DD) into: "DD MMM YYYY"
+ * without arbitrary time offset artifacts. e.g. "23 Nov 2026"
+ */
+export function formatCalendarDate(dateStr: string): string {
+    try {
+        const parts = dateStr.split("-").map(Number);
+        if (parts.length === 3 && !isNaN(parts[0])) {
+            const year = parts[0];
+            const monthIdx = parts[1] - 1;
+            const day = parts[2];
+            const months = [
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            ];
+            return `${day} ${months[monthIdx]} ${year}`;
+        }
+        return dateStr;
+    } catch {
+        return dateStr;
+    }
+}
+
+/**
  * Formats a Date object to "YYYY-MM-DD" for HTML date inputs
  */
 export function formatDateForInput(date: Date): string {

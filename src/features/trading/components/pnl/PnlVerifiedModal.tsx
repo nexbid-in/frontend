@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useMemo, type FC } from "react";
 import type { PnlSummary, PnlHeatmapSummary } from "../../types";
 import { formatCurrencyINR } from "../../utils/pnlFormatters";
 
@@ -25,8 +25,21 @@ export const PnlVerifiedModal: FC<PnlVerifiedModalProps> = ({
 
     const netRealized = summary?.netRealizedPnL ?? 0;
     const isPositive = netRealized >= 0;
-    const greenDays = heatmap?.greenDays ?? 0;
-    const redDays = heatmap?.redDays ?? 0;
+    const { greenDays, redDays } = useMemo(() => {
+        if (!heatmap?.days || heatmap.days.length === 0) {
+            return {
+                greenDays: heatmap?.greenDays ?? 0,
+                redDays: heatmap?.redDays ?? 0,
+            };
+        }
+        let green = 0;
+        let red = 0;
+        for (const d of heatmap.days) {
+            if (d.netPnL > 0) green++;
+            else if (d.netPnL < 0) red++;
+        }
+        return { greenDays: green, redDays: red };
+    }, [heatmap]);
 
     return (
         <div
