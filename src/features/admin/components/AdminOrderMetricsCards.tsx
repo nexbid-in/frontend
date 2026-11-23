@@ -35,14 +35,12 @@ export function AdminOrderMetricsCards({ metrics, isLoading }: AdminOrderMetrics
     return (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
             {/* Today's Orders */}
-            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-muted/80 transition-colors">
+            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-muted/80 transition-colors flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                     <span className="text-xs font-medium">Today's Orders</span>
-                    <div className="w-7 h-7 rounded-lg bg-panel-2 flex items-center justify-center text-text-primary">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-panel-2 text-text-secondary border border-border-muted">
+                        Today
+                    </span>
                 </div>
                 <p className="text-xl font-bold text-text-primary mt-2">
                     {todayOrdersCount.toLocaleString()}
@@ -51,14 +49,12 @@ export function AdminOrderMetricsCards({ metrics, isLoading }: AdminOrderMetrics
             </article>
 
             {/* Today's Turnover */}
-            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-muted/80 transition-colors">
+            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-muted/80 transition-colors flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                     <span className="text-xs font-medium">Today's Turnover</span>
-                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400">
+                        Volume
+                    </span>
                 </div>
                 <p className="text-xl font-bold text-text-primary mt-2">
                     ₹{formatINR(todayTurnover)}
@@ -67,7 +63,7 @@ export function AdminOrderMetricsCards({ metrics, isLoading }: AdminOrderMetrics
             </article>
 
             {/* Executed Orders */}
-            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-border transition-colors">
+            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-muted/80 transition-colors flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                     <span className="text-xs font-medium">Executed</span>
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green/10 text-green">
@@ -81,7 +77,7 @@ export function AdminOrderMetricsCards({ metrics, isLoading }: AdminOrderMetrics
             </article>
 
             {/* Pending AMO */}
-            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-border transition-colors">
+            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-muted/80 transition-colors flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                     <span className="text-xs font-medium">Pending AMO</span>
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/15 text-purple-400">
@@ -95,22 +91,21 @@ export function AdminOrderMetricsCards({ metrics, isLoading }: AdminOrderMetrics
             </article>
 
             {/* Cancelled & Rejected */}
-            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-border transition-colors">
+            <article className="rounded-xl border border-border-muted bg-card p-4 hover:border-border-muted/80 transition-colors flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                     <span className="text-xs font-medium">Inactive / Failed</span>
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red/10 text-red">
                         {todayCancelledCount + todayRejectedCount} Total
                     </span>
                 </div>
-                <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-xl font-bold text-text-primary">
-                        {todayCancelledCount} <span className="text-xs font-normal text-text-secondary">canc.</span>
-                    </span>
-                    <span className="text-sm font-semibold text-red">
-                        / {todayRejectedCount} <span className="text-xs font-normal text-text-secondary">rej.</span>
-                    </span>
+                <div className="flex items-baseline gap-1.5 mt-2">
+                    <span className="text-xl font-bold text-text-primary">{todayCancelledCount}</span>
+                    <span className="text-xs font-medium text-text-secondary">Canc</span>
+                    <span className="text-text-secondary/40 text-xs">/</span>
+                    <span className="text-xl font-bold text-red">{todayRejectedCount}</span>
+                    <span className="text-xs font-medium text-text-secondary">Rej</span>
                 </div>
-                <p className="text-[11px] text-text-secondary mt-0.5">Cancelled or rejected</p>
+                <p className="text-[11px] text-text-secondary mt-0.5">Cancelled or rejected orders</p>
             </article>
         </section>
     );

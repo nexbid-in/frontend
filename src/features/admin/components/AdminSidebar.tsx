@@ -148,7 +148,7 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
                                     <rect x="10" y="8" width="4" height="12" rx="1" />
                                     <rect x="17" y="4" width="4" height="16" rx="1" />
                                 </svg>
-                                Stocks
+                                Instruments
                             </>
                         )}
                     </NavLink>

@@ -123,3 +123,6 @@ export interface AdminOrderDetailsDTO {
     updatedAt: string;
     trades: AdminOrderTradeDTO[];
 }
+
+export * from "@/types/adminStock";
+
