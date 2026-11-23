@@ -1,29 +1,156 @@
-export function PnLStatementPage() {
-    return (
-        <div className="flex flex-col flex-1 h-full">
-            <h1 className="text-2xl font-semibold text-dash-text">P&L Statement</h1>
+import { useState, useMemo, type FC } from "react";
+import {
+    usePnlStatementQuery,
+    PnlHeatmap,
+    PnlSummaryRow,
+    PnlFilterBar,
+    PnlSymbolTable,
+    PnlChargesModal,
+    getIndianFinancialYearPresets,
+    type PnlFilterState,
+    type PnlChargesBreakdown,
+} from "@/features/trading";
 
-            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto py-12">
-                <div className="w-16 h-16 rounded-full bg-dash-panel-2 flex items-center justify-center text-primary-green mb-4">
-                    <svg
-                        className="w-8 h-8"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
-                        />
-                    </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-dash-text mb-2">Profit & Loss Statements</h2>
-                <p className="text-sm text-dash-text-muted">
-                    Your realized and unrealized profit & loss reports will appear here once trade activity is recorded.
-                </p>
+export const PnLStatementPage: FC = () => {
+    const fyPresets = useMemo(() => getIndianFinancialYearPresets(), []);
+
+    // 1. Form Filter State (controlled inputs)
+    const [filterForm, setFilterForm] = useState<PnlFilterState>({
+        segment: "COMBINED",
+        pnlType: "COMBINED",
+        symbol: "",
+        fromDate: fyPresets.currentFy.from,
+        toDate: fyPresets.currentFy.to,
+    });
+
+    // 2. Active Applied Query State (triggered on Submit button click or Enter)
+    const [appliedFilters, setAppliedFilters] = useState<PnlFilterState>({ ...filterForm });
+
+    // 3. Modals State
+    const [isChargesModalOpen, setIsChargesModalOpen] = useState(false);
+
+    // 4. API Query Parameters Construction
+    const queryParams = useMemo(() => {
+        const fromIso = appliedFilters.fromDate
+            ? new Date(`${appliedFilters.fromDate}T00:00:00.000Z`).toISOString()
+            : undefined;
+        const toIso = appliedFilters.toDate
+            ? new Date(`${appliedFilters.toDate}T23:59:59.999Z`).toISOString()
+            : undefined;
+
+        return {
+            from: fromIso,
+            to: toIso,
+            segment: appliedFilters.segment,
+            pnlType: appliedFilters.pnlType,
+            symbol: appliedFilters.symbol.trim() || undefined,
+        };
+    }, [appliedFilters]);
+
+    const {
+        data: pnlData,
+        isLoading,
+        isFetching,
+        isError,
+        error,
+        refetch,
+    } = usePnlStatementQuery(queryParams);
+
+    const handleFormSubmit = () => {
+        setAppliedFilters({ ...filterForm });
+    };
+
+    const handleResetFilters = () => {
+        const resetState: PnlFilterState = {
+            segment: "COMBINED",
+            pnlType: "COMBINED",
+            symbol: "",
+            fromDate: fyPresets.currentFy.from,
+            toDate: fyPresets.currentFy.to,
+        };
+        setFilterForm(resetState);
+        setAppliedFilters(resetState);
+    };
+
+    const chargesBreakdown: PnlChargesBreakdown = pnlData?.summary?.chargesBreakdown ?? {
+        brokerage: 0,
+        stt: 0,
+        exchangeTurnoverCharges: 0,
+        sebiCharges: 0,
+        stampDuty: 0,
+        gst: 0,
+        totalCharges: 0,
+    };
+
+    return (
+        <div className="flex flex-col space-y-5 animate-in fade-in duration-150 pb-10">
+            {/* Header: Title matching sidebar "P&L Statement" */}
+            <div className="flex items-center justify-between pb-1 shrink-0">
+                <h1 className="text-xl md:text-2xl font-bold text-dash-text tracking-tight select-none">
+                    P&L Statement
+                </h1>
             </div>
+
+            {/* Error Message if query fails */}
+            {isError && (
+                <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-between text-xs shrink-0">
+                    <span>
+                        {error instanceof Error ? error.message : "Failed to load P&L report."}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => void refetch()}
+                        className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 font-semibold cursor-pointer"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+
+            {/* 1. Filter Bar (Zerodha Console 5 inputs + Blue Arrow button) */}
+            <div className="shrink-0">
+                <PnlFilterBar
+                    filters={filterForm}
+                    onChange={setFilterForm}
+                    onSubmit={handleFormSubmit}
+                    isLoading={isFetching}
+                />
+            </div>
+
+            {/* 2. Interactive Daily Heatmap Calendar */}
+            <PnlHeatmap
+                heatmap={pnlData?.heatmap}
+                fromDate={appliedFilters.fromDate}
+                toDate={appliedFilters.toDate}
+                isLoading={isLoading}
+            />
+
+            {/* 3. Horizontal Summary Metrics Row */}
+            <div className="shrink-0">
+                <PnlSummaryRow
+                    summary={pnlData?.summary}
+                    isLoading={isLoading}
+                    onOpenChargesBreakdown={() => setIsChargesModalOpen(true)}
+                />
+            </div>
+
+            {/* 4. Symbol Table with Search, FIFO Expansion & Pagination */}
+            <div className="shrink-0">
+                <PnlSymbolTable
+                    symbols={pnlData?.symbols ?? []}
+                    isLoading={isLoading}
+                    onResetFilters={handleResetFilters}
+                />
+            </div>
+
+            {/* Charges Breakdown Transparency Modal */}
+            <PnlChargesModal
+                isOpen={isChargesModalOpen}
+                onClose={() => setIsChargesModalOpen(false)}
+                breakdown={chargesBreakdown}
+                title="Charges & Taxes Breakdown"
+                subtitle="Itemized statutory levies and platform fees deducted from your gross trading returns."
+            />
         </div>
     );
-}
+};
