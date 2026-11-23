@@ -200,7 +200,7 @@ export interface PnlSymbolSummary {
   unrealizedPnL: number;    // MTM on open quantity
   openQuantity: number;     // Open inventory still holding
   currentLtp: number;
-  legs: PnlFifoLeg[];       // Granular FIFO trade breakdown
+  legs?: PnlFifoLeg[];       // Optional FIFO trade breakdown
   tags?: string[];
 }
 
