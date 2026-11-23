@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ToggleSwitch } from "./ToggleSwitch";
 import type {
     AdminStockItem,
@@ -32,15 +32,17 @@ export function AdminStockModal({
 }: AdminStockModalProps) {
     const isEdit = mode === "edit";
 
-    // Form state
-    const [symbol, setSymbol] = useState("");
-    const [name, setName] = useState("");
-    const [exchange, setExchange] = useState("NSE");
-    const [sector, setSector] = useState("");
-    const [type, setType] = useState<InstrumentType>("EQUITY");
-    const [feedSymbol, setFeedSymbol] = useState("");
-    const [isActive, setIsActive] = useState(true);
-    const [isTradable, setIsTradable] = useState(true);
+    // Form state initialized directly from props
+    const [symbol, setSymbol] = useState(isEdit && stock ? stock.symbol : "");
+    const [name, setName] = useState(isEdit && stock ? stock.name : "");
+    const [exchange, setExchange] = useState(isEdit && stock ? stock.exchange || "NSE" : "NSE");
+    const [sector, setSector] = useState(isEdit && stock ? stock.sector || "" : "");
+    const [type, setType] = useState<InstrumentType>(isEdit && stock ? stock.type : "EQUITY");
+    const [feedSymbol, setFeedSymbol] = useState(isEdit && stock ? stock.feedSymbol || "" : "");
+    const [isActive, setIsActive] = useState(isEdit && stock ? stock.isActive : true);
+    const [isTradable, setIsTradable] = useState(
+        isEdit && stock ? (stock.type === "INDEX" ? false : stock.isTradable) : true
+    );
 
     // Validation errors
     const [errors, setErrors] = useState<{
@@ -48,32 +50,6 @@ export function AdminStockModal({
         name?: string;
         exchange?: string;
     }>({});
-
-    // Populate or reset form when modal opens or stock changes
-    useEffect(() => {
-        if (!isOpen) return;
-
-        if (isEdit && stock) {
-            setSymbol(stock.symbol);
-            setName(stock.name);
-            setExchange(stock.exchange || "NSE");
-            setSector(stock.sector || "");
-            setType(stock.type);
-            setFeedSymbol(stock.feedSymbol || "");
-            setIsActive(stock.isActive);
-            setIsTradable(stock.type === "INDEX" ? false : stock.isTradable);
-        } else {
-            setSymbol("");
-            setName("");
-            setExchange("NSE");
-            setSector("");
-            setType("EQUITY");
-            setFeedSymbol("");
-            setIsActive(true);
-            setIsTradable(true);
-        }
-        setErrors({});
-    }, [isOpen, isEdit, stock]);
 
     if (!isOpen) return null;
 

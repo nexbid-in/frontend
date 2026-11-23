@@ -686,6 +686,7 @@ export function AdminStocksPage() {
 
             {/* Add / Edit Instrument Modal */}
             <AdminStockModal
+                key={modalState.isOpen ? `${modalState.mode}-${modalState.stock?.id ?? "new"}` : "closed"}
                 isOpen={modalState.isOpen}
                 mode={modalState.mode}
                 stock={modalState.stock}
