@@ -73,54 +73,6 @@ export function formatCurrencyINR(
 }
 
 /**
- * Formats percentage with sign and 2 decimal places.
- */
-export function formatPercent(
-    val: number | null | undefined,
-    showPlusSign: boolean = true
-): string {
-    if (val === null || val === undefined || isNaN(val)) {
-        return "0.00%";
-    }
-    const isNegative = val < 0;
-    const absVal = Math.abs(val);
-    const formatted = absVal.toFixed(2);
-
-    if (isNegative) {
-        return `-${formatted}%`;
-    }
-    if (showPlusSign && val > 0) {
-        return `+${formatted}%`;
-    }
-    return `${formatted}%`;
-}
-
-/**
- * Formats an ISO date/time string into: "DD MMM YYYY, HH:mm"
- * e.g. "23 Nov 2026, 14:32"
- */
-export function formatTradeDateTime(dateInput: string | Date): string {
-    try {
-        const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-        if (isNaN(d.getTime())) return "—";
-
-        const day = d.getDate().toString().padStart(2, "0");
-        const months = [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        ];
-        const month = months[d.getMonth()];
-        const year = d.getFullYear();
-        const hours = d.getHours().toString().padStart(2, "0");
-        const minutes = d.getMinutes().toString().padStart(2, "0");
-
-        return `${day} ${month} ${year}, ${hours}:${minutes}`;
-    } catch {
-        return "—";
-    }
-}
-
-/**
  * Formats a calendar date string (YYYY-MM-DD) into: "DD MMM YYYY"
  * without arbitrary time offset artifacts. e.g. "23 Nov 2026"
  */
