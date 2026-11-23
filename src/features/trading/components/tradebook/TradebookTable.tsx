@@ -243,60 +243,57 @@ export const TradebookTable: FC<TradebookTableProps> = ({
                 </div>
             )}
 
-            {/* Pagination Controls */}
+            {/* Table Footer: Rows Counter on left, Pagination on right (matching P&L Statement) */}
             {totalCount > 0 && (
-                <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-dash-border text-xs text-dash-text-muted">
-                    <div>
-                        Showing <span className="font-mono text-dash-text font-medium">{startRow}</span> -{" "}
-                        <span className="font-mono text-dash-text font-medium">{endRow}</span> of{" "}
-                        <span className="font-mono text-dash-text font-medium">{totalCount}</span> executions
-                    </div>
+                <div className="p-4 sm:p-5 border-t border-dash-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-dash-text-muted select-none">
+                    <span>
+                        Showing page {page} (rows {startRow} - {endRow} out of {totalCount})
+                    </span>
 
-                    <div className="flex items-center gap-1">
+                    {/* Pagination Buttons */}
+                    <div className="flex items-center gap-1 self-center sm:self-auto">
                         <button
                             type="button"
-                            onClick={() => onPageChange(page - 1)}
                             disabled={page <= 1}
-                            className="px-2.5 py-1 rounded bg-dash-panel-2 border border-dash-border hover:bg-dash-panel text-dash-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer select-none"
+                            onClick={() => onPageChange(page - 1)}
+                            className="w-8 h-8 rounded border border-dash-border flex items-center justify-center hover:bg-dash-panel-2 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-colors text-dash-text"
                             aria-label="Previous page"
                         >
-                            ‹ Prev
+                            ‹
                         </button>
 
-                        <div className="flex items-center gap-1 px-1">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
-                                let pageNum = idx + 1;
-                                if (totalPages > 5 && page > 3) {
-                                    pageNum = page - 3 + idx;
-                                    if (pageNum > totalPages) pageNum = totalPages - 4 + idx;
-                                }
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
+                            let pageNum = idx + 1;
+                            if (totalPages > 5 && page > 3) {
+                                pageNum = page - 3 + idx;
+                                if (pageNum > totalPages) pageNum = totalPages - 4 + idx;
+                            }
 
-                                const isActive = pageNum === page;
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        type="button"
-                                        onClick={() => onPageChange(pageNum)}
-                                        className={`w-7 h-7 rounded text-xs font-mono transition-colors cursor-pointer select-none ${
-                                            isActive
-                                                ? "bg-blue-600 text-white font-semibold"
-                                                : "bg-dash-panel-2 hover:bg-dash-panel text-dash-text border border-dash-border"
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                        </div>
+                            const isActive = pageNum === page;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => onPageChange(pageNum)}
+                                    className={`w-8 h-8 rounded border text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+                                        isActive
+                                            ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                                            : "border-dash-border text-dash-text hover:bg-dash-panel-2"
+                                    }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
 
                         <button
                             type="button"
-                            onClick={() => onPageChange(page + 1)}
                             disabled={page >= totalPages}
-                            className="px-2.5 py-1 rounded bg-dash-panel-2 border border-dash-border hover:bg-dash-panel text-dash-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer select-none"
+                            onClick={() => onPageChange(page + 1)}
+                            className="w-8 h-8 rounded border border-dash-border flex items-center justify-center hover:bg-dash-panel-2 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-colors text-dash-text"
                             aria-label="Next page"
                         >
-                            Next ›
+                            ›
                         </button>
                     </div>
                 </div>

@@ -23,7 +23,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                         <div key={i} className="flex flex-col space-y-2">
                             <div className="h-3 bg-dash-panel-2 rounded w-20" />
                             <div className="h-7 bg-dash-panel-2 rounded w-28" />
-                            <div className="h-3 bg-dash-panel-2 rounded w-24" />
                         </div>
                     ))}
                 </div>
@@ -32,10 +31,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
     }
 
     const totalTrades = summary?.totalTrades ?? 0;
-    const buyCount = summary?.buyTradesCount ?? 0;
-    const sellCount = summary?.sellTradesCount ?? 0;
-    const buyQty = summary?.totalBuyQty ?? 0;
-    const sellQty = summary?.totalSellQty ?? 0;
     const buyTurnover = summary?.totalBuyTurnover ?? 0;
     const sellTurnover = summary?.totalSellTurnover ?? 0;
     const totalCharges = summary?.totalCharges ?? 0;
@@ -53,11 +48,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                     <span className="text-2xl sm:text-[28px] font-medium tracking-normal text-dash-text font-sans">
                         {totalTrades}
                     </span>
-                    <span className="text-[11px] text-dash-text-muted mt-1 font-sans">
-                        <span className="text-emerald-400 font-medium">{buyCount} Buy</span>
-                        {" • "}
-                        <span className="text-rose-400 font-medium">{sellCount} Sell</span>
-                    </span>
                 </div>
 
                 {/* 2. Buy Turnover */}
@@ -71,9 +61,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                     >
                         {formatZerodhaMetric(buyTurnover, false)}
                     </span>
-                    <span className="text-[11px] text-dash-text-muted mt-1 font-sans">
-                        Qty: {buyQty.toLocaleString()}
-                    </span>
                 </div>
 
                 {/* 3. Sell Turnover */}
@@ -86,9 +73,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                         title={`Exact: ${formatCurrencyINR(sellTurnover, false, true)}`}
                     >
                         {formatZerodhaMetric(sellTurnover, false)}
-                    </span>
-                    <span className="text-[11px] text-dash-text-muted mt-1 font-sans">
-                        Qty: {sellQty.toLocaleString()}
                     </span>
                 </div>
 
@@ -119,9 +103,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                             </svg>
                         </button>
                     </div>
-                    <span className="text-[11px] text-dash-text-muted mt-1 font-sans">
-                        Govt. levies & fees
-                    </span>
                 </div>
             </div>
         </div>
