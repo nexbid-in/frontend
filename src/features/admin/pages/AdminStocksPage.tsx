@@ -28,7 +28,7 @@ export function AdminStocksPage() {
     const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
     const [tradableFilter, setTradableFilter] = useState<"ALL" | "TRADABLE" | "VIEW_ONLY">("ALL");
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(20);
+    const limit = 20;
 
     // Modals state
     const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -278,216 +278,212 @@ export function AdminStocksPage() {
     };
 
     return (
-        <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
-            {/* Header & Primary Action */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary">
-                        Instruments & Stock Directory
-                    </h1>
-                    <p className="text-xs sm:text-sm text-text-secondary mt-1">
-                        Manage tradeable equities, indices, and market feed mappings
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => refetch()}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-muted bg-panel hover:bg-panel-2 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-                        title="Refresh instrument directory"
-                    >
-                        <svg
-                            className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-primary-green" : ""}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                            />
-                        </svg>
-                        <span>Refresh</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setModalState({ isOpen: true, mode: "create", stock: null })}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-green hover:bg-primary-green-hover text-white text-xs sm:text-sm font-semibold transition-all shadow-md shadow-primary-green/10 cursor-pointer"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>Add Instrument</span>
-                    </button>
-                </div>
-            </div>
-
+        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
             {/* Metrics Overview Cards */}
             <AdminStockMetricsCards metrics={metrics} stocks={stocks} isLoading={isLoading} />
 
-            {/* Filter & Search Bar */}
-            <section className="rounded-2xl border border-border-muted bg-panel p-4 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                        Filter & Search Instruments
-                    </span>
-                    <div className="flex items-center gap-2 self-start sm:self-auto">
-                        {hasActiveFilters && (
+            {/* Instruments Management Section (Unified Filter Toolbar + Table) */}
+            <section className="rounded-xl border border-border-muted bg-card overflow-hidden shadow-xs">
+                {/* Header and Filter Toolbar */}
+                <div className="p-5 border-b border-border-muted space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-base font-semibold text-text-primary tracking-tight">
+                                    Platform Stock Directory
+                                </h2>
+                                {isFetching && !isLoading && (
+                                    <span className="w-2 h-2 rounded-full bg-primary-green animate-ping" />
+                                )}
+                            </div>
+                            <p className="text-xs text-text-secondary mt-0.5">
+                                Real-time catalog and administrative oversight of all tradeable instruments.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
                             <button
                                 type="button"
-                                onClick={handleResetFilters}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border-muted bg-panel-2 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                                onClick={() => refetch()}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-muted bg-panel-2 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                                title="Refresh instrument directory"
                             >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                                <span>Reset Filters</span>
-                            </button>
-                        )}
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel-2 border border-border-muted text-xs text-text-secondary font-medium">
-                            <strong className="font-semibold text-text-primary">{totalStocks}</strong> Instruments
-                        </div>
-                    </div>
-                </div>
-
-                {/* Filter Controls Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
-                    {/* Search Input */}
-                    <div className="lg:col-span-6 relative">
-                        <svg
-                            className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search symbol, company name, or feed ticker..."
-                            className="w-full bg-panel-2 border border-border-muted rounded-xl pl-9 pr-8 py-2 text-xs text-text-primary placeholder:text-text-secondary/60 focus:outline-none focus:border-primary-green transition-colors"
-                        />
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary p-0.5 cursor-pointer"
-                                aria-label="Clear search"
-                            >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Type Filter */}
-                    <div className="lg:col-span-2">
-                        <select
-                            value={typeFilter}
-                            onChange={(e) => {
-                                setTypeFilter(e.target.value as "ALL" | "EQUITY" | "INDEX");
-                                setPage(1);
-                            }}
-                            className="w-full bg-panel-2 border border-border-muted rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-primary-green transition-colors cursor-pointer"
-                        >
-                            <option value="ALL">All Types</option>
-                            <option value="EQUITY">Equities Only</option>
-                            <option value="INDEX">Indices Only</option>
-                        </select>
-                    </div>
-
-                    {/* Status Filter */}
-                    <div className="lg:col-span-2">
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => {
-                                setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "INACTIVE");
-                                setPage(1);
-                            }}
-                            className="w-full bg-panel-2 border border-border-muted rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-primary-green transition-colors cursor-pointer"
-                        >
-                            <option value="ALL">All Statuses</option>
-                            <option value="ACTIVE">Active Only</option>
-                            <option value="INACTIVE">Inactive Only</option>
-                        </select>
-                    </div>
-
-                    {/* Tradable Filter */}
-                    <div className="lg:col-span-2">
-                        <select
-                            value={tradableFilter}
-                            onChange={(e) => {
-                                setTradableFilter(e.target.value as "ALL" | "TRADABLE" | "VIEW_ONLY");
-                                setPage(1);
-                            }}
-                            className="w-full bg-panel-2 border border-border-muted rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-primary-green transition-colors cursor-pointer"
-                        >
-                            <option value="ALL">All Trading Modes</option>
-                            <option value="TRADABLE">Tradable</option>
-                            <option value="VIEW_ONLY">View-Only</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
-
-            {/* Data Table Section */}
-            <section className="rounded-2xl border border-border-muted bg-panel shadow-sm overflow-hidden flex flex-col">
-                <div ref={tableContainerRef} className="overflow-x-auto custom-scrollbar">
-                    {isLoading ? (
-                        <div className="p-12 flex flex-col items-center justify-center space-y-3">
-                            <div className="w-8 h-8 rounded-full border-2 border-primary-green border-t-transparent animate-spin" />
-                            <p className="text-xs text-text-secondary font-medium">Loading instrument master...</p>
-                        </div>
-                    ) : queryError ? (
-                        <div className="p-12 text-center space-y-3">
-                            <div className="w-10 h-10 rounded-full bg-red/10 text-red mx-auto flex items-center justify-center">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg
+                                    className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-primary-green" : ""}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
                                     <path
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         strokeWidth="2"
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                                     />
                                 </svg>
+                                <span>Refresh</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setModalState({ isOpen: true, mode: "create", stock: null })}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-green hover:bg-primary-green-hover text-white text-xs font-semibold transition-all shadow-sm shadow-primary-green/10 cursor-pointer"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span>Add Instrument</span>
+                            </button>
+
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-panel-2 border border-border-muted text-xs text-text-secondary font-medium">
+                                <strong className="font-semibold text-text-primary">{totalStocks}</strong> Total Instruments
                             </div>
-                            <h3 className="text-sm font-semibold text-text-primary">Failed to load instruments</h3>
-                            <p className="text-xs text-text-secondary max-w-sm mx-auto">
-                                {queryError instanceof Error ? queryError.message : "Network error"}
+                        </div>
+                    </div>
+
+                    {/* Filter Inputs Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 pt-1">
+                        {/* Search Input */}
+                        <div className="lg:col-span-6 relative">
+                            <svg
+                                className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search symbol, company name, or feed ticker..."
+                                className="w-full bg-panel-2 border border-border-muted rounded-lg pl-9 pr-8 py-2 text-xs text-text-primary placeholder:text-text-secondary/60 focus:outline-none focus:border-primary-green transition-colors"
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery("")}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary p-0.5 cursor-pointer"
+                                    aria-label="Clear search"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Type Filter */}
+                        <div className="lg:col-span-2">
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => {
+                                    setTypeFilter(e.target.value as "ALL" | "EQUITY" | "INDEX");
+                                    setPage(1);
+                                }}
+                                className="w-full bg-panel-2 border border-border-muted rounded-lg px-2.5 py-2 text-xs text-text-secondary focus:outline-none focus:border-primary-green transition-colors cursor-pointer"
+                            >
+                                <option value="ALL">All Types</option>
+                                <option value="EQUITY">Equities Only</option>
+                                <option value="INDEX">Indices Only</option>
+                            </select>
+                        </div>
+
+                        {/* Status Filter */}
+                        <div className="lg:col-span-2">
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => {
+                                    setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "INACTIVE");
+                                    setPage(1);
+                                }}
+                                className="w-full bg-panel-2 border border-border-muted rounded-lg px-2.5 py-2 text-xs text-text-secondary focus:outline-none focus:border-primary-green transition-colors cursor-pointer"
+                            >
+                                <option value="ALL">All Statuses</option>
+                                <option value="ACTIVE">Active Only</option>
+                                <option value="INACTIVE">Inactive Only</option>
+                            </select>
+                        </div>
+
+                        {/* Tradable Filter */}
+                        <div className="lg:col-span-2">
+                            <select
+                                value={tradableFilter}
+                                onChange={(e) => {
+                                    setTradableFilter(e.target.value as "ALL" | "TRADABLE" | "VIEW_ONLY");
+                                    setPage(1);
+                                }}
+                                className="w-full bg-panel-2 border border-border-muted rounded-lg px-2.5 py-2 text-xs text-text-secondary focus:outline-none focus:border-primary-green transition-colors cursor-pointer"
+                            >
+                                <option value="ALL">All Trading Modes</option>
+                                <option value="TRADABLE">Tradable</option>
+                                <option value="VIEW_ONLY">View-Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Clear Filters Row */}
+                    {hasActiveFilters && (
+                        <div className="flex items-center justify-end pt-1">
+                            <button
+                                type="button"
+                                onClick={handleResetFilters}
+                                className="text-xs text-text-secondary hover:text-primary-green transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <span>Clear Filters</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Table Viewport with vertical scroll for visible rows */}
+                <div
+                    ref={tableContainerRef}
+                    className="overflow-x-auto overflow-y-auto h-[340px] custom-scrollbar relative"
+                >
+                    {isLoading && !stocksData && (
+                        <div className="absolute inset-0 z-20 flex items-center justify-center bg-card/60 backdrop-blur-xs transition-all duration-200">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-7 h-7 border-2 border-primary-green/20 border-t-primary-green rounded-full animate-spin" />
+                                <span className="text-xs text-text-secondary font-medium">Loading instruments...</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {queryError ? (
+                        <div className="flex flex-col items-center justify-center h-full text-red text-xs space-y-2 p-8">
+                            <svg className="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="font-medium">
+                                {queryError instanceof Error ? queryError.message : "Failed to load instruments"}
                             </p>
                             <button
                                 type="button"
                                 onClick={() => refetch()}
-                                className="px-3.5 py-1.5 rounded-lg bg-panel-2 border border-border-muted text-xs text-text-primary hover:bg-muted font-medium cursor-pointer"
+                                className="px-3 py-1 rounded bg-panel-2 border border-border-muted text-text-primary text-xs hover:border-primary-green transition-colors cursor-pointer"
                             >
-                                Try Again
+                                Retry
                             </button>
                         </div>
-                    ) : stocks.length === 0 ? (
-                        <div className="p-12 text-center space-y-3">
-                            <div className="w-12 h-12 rounded-2xl bg-panel-2 border border-border-muted mx-auto flex items-center justify-center text-text-secondary">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <rect x="3" y="12" width="4" height="8" rx="1" strokeWidth="2" />
-                                    <rect x="10" y="8" width="4" height="12" rx="1" strokeWidth="2" />
-                                    <rect x="17" y="4" width="4" height="16" rx="1" strokeWidth="2" />
-                                </svg>
-                            </div>
-                            <h3 className="text-sm font-semibold text-text-primary">No instruments found</h3>
-                            <p className="text-xs text-text-secondary max-w-sm mx-auto">
-                                {hasActiveFilters
-                                    ? "No instruments matched your search or filter criteria. Try adjusting or clearing your filters."
-                                    : "No instruments are registered in the master directory yet. Add your first instrument above."}
-                            </p>
+                    ) : stocks.length === 0 && !isLoading ? (
+                        <div className="flex flex-col items-center justify-center h-full text-text-secondary text-xs space-y-2 p-8">
+                            <svg className="w-8 h-8 opacity-40 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="12" width="4" height="8" rx="1" strokeWidth="1.5" />
+                                <rect x="10" y="8" width="4" height="12" rx="1" strokeWidth="1.5" />
+                                <rect x="17" y="4" width="4" height="16" rx="1" strokeWidth="1.5" />
+                            </svg>
+                            <p className="font-medium text-text-primary">No instruments found</p>
+                            <p className="text-[11px] text-text-secondary">Try adjusting your search or filters.</p>
                             {hasActiveFilters && (
                                 <button
                                     type="button"
                                     onClick={handleResetFilters}
-                                    className="px-3.5 py-1.5 rounded-lg bg-panel-2 border border-border-muted text-xs text-text-primary hover:bg-muted font-medium cursor-pointer"
+                                    className="px-3 py-1 mt-1 rounded bg-panel-2 border border-border-muted text-text-primary text-xs hover:border-primary-green transition-colors cursor-pointer"
                                 >
                                     Clear Filters
                                 </button>
@@ -495,66 +491,66 @@ export function AdminStocksPage() {
                         </div>
                     ) : (
                         <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-border-muted/80 bg-panel-2/40 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
-                                    <th className="py-3 px-4">Symbol & Exchange</th>
-                                    <th className="py-3 px-4">Instrument Name</th>
-                                    <th className="py-3 px-4">Type</th>
-                                    <th className="py-3 px-4">Sector</th>
-                                    <th className="py-3 px-4">Feed Ticker</th>
-                                    <th className="py-3 px-4 text-center">Active</th>
-                                    <th className="py-3 px-4 text-center">Tradable</th>
-                                    <th className="py-3 px-4 text-right">Actions</th>
+                            <thead className="sticky top-0 z-10 bg-panel-2 border-b border-border-muted shadow-xs">
+                                <tr className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                                    <th className="py-3 px-4 bg-panel-2">Symbol & Exchange</th>
+                                    <th className="py-3 px-4 bg-panel-2">Instrument Name</th>
+                                    <th className="py-3 px-4 bg-panel-2">Type</th>
+                                    <th className="py-3 px-4 bg-panel-2">Sector</th>
+                                    <th className="py-3 px-4 bg-panel-2">Feed Ticker</th>
+                                    <th className="py-3 px-4 bg-panel-2 text-center">Active</th>
+                                    <th className="py-3 px-4 bg-panel-2 text-center">Tradable</th>
+                                    <th className="py-3 px-4 bg-panel-2 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border-muted/40 text-xs">
+                            <tbody className="text-xs divide-y divide-border-muted/60">
                                 {stocks.map((stock) => {
                                     const isEquity = stock.type === "EQUITY";
 
                                     return (
                                         <tr
                                             key={stock.id}
-                                            className="hover:bg-panel-2/50 transition-colors group"
+                                            className="hover:bg-panel-2/40 transition-colors group"
                                         >
                                             {/* Symbol & Exchange */}
-                                            <td className="py-3.5 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-text-primary font-mono tracking-tight text-sm">
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-mono font-bold text-text-primary tracking-tight">
                                                         {stock.symbol}
                                                     </span>
-                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-panel-2 border border-border-muted text-text-secondary uppercase">
+                                                    <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-panel-2 border border-border-muted text-text-secondary uppercase">
                                                         {stock.exchange || "NSE"}
                                                     </span>
                                                 </div>
                                             </td>
 
                                             {/* Instrument Name */}
-                                            <td className="py-3.5 px-4 font-medium text-text-primary max-w-xs truncate">
+                                            <td className="py-3 px-4 font-medium text-text-primary max-w-[220px] truncate">
                                                 {stock.name}
                                             </td>
 
                                             {/* Type Badge */}
-                                            <td className="py-3.5 px-4">
+                                            <td className="py-3 px-4">
                                                 {isEquity ? (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                                                         EQUITY
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                                                         INDEX
                                                     </span>
                                                 )}
                                             </td>
 
                                             {/* Sector */}
-                                            <td className="py-3.5 px-4 text-text-secondary text-xs">
-                                                {stock.sector || <span className="text-text-secondary/40">-</span>}
+                                            <td className="py-3 px-4 text-text-secondary text-xs max-w-[160px] truncate">
+                                                {stock.sector || <span className="text-text-secondary/40">—</span>}
                                             </td>
 
                                             {/* Feed Ticker */}
-                                            <td className="py-3.5 px-4">
+                                            <td className="py-3 px-4">
                                                 {stock.feedSymbol ? (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-panel-2 border border-border-muted text-text-primary">
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono font-medium bg-panel-2 border border-border-muted text-text-primary">
                                                         {stock.feedSymbol}
                                                     </span>
                                                 ) : (
@@ -565,7 +561,7 @@ export function AdminStocksPage() {
                                             </td>
 
                                             {/* Active Toggle Switch */}
-                                            <td className="py-3.5 px-4 text-center">
+                                            <td className="py-3 px-4 text-center">
                                                 <div className="inline-flex items-center justify-center">
                                                     <ToggleSwitch
                                                         checked={stock.isActive}
@@ -576,7 +572,7 @@ export function AdminStocksPage() {
                                             </td>
 
                                             {/* Tradable Toggle Switch */}
-                                            <td className="py-3.5 px-4 text-center">
+                                            <td className="py-3 px-4 text-center">
                                                 <div className="inline-flex items-center justify-center">
                                                     <ToggleSwitch
                                                         checked={stock.type === "INDEX" ? false : stock.isTradable}
@@ -589,7 +585,7 @@ export function AdminStocksPage() {
                                             </td>
 
                                             {/* Actions */}
-                                            <td className="py-3.5 px-4 text-right">
+                                            <td className="py-3 px-4 text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     {/* Edit Button */}
                                                     <button
@@ -643,36 +639,17 @@ export function AdminStocksPage() {
                 </div>
 
                 {/* Pagination Controls */}
-                <div className="p-4 border-t border-border-muted flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-secondary bg-panel">
-                    <div className="flex items-center gap-3">
-                        <div>
-                            Showing{" "}
-                            <span className="font-semibold text-text-primary">
-                                {(page - 1) * limit + (stocks.length > 0 ? 1 : 0)}
-                            </span>{" "}
-                            to{" "}
-                            <span className="font-semibold text-text-primary">
-                                {Math.min(page * limit, totalStocks)}
-                            </span>{" "}
-                            of <span className="font-semibold text-text-primary">{totalStocks}</span> instruments
-                        </div>
-
-                        {/* Page Size Selector */}
-                        <div className="flex items-center gap-1.5 pl-3 border-l border-border-muted">
-                            <span className="text-[11px] text-text-secondary">Rows:</span>
-                            <select
-                                value={limit}
-                                onChange={(e) => {
-                                    setLimit(Number(e.target.value));
-                                    setPage(1);
-                                }}
-                                className="bg-panel-2 border border-border-muted rounded-lg px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-primary-green cursor-pointer"
-                            >
-                                <option value={10}>10</option>
-                                <option value={20}>20</option>
-                                <option value={50}>50</option>
-                            </select>
-                        </div>
+                <div className="p-4 border-t border-border-muted flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-secondary bg-card">
+                    <div>
+                        Showing{" "}
+                        <span className="font-semibold text-text-primary">
+                            {(page - 1) * limit + (stocks.length > 0 ? 1 : 0)}
+                        </span>{" "}
+                        to{" "}
+                        <span className="font-semibold text-text-primary">
+                            {Math.min(page * limit, totalStocks)}
+                        </span>{" "}
+                        of <span className="font-semibold text-text-primary">{totalStocks}</span> instruments
                     </div>
 
                     <div className="flex items-center gap-1.5">
