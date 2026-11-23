@@ -155,7 +155,7 @@ export function AdminStockModal({
             {/* Modal Dialog */}
             <div className="relative w-full max-w-xl rounded-2xl bg-panel border border-border-muted shadow-2xl overflow-hidden z-10 flex flex-col max-h-[92vh]">
                 {/* Header */}
-                <div className="px-6 py-4.5 border-b border-border-muted flex items-center justify-between">
+                <div className="px-6 py-4.5 border-b border-border-muted flex items-center justify-between shrink-0">
                     <div>
                         <h3 className="text-base font-semibold text-text-primary">
                             {isEdit ? "Edit Instrument Metadata" : "Register New Instrument"}
@@ -178,8 +178,10 @@ export function AdminStockModal({
                     </button>
                 </div>
 
-                {/* Form Body */}
-                <form onSubmit={handleSubmit} className="overflow-y-auto custom-scrollbar p-6 space-y-4.5 flex-1">
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    {/* Scrollable Form Body */}
+                    <div className="overflow-y-auto custom-scrollbar p-6 space-y-4.5 flex-1 min-h-0">
                     {/* Symbol & Exchange Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Symbol */}
@@ -193,7 +195,7 @@ export function AdminStockModal({
                                 onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                                 disabled={isEdit}
                                 placeholder="e.g. RELIANCE, NIFTY 50"
-                                className={`w-full bg-panel-2 border rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors uppercase font-mono ${
+                                className={`w-full h-10 bg-panel-2 border rounded-lg px-3.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors uppercase font-mono ${
                                     isEdit ? "opacity-60 cursor-not-allowed bg-muted/40" : ""
                                 } ${errors.symbol ? "border-red" : "border-border-muted"}`}
                             />
@@ -213,13 +215,12 @@ export function AdminStockModal({
                             <select
                                 value={exchange}
                                 onChange={(e) => setExchange(e.target.value)}
-                                className={`w-full bg-panel-2 border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary-green transition-colors cursor-pointer ${
+                                className={`w-full h-10 bg-panel-2 border rounded-lg px-3.5 text-sm text-text-primary focus:outline-none focus:border-primary-green transition-colors cursor-pointer ${
                                     errors.exchange ? "border-red" : "border-border-muted"
                                 }`}
                             >
                                 <option value="NSE">NSE (National Stock Exchange)</option>
                                 <option value="BSE">BSE (Bombay Stock Exchange)</option>
-                                <option value="MCX">MCX (Commodity)</option>
                             </select>
                             {errors.exchange && <p className="mt-1 text-[11px] text-red">{errors.exchange}</p>}
                         </div>
@@ -235,7 +236,7 @@ export function AdminStockModal({
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="e.g. Reliance Industries Ltd or Nifty 50 Index"
-                            className={`w-full bg-panel-2 border rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors ${
+                            className={`w-full h-10 bg-panel-2 border rounded-lg px-3.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors ${
                                 errors.name ? "border-red" : "border-border-muted"
                             }`}
                         />
@@ -300,7 +301,7 @@ export function AdminStockModal({
                             value={sector}
                             onChange={(e) => setSector(e.target.value)}
                             placeholder="e.g. Energy & Petrochemicals, Banking, Automobile, IT"
-                            className="w-full bg-panel-2 border border-border-muted rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors"
+                            className="w-full h-10 bg-panel-2 border border-border-muted rounded-lg px-3.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors"
                         />
                     </div>
 
@@ -314,7 +315,7 @@ export function AdminStockModal({
                             value={feedSymbol}
                             onChange={(e) => setFeedSymbol(e.target.value)}
                             placeholder="e.g. NSE:TMCV-EQ or 256265"
-                            className="w-full bg-panel-2 border border-border-muted rounded-lg px-3 py-2 text-xs font-mono text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors"
+                            className="w-full h-10 bg-panel-2 border border-border-muted rounded-lg px-3.5 text-sm font-mono text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-primary-green transition-colors"
                         />
                         <p className="mt-1 text-[11px] text-text-secondary">
                             Specify broker ticker if different from standard symbol, e.g. <span className="font-mono text-text-primary">NSE:TMCV-EQ</span>
@@ -368,9 +369,11 @@ export function AdminStockModal({
                             />
                         </div>
                     </div>
+                    {/* End Scrollable Form Body */}
+                    </div>
 
-                    {/* Footer Actions */}
-                    <div className="pt-4 border-t border-border-muted flex items-center justify-end gap-2.5">
+                    {/* Fixed Footer Actions */}
+                    <div className="px-6 py-4 border-t border-border-muted flex items-center justify-end gap-2.5 bg-panel shrink-0">
                         <button
                             type="button"
                             onClick={onClose}
