@@ -5,22 +5,24 @@ import { formatCurrencyINR, formatZerodhaMetric } from "../../utils/pnlFormatter
 interface TradebookSummaryRowProps {
     summary?: TradebookSummary;
     isLoading?: boolean;
+    isFetching?: boolean;
     onOpenChargesBreakdown: () => void;
 }
 
 export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
     summary,
     isLoading = false,
+    isFetching = false,
     onOpenChargesBreakdown,
 }) => {
-    if (isLoading) {
+    if (isLoading && !summary) {
         return (
-            <div className="bg-dash-panel border border-dash-border rounded-lg p-5 animate-pulse">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="p-5 sm:py-6 px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32 bg-dash-panel border border-dash-border rounded-lg animate-pulse">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 items-start justify-between">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="flex flex-col space-y-2">
                             <div className="h-3 bg-dash-panel-2 rounded w-20" />
-                            <div className="h-7 bg-dash-panel-2 rounded w-32" />
+                            <div className="h-7 bg-dash-panel-2 rounded w-28" />
                             <div className="h-3 bg-dash-panel-2 rounded w-24" />
                         </div>
                     ))}
@@ -39,7 +41,9 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
     const totalCharges = summary?.totalCharges ?? 0;
 
     return (
-        <div className="bg-dash-panel border border-dash-border rounded-lg px-6 sm:px-10 md:px-14 lg:px-20 xl:px-24 py-5 transition-all">
+        <div className={`p-5 sm:py-6 px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32 bg-dash-panel border border-dash-border rounded-lg transition-opacity duration-300 ${
+            isFetching ? "opacity-75" : "opacity-100"
+        }`}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 items-start justify-between">
                 {/* 1. Total Executions */}
                 <div className="flex flex-col">

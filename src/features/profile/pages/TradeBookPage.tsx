@@ -207,6 +207,7 @@ export const TradeBookPage: FC = () => {
                 <TradebookSummaryRow
                     summary={tradebookData?.summary}
                     isLoading={isLoading}
+                    isFetching={isFetching}
                     onOpenChargesBreakdown={handleOpenTotalCharges}
                 />
             </div>
@@ -222,6 +223,7 @@ export const TradeBookPage: FC = () => {
                         setCurrentPage(1);
                     }}
                     isLoading={isLoading}
+                    isFetching={isFetching}
                     onSelectTradeCharges={handleOpenIndividualTradeCharges}
                     onResetFilters={handleResetFilters}
                 />

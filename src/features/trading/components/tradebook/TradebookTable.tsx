@@ -8,6 +8,7 @@ interface TradebookTableProps {
     onPageChange: (newPage: number) => void;
     onLimitChange?: (newLimit: number) => void;
     isLoading?: boolean;
+    isFetching?: boolean;
     onSelectTradeCharges?: (charges: TradeChargesItem, tradeTitle: string) => void;
     onResetFilters: () => void;
 }
@@ -18,6 +19,7 @@ export const TradebookTable: FC<TradebookTableProps> = ({
     onPageChange,
     onLimitChange,
     isLoading = false,
+    isFetching = false,
     onSelectTradeCharges,
     onResetFilters,
 }) => {
@@ -29,7 +31,7 @@ export const TradebookTable: FC<TradebookTableProps> = ({
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    if (isLoading) {
+    if (isLoading && trades.length === 0) {
         return (
             <div className="bg-dash-panel border border-dash-border rounded-lg p-5 animate-pulse space-y-4">
                 <div className="h-9 bg-dash-panel-2 rounded w-60" />
@@ -48,7 +50,9 @@ export const TradebookTable: FC<TradebookTableProps> = ({
     const endRow = Math.min(totalCount, page * limit);
 
     return (
-        <div className="bg-dash-panel border border-dash-border rounded-lg flex flex-col">
+        <div className={`bg-dash-panel border border-dash-border rounded-lg flex flex-col transition-opacity duration-300 ${
+            isFetching ? "opacity-75" : "opacity-100"
+        }`}>
             {/* Top Toolbar */}
             <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dash-border">
                 <div className="flex items-center gap-2">

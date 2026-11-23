@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { tradingService } from "../services/tradingService";
 import { QUERY_KEYS } from "@/constants/queryKeys";
 import { useAppDispatch } from "@/store/hooks";
@@ -59,6 +59,7 @@ export function usePnlStatementQuery(params?: PnlStatementQueryParams) {
     return useQuery({
         queryKey: QUERY_KEYS.portfolio.pnl(params as Record<string, unknown>),
         queryFn: () => tradingService.getPnlStatement(params),
+        placeholderData: keepPreviousData,
         staleTime: 1000 * 15,
     });
 }
@@ -67,6 +68,7 @@ export function useTradebookQuery(params?: TradebookQueryParams) {
     return useQuery({
         queryKey: QUERY_KEYS.portfolio.tradebook(params as Record<string, unknown>),
         queryFn: () => tradingService.getTradebook(params),
+        placeholderData: keepPreviousData,
         staleTime: 1000 * 10,
     });
 }
