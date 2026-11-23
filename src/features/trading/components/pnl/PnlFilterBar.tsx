@@ -89,14 +89,32 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         Symbol
                     </label>
-                    <input
-                        type="text"
-                        placeholder="EG: INFY"
-                        value={filters.symbol}
-                        onChange={(e) => onChange({ ...filters, symbol: e.target.value.toUpperCase() })}
-                        onKeyDown={(e) => e.key === "Enter" && onSubmit()}
-                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text placeholder-dash-text-muted/60 uppercase focus:outline-none transition-colors"
-                    />
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="EG: INFY"
+                            value={filters.symbol}
+                            onChange={(e) => onChange({ ...filters, symbol: e.target.value.toUpperCase() })}
+                            onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+                            className={`w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded pl-3 ${
+                                filters.symbol ? "pr-8" : "pr-3"
+                            } py-2 text-xs text-dash-text placeholder-dash-text-muted/60 uppercase focus:outline-none transition-colors`}
+                        />
+                        {filters.symbol && (
+                            <button
+                                type="button"
+                                onClick={() => onChange({ ...filters, symbol: "" })}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-dash-text-muted hover:text-dash-text rounded transition-colors cursor-pointer"
+                                aria-label="Clear symbol"
+                                title="Clear symbol"
+                            >
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* 4. Date Range Picker (Zerodha Console Style) */}
