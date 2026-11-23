@@ -7,33 +7,12 @@ interface PnlSymbolTableProps {
     symbols: PnlSymbolSummary[];
     isLoading?: boolean;
     onResetFilters?: () => void;
-    onOpenManageTags?: () => void;
 }
-
-// Default tags mapping for Zerodha aesthetic if backend symbol doesn't specify tags
-const SAMPLE_TAG_MAP: Record<string, string[]> = {
-    INFY: ["Swing", "Earnings"],
-    BHARTIARTL: ["Long-term"],
-    RELIANCE: ["Long-term"],
-    HDFCBANK: ["Swing"],
-    TATAMOTORS: ["Breakout", "Intraday"],
-    LT: ["Swing"],
-    ICICIBANK: [],
-};
-
-const TAG_COLOR_MAP: Record<string, { dot: string; bg: string }> = {
-    "Long-term": { dot: "bg-emerald-500", bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-    "Swing": { dot: "bg-purple-400", bg: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
-    "Breakout": { dot: "bg-blue-400", bg: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-    "Intraday": { dot: "bg-amber-400", bg: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-    "Earnings": { dot: "bg-rose-400", bg: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
-};
 
 export const PnlSymbolTable: FC<PnlSymbolTableProps> = ({
     symbols,
     isLoading = false,
     onResetFilters,
-    onOpenManageTags,
 }) => {
     // 1. Search & Filter State
     const [searchQuery, setSearchQuery] = useState("");
@@ -158,18 +137,6 @@ export const PnlSymbolTable: FC<PnlSymbolTableProps> = ({
                 <div className="flex items-center gap-4 text-xs font-medium text-dash-text">
                     <button
                         type="button"
-                        onClick={onOpenManageTags}
-                        className="inline-flex items-center gap-1.5 text-blue-500 hover:text-blue-400 hover:underline cursor-pointer transition-colors"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
-                        </svg>
-                        <span>Manage tags</span>
-                    </button>
-
-                    <button
-                        type="button"
                         onClick={handleDownloadCSV}
                         className="inline-flex items-center gap-1.5 text-blue-500 hover:text-blue-400 hover:underline cursor-pointer transition-colors"
                         title="Export statement as CSV"
@@ -231,9 +198,6 @@ export const PnlSymbolTable: FC<PnlSymbolTableProps> = ({
                                 const isNetProfit = item.netRealizedPnL >= 0;
                                 const isUnrealizedProfit = item.unrealizedPnL >= 0;
 
-                                // Tags for this symbol (from backend or sample map)
-                                const tags = item.tags ?? SAMPLE_TAG_MAP[item.symbol] ?? [];
-
                                 return (
                                     <Fragment key={rowKey}>
                                         <tr
@@ -242,46 +206,23 @@ export const PnlSymbolTable: FC<PnlSymbolTableProps> = ({
                                                 isExpanded ? "bg-dash-panel-2/50" : "hover:bg-dash-panel-2/30"
                                             }`}
                                         >
-                                            {/* Symbol column with Caret + Ticker + NSE + Tags */}
+                                            {/* Symbol column with Caret + Ticker + NSE */}
                                             <td className="py-3.5 px-4 font-medium whitespace-nowrap">
-                                                <div className="flex items-start gap-2">
+                                                <div className="flex items-center gap-2">
                                                     <span
-                                                        className={`text-dash-text-muted mt-0.5 inline-block text-[11px] transition-transform duration-150 ${
+                                                        className={`text-dash-text-muted inline-block text-[11px] transition-transform duration-150 ${
                                                             isExpanded ? "rotate-90 text-blue-500" : ""
                                                         }`}
                                                     >
                                                         ›
                                                     </span>
-                                                    <div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="font-semibold text-dash-text">
-                                                                {item.symbol}
-                                                            </span>
-                                                            <span className="text-[10px] text-dash-text-muted font-normal">
-                                                                {item.exchange || "NSE"}
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Tags list below ticker */}
-                                                        {tags.length > 0 && (
-                                                            <div className="flex items-center gap-1.5 mt-1">
-                                                                {tags.map((tag) => {
-                                                                    const style = TAG_COLOR_MAP[tag] ?? {
-                                                                        dot: "bg-blue-400",
-                                                                        bg: "bg-dash-panel-3 text-dash-text-muted border-dash-border",
-                                                                    };
-                                                                    return (
-                                                                        <span
-                                                                            key={tag}
-                                                                            className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] bg-dash-panel-2 border border-dash-border/60 text-dash-text-muted"
-                                                                        >
-                                                                            <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                                                                            <span>{tag}</span>
-                                                                        </span>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-semibold text-dash-text">
+                                                            {item.symbol}
+                                                        </span>
+                                                        <span className="text-[10px] text-dash-text-muted font-normal">
+                                                            {item.exchange || "NSE"}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>

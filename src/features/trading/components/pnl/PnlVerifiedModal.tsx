@@ -21,10 +21,7 @@ export const PnlVerifiedModal: FC<PnlVerifiedModalProps> = ({
     toDate,
     userName = "Trader",
 }) => {
-    if (!isOpen) return null;
-
-    const netRealized = summary?.netRealizedPnL ?? 0;
-    const isPositive = netRealized >= 0;
+    // Hooks must ALWAYS be declared before any conditional early returns
     const { greenDays, redDays } = useMemo(() => {
         if (!heatmap?.days || heatmap.days.length === 0) {
             return {
@@ -40,6 +37,11 @@ export const PnlVerifiedModal: FC<PnlVerifiedModalProps> = ({
         }
         return { greenDays: green, redDays: red };
     }, [heatmap]);
+
+    if (!isOpen) return null;
+
+    const netRealized = summary?.netRealizedPnL ?? 0;
+    const isPositive = netRealized >= 0;
 
     return (
         <div

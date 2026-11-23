@@ -136,7 +136,7 @@ export type PositionsFilter = 'OPEN' | 'ALL' | 'CLOSED';
 // P&L STATEMENT TYPES (Zerodha-Standard FIFO Architecture)
 // ============================================================================
 export type PnlViewType = "COMBINED" | "REALIZED" | "UNREALIZED";
-export type PnlSegment = "ALL" | "CNC" | "MIS";
+export type PnlSegment = "ALL" | "CNC" | "MIS" | "COMBINED" | "DELIVERY" | "INTRADAY";
 
 export interface PnlChargesBreakdown {
   brokerage: number;

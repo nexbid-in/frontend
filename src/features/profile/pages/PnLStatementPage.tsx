@@ -23,12 +23,11 @@ export const PnLStatementPage: FC = () => {
 
     // 1. Form Filter State (controlled inputs)
     const [filterForm, setFilterForm] = useState<PnlFilterState>({
-        segment: "ALL",
+        segment: "COMBINED",
         pnlType: "COMBINED",
         symbol: "",
         fromDate: fyPresets.currentFy.from,
         toDate: fyPresets.currentFy.to,
-        tag: "All Tags",
     });
 
     // 2. Active Applied Query State (triggered on Submit button click or Enter)
@@ -65,27 +64,17 @@ export const PnLStatementPage: FC = () => {
         refetch,
     } = usePnlStatementQuery(queryParams);
 
-    // Filter symbols by Tag if a specific tag is selected
-    const visibleSymbols = useMemo(() => {
-        const list = pnlData?.symbols ?? [];
-        if (!appliedFilters.tag || appliedFilters.tag === "All Tags") {
-            return list;
-        }
-        return list.filter((s) => s.tags?.includes(appliedFilters.tag));
-    }, [pnlData?.symbols, appliedFilters.tag]);
-
     const handleFormSubmit = () => {
         setAppliedFilters({ ...filterForm });
     };
 
     const handleResetFilters = () => {
         const resetState: PnlFilterState = {
-            segment: "ALL",
+            segment: "COMBINED",
             pnlType: "COMBINED",
             symbol: "",
             fromDate: fyPresets.currentFy.from,
             toDate: fyPresets.currentFy.to,
-            tag: "All Tags",
         };
         setFilterForm(resetState);
         setAppliedFilters(resetState);
@@ -172,13 +161,12 @@ export const PnLStatementPage: FC = () => {
                 />
             </div>
 
-            {/* 4. Symbol Table with Search, Tag Filter, FIFO Expansion & Pagination */}
+            {/* 4. Symbol Table with Search, FIFO Expansion & Pagination */}
             <div className="shrink-0">
                 <PnlSymbolTable
-                    symbols={visibleSymbols}
+                    symbols={pnlData?.symbols ?? []}
                     isLoading={isLoading}
                     onResetFilters={handleResetFilters}
-                    onOpenManageTags={() => {}}
                 />
             </div>
 

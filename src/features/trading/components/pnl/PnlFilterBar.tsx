@@ -8,7 +8,6 @@ export interface PnlFilterState {
     symbol: string;
     fromDate: string;
     toDate: string;
-    tag: string;
 }
 
 interface PnlFilterBarProps {
@@ -17,8 +16,6 @@ interface PnlFilterBarProps {
     onSubmit: () => void;
     isLoading?: boolean;
 }
-
-const AVAILABLE_TAGS = ["All Tags", "Long-term", "Swing", "Intraday", "Breakout", "Earnings"];
 
 export const PnlFilterBar: FC<PnlFilterBarProps> = ({
     filters,
@@ -48,32 +45,38 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
 
     return (
         <div className="bg-dash-panel border border-dash-border rounded-lg p-4 sm:p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-end gap-4 sm:gap-5 lg:gap-6">
                 {/* 1. Segment */}
-                <div className="lg:col-span-2 flex flex-col gap-1.5">
+                <div className="lg:flex-1 min-w-0 flex flex-col gap-1.5">
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         Segment
                     </label>
                     <select
-                        value={filters.segment}
+                        value={
+                            filters.segment === "ALL" || filters.segment === "COMBINED"
+                                ? "COMBINED"
+                                : filters.segment === "MIS" || filters.segment === "INTRADAY"
+                                ? "INTRADAY"
+                                : "DELIVERY"
+                        }
                         onChange={(e) => onChange({ ...filters, segment: e.target.value as PnlSegment })}
-                        className="w-full bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
+                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
                     >
-                        <option value="ALL">Equity</option>
-                        <option value="CNC">Delivery (CNC)</option>
-                        <option value="MIS">Intraday (MIS)</option>
+                        <option value="COMBINED">Combined</option>
+                        <option value="INTRADAY">Intraday</option>
+                        <option value="DELIVERY">Delivery</option>
                     </select>
                 </div>
 
                 {/* 2. P&L View */}
-                <div className="lg:col-span-2 flex flex-col gap-1.5">
+                <div className="lg:flex-1 min-w-0 flex flex-col gap-1.5">
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         P&L
                     </label>
                     <select
                         value={filters.pnlType}
                         onChange={(e) => onChange({ ...filters, pnlType: e.target.value as PnlViewType })}
-                        className="w-full bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
+                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
                     >
                         <option value="COMBINED">Combined</option>
                         <option value="REALIZED">Realised</option>
@@ -82,7 +85,7 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                 </div>
 
                 {/* 3. Symbol Search */}
-                <div className="lg:col-span-2 flex flex-col gap-1.5">
+                <div className="lg:flex-1 min-w-0 flex flex-col gap-1.5">
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         Symbol
                     </label>
@@ -92,19 +95,19 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                         value={filters.symbol}
                         onChange={(e) => onChange({ ...filters, symbol: e.target.value.toUpperCase() })}
                         onKeyDown={(e) => e.key === "Enter" && onSubmit()}
-                        className="w-full bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text placeholder-dash-text-muted/60 uppercase font-mono focus:outline-none transition-colors"
+                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text placeholder-dash-text-muted/60 uppercase focus:outline-none transition-colors"
                     />
                 </div>
 
                 {/* 4. Date Range Picker (Zerodha Console Style) */}
-                <div className="lg:col-span-3 flex flex-col gap-1.5 relative" ref={dateMenuRef}>
+                <div className="lg:flex-1 min-w-0 flex flex-col gap-1.5 relative" ref={dateMenuRef}>
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         Date range
                     </label>
                     <button
                         type="button"
                         onClick={() => setIsDateMenuOpen((prev) => !prev)}
-                        className="w-full bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text flex items-center justify-between font-mono focus:outline-none transition-colors cursor-pointer text-left"
+                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text flex items-center justify-between focus:outline-none transition-colors cursor-pointer text-left"
                     >
                         <span>
                             {filters.fromDate} ~ {filters.toDate}
@@ -182,31 +185,13 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                     )}
                 </div>
 
-                {/* 5. Tags Filter */}
-                <div className="lg:col-span-2 flex flex-col gap-1.5">
-                    <label className="text-[11px] font-medium text-dash-text-muted select-none">
-                        Tags
-                    </label>
-                    <select
-                        value={filters.tag}
-                        onChange={(e) => onChange({ ...filters, tag: e.target.value })}
-                        className="w-full bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
-                    >
-                        {AVAILABLE_TAGS.map((tag) => (
-                            <option key={tag} value={tag}>
-                                {tag}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* 6. Blue Arrow Submit Button (Zerodha signature button) */}
-                <div className="lg:col-span-1 flex items-end">
+                {/* 5. Blue Arrow Submit Button (Zerodha signature button) */}
+                <div className="sm:col-span-2 lg:col-span-auto shrink-0 flex items-end">
                     <button
                         type="button"
                         onClick={onSubmit}
                         disabled={isLoading}
-                        className="w-full sm:w-11 h-9 rounded bg-[#387ed1] hover:bg-[#2b6cb8] active:bg-[#225796] text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
+                        className="w-full sm:w-11 lg:w-11 h-9 rounded bg-[#387ed1] hover:bg-[#2b6cb8] active:bg-[#225796] text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
                         title="Submit / Apply Filters"
                         aria-label="Submit filters"
                     >

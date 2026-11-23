@@ -132,6 +132,23 @@ export const PnlHeatmap: FC<PnlHeatmapProps> = ({
         return months;
     }, [fromDate, dayMap]);
 
+    // Calculate Net Realised P&L Green & Red day counts (All hooks MUST be declared before any conditional return)
+    const { greenDays, redDays } = useMemo(() => {
+        if (!heatmap?.days || heatmap.days.length === 0) {
+            return {
+                greenDays: heatmap?.greenDays ?? 0,
+                redDays: heatmap?.redDays ?? 0,
+            };
+        }
+        let green = 0;
+        let red = 0;
+        for (const d of heatmap.days) {
+            if (d.netPnL > 0) green++;
+            else if (d.netPnL < 0) red++;
+        }
+        return { greenDays: green, redDays: red };
+    }, [heatmap]);
+
     // Color intensity helper
     const getTileStyle = (netPnL: number, hasTrades: boolean) => {
         if (!hasTrades) {
@@ -166,23 +183,6 @@ export const PnlHeatmap: FC<PnlHeatmapProps> = ({
             </div>
         );
     }
-
-    // Calculate Net Realised P&L Green & Red day counts
-    const { greenDays, redDays } = useMemo(() => {
-        if (!heatmap?.days || heatmap.days.length === 0) {
-            return {
-                greenDays: heatmap?.greenDays ?? 0,
-                redDays: heatmap?.redDays ?? 0,
-            };
-        }
-        let green = 0;
-        let red = 0;
-        for (const d of heatmap.days) {
-            if (d.netPnL > 0) green++;
-            else if (d.netPnL < 0) red++;
-        }
-        return { greenDays: green, redDays: red };
-    }, [heatmap]);
 
     return (
         <div className="p-4 sm:p-5 bg-dash-panel border border-dash-border rounded-lg flex flex-col shrink-0">
