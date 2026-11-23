@@ -18,7 +18,6 @@ export const adminStockService = {
         if (query.type && query.type !== "ALL") params.append("type", query.type);
         if (query.isActive !== undefined) params.append("isActive", String(query.isActive));
         if (query.isTradable !== undefined) params.append("isTradable", String(query.isTradable));
-        if (query.sector && query.sector.trim()) params.append("sector", query.sector.trim());
 
         const queryString = params.toString();
         const url = queryString ? `${API_ROUTES.ADMIN.STOCKS}?${queryString}` : API_ROUTES.ADMIN.STOCKS;

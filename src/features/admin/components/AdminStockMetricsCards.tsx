@@ -31,7 +31,6 @@ export function AdminStockMetricsCards({
         totalStocks = 0,
         activeStocks = 0,
         tradableStocks = 0,
-        totalSectors = 0,
     } = metrics || {};
 
     // Calculate split from available stocks in list or derived metrics
@@ -59,7 +58,7 @@ export function AdminStockMetricsCards({
                     {totalStocks.toLocaleString()}
                 </p>
                 <p className="text-[11px] text-text-secondary mt-0.5">
-                    Catalog across <span className="text-text-primary font-medium">{totalSectors}</span> {totalSectors === 1 ? "sector" : "sectors"}
+                    Total instruments registered in directory
                 </p>
             </article>
 

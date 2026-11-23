@@ -12,14 +12,13 @@ export interface AdminStockItem {
     isTradable: boolean;
     createdAt: string;
     updatedAt: string;
-    orderCount: number;
+    canDelete: boolean;
 }
 
 export interface AdminStockMetrics {
     totalStocks: number;
     activeStocks: number;
     tradableStocks: number;
-    totalSectors: number;
 }
 
 export interface AdminStocksPagination {
@@ -42,7 +41,6 @@ export interface AdminStocksQuery {
     type?: 'ALL' | 'EQUITY' | 'INDEX';
     isActive?: boolean;
     isTradable?: boolean;
-    sector?: string;
 }
 
 export interface CreateStockInput {

@@ -27,7 +27,6 @@ export function AdminStocksPage() {
     const [typeFilter, setTypeFilter] = useState<"ALL" | "EQUITY" | "INDEX">("ALL");
     const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
     const [tradableFilter, setTradableFilter] = useState<"ALL" | "TRADABLE" | "VIEW_ONLY">("ALL");
-    const [sectorFilter, setSectorFilter] = useState("");
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(20);
 
@@ -85,7 +84,6 @@ export function AdminStocksPage() {
                 : tradableFilter === "VIEW_ONLY"
                 ? false
                 : undefined,
-        sector: sectorFilter.trim() || undefined,
     };
 
     // React Query data fetching
@@ -154,7 +152,6 @@ export function AdminStocksPage() {
         setTypeFilter("ALL");
         setStatusFilter("ALL");
         setTradableFilter("ALL");
-        setSectorFilter("");
         setPage(1);
         if (tableContainerRef.current) {
             tableContainerRef.current.scrollTop = 0;
@@ -173,8 +170,7 @@ export function AdminStocksPage() {
         debouncedSearch ||
         typeFilter !== "ALL" ||
         statusFilter !== "ALL" ||
-        tradableFilter !== "ALL" ||
-        sectorFilter
+        tradableFilter !== "ALL"
     );
 
     // Quick toggle active status
@@ -360,7 +356,7 @@ export function AdminStocksPage() {
                 {/* Filter Controls Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
                     {/* Search Input */}
-                    <div className="lg:col-span-4 relative">
+                    <div className="lg:col-span-6 relative">
                         <svg
                             className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                             fill="none"
@@ -437,20 +433,6 @@ export function AdminStocksPage() {
                             <option value="VIEW_ONLY">View-Only</option>
                         </select>
                     </div>
-
-                    {/* Sector Filter Input */}
-                    <div className="lg:col-span-2">
-                        <input
-                            type="text"
-                            value={sectorFilter}
-                            onChange={(e) => {
-                                setSectorFilter(e.target.value);
-                                setPage(1);
-                            }}
-                            placeholder="Filter by Sector..."
-                            className="w-full bg-panel-2 border border-border-muted rounded-xl px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/60 focus:outline-none focus:border-primary-green transition-colors"
-                        />
-                    </div>
                 </div>
             </section>
 
@@ -522,14 +504,12 @@ export function AdminStocksPage() {
                                     <th className="py-3 px-4">Feed Ticker</th>
                                     <th className="py-3 px-4 text-center">Active</th>
                                     <th className="py-3 px-4 text-center">Tradable</th>
-                                    <th className="py-3 px-4 text-center">Orders</th>
                                     <th className="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-muted/40 text-xs">
                                 {stocks.map((stock) => {
                                     const isEquity = stock.type === "EQUITY";
-                                    const hasOrders = stock.orderCount > 0;
 
                                     return (
                                         <tr
@@ -608,19 +588,6 @@ export function AdminStocksPage() {
                                                 </div>
                                             </td>
 
-                                            {/* Orders Count Badge */}
-                                            <td className="py-3.5 px-4 text-center">
-                                                <span
-                                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                                        hasOrders
-                                                            ? "bg-primary-green/10 text-primary-green border border-primary-green/20"
-                                                            : "bg-panel-2 text-text-secondary/70 border border-border-muted/50"
-                                                    }`}
-                                                >
-                                                    {stock.orderCount ?? 0}
-                                                </span>
-                                            </td>
-
                                             {/* Actions */}
                                             <td className="py-3.5 px-4 text-right">
                                                 <div className="flex items-center justify-end gap-1">
@@ -647,29 +614,8 @@ export function AdminStocksPage() {
                                                         </svg>
                                                     </button>
 
-                                                    {/* Delete Button with Safety Guard */}
-                                                    {hasOrders ? (
-                                                        <div
-                                                            className="inline-block"
-                                                            title="Cannot delete instrument with order history. Deactivate it instead."
-                                                        >
-                                                            <button
-                                                                type="button"
-                                                                disabled
-                                                                className="p-1.5 rounded-lg text-text-secondary/30 cursor-not-allowed"
-                                                                aria-label="Delete disabled"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        strokeWidth="2"
-                                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                                    />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    ) : (
+                                                    {/* Delete Button (Rendered ONLY IF stock.canDelete === true) */}
+                                                    {stock.canDelete && (
                                                         <button
                                                             type="button"
                                                             onClick={() => setDeleteModalStock(stock)}
