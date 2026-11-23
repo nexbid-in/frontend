@@ -73,6 +73,34 @@ export function formatCurrencyINR(
 }
 
 /**
+ * Formats an ISO date/time string into: "DD MMM YYYY, HH:mm:ss"
+ * e.g. "23 Nov 2026, 14:32:05"
+ */
+export function formatTradeDateTime(dateInput: string | Date, includeSeconds: boolean = true): string {
+    try {
+        const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+        if (isNaN(d.getTime())) return "—";
+
+        const day = d.getDate().toString().padStart(2, "0");
+        const months = [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        ];
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        const hours = d.getHours().toString().padStart(2, "0");
+        const minutes = d.getMinutes().toString().padStart(2, "0");
+        const seconds = d.getSeconds().toString().padStart(2, "0");
+
+        return includeSeconds
+            ? `${day} ${month} ${year}, ${hours}:${minutes}:${seconds}`
+            : `${day} ${month} ${year}, ${hours}:${minutes}`;
+    } catch {
+        return "—";
+    }
+}
+
+/**
  * Formats a calendar date string (YYYY-MM-DD) into: "DD MMM YYYY"
  * without arbitrary time offset artifacts. e.g. "23 Nov 2026"
  */
