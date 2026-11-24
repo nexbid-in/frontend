@@ -25,11 +25,22 @@ export const DashboardPage: FC = () => {
     const {
         data,
         isLoading,
-        isFetching,
         isError,
         error,
         refetch,
     } = useDashboardOverviewQuery();
+
+    // Manual refresh state so the spinner only activates upon user interaction
+    const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+    const handleManualRefresh = async () => {
+        try {
+            setIsManualRefreshing(true);
+            await refetch();
+        } finally {
+            setIsManualRefreshing(false);
+        }
+    };
 
     // 2. Watchlist integration for left sidebar
     const { data: watchlistItems = [], isLoading: isWatchlistLoading } = useWatchlistQuery();
@@ -131,12 +142,12 @@ export const DashboardPage: FC = () => {
 
             {/* Right Column: Dashboard Main Content */}
             <main className="flex-1 min-w-0 bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-7 space-y-6">
-                {/* 1. Greeting Section (User greeting, Market status, refresh button) */}
+                {/* 1. Greeting Section (User greeting, Client-side live time, manual refresh) */}
                 <MarketStatusHeader
                     user={data?.user}
                     marketStatus={data?.marketStatus}
-                    isFetching={isFetching}
-                    onRefresh={() => void refetch()}
+                    isFetching={isManualRefreshing}
+                    onRefresh={() => void handleManualRefresh()}
                 />
 
                 {/* Error Banner */}
@@ -147,7 +158,7 @@ export const DashboardPage: FC = () => {
                         </span>
                         <button
                             type="button"
-                            onClick={() => void refetch()}
+                            onClick={() => void handleManualRefresh()}
                             className="px-3 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 font-semibold cursor-pointer"
                         >
                             Retry
