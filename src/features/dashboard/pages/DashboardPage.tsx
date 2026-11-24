@@ -15,6 +15,7 @@ import {
     usePositionsQuery,
     useHoldingsQuery,
 } from "@/features/trading";
+import { useWalletOverview } from "@/features/funds";
 import { useDashboardOverviewQuery } from "../hooks/useDashboardOverview";
 import {
     MarketStatusHeader,
@@ -24,6 +25,7 @@ import {
     DashboardQuickLinks,
 } from "../components";
 import type {
+    DashboardMargins,
     DashboardHoldingsOverview,
     DashboardPositionsOverview,
     RecentPositionItem,
@@ -31,6 +33,7 @@ import type {
 
 export const DashboardPage: FC = () => {
     const navigate = useNavigate();
+    const userId = useAppSelector((state) => state.auth.user?.id);
 
     const {
         data,
@@ -40,6 +43,7 @@ export const DashboardPage: FC = () => {
         refetch,
     } = useDashboardOverviewQuery();
 
+    const { data: walletOverview, refetch: refetchWallet } = useWalletOverview({ enabled: !!userId });
     const positionsQuery = usePositionsQuery("ALL");
     const holdingsQuery = useHoldingsQuery();
     const [livePrices, setLivePrices] = useState<Record<string, number>>({});
@@ -53,11 +57,28 @@ export const DashboardPage: FC = () => {
                 refetch(),
                 positionsQuery.refetch(),
                 holdingsQuery.refetch(),
+                refetchWallet(),
             ]);
         } finally {
             setIsManualRefreshing(false);
         }
     };
+
+    const liveMargins = useMemo<DashboardMargins | undefined>(() => {
+        if (walletOverview) {
+            return {
+                availableMargin:
+                    walletOverview.availableMargin ??
+                    (walletOverview.balance - (walletOverview.usedMargin ?? 0)),
+                usedMargin: walletOverview.usedMargin ?? 0,
+                availableCash: walletOverview.balance ?? 0,
+                openingBalance: data?.margins?.openingBalance ?? walletOverview.balance ?? 0,
+                tradingStatus:
+                    walletOverview.tradingStatus ?? data?.margins?.tradingStatus ?? "ACTIVE",
+            };
+        }
+        return data?.margins;
+    }, [walletOverview, data?.margins]);
 
     useEffect(() => {
         const symbolsToSubscribe = new Set<string>();
@@ -291,7 +312,6 @@ export const DashboardPage: FC = () => {
     const addMutation = useAddToWatchlistMutation();
     const removeMutation = useRemoveFromWatchlistMutation();
 
-    const userId = useAppSelector((state) => state.auth.user?.id);
     const lastStockStorageKey = userId ? `nexbid_last_stock_${userId}` : "nexbid_last_stock_guest";
 
     const [selectedStockId, setSelectedStockId] = useState<string | null>(() => {
@@ -408,8 +428,8 @@ export const DashboardPage: FC = () => {
                     )}
 
                     <MarginSummaryCard
-                        margins={data?.margins}
-                        isLoading={isLoading}
+                        margins={liveMargins}
+                        isLoading={isLoading && !walletOverview}
                     />
 
                     <div className="pt-2 sm:pt-3 border-t border-dash-border/60">

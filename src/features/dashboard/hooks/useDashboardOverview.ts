@@ -7,6 +7,7 @@ export function useDashboardOverviewQuery() {
         queryKey: QUERY_KEYS.dashboard.overview(),
         queryFn: () => dashboardService.getOverview(),
         placeholderData: keepPreviousData,
-        staleTime: 1000 * 60 * 2, // 2 minutes stale time
+        staleTime: 1000 * 5,
+        refetchOnMount: "always",
     });
 }

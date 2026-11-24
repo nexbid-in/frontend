@@ -92,6 +92,7 @@ export function usePlaceOrderMutation() {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.portfolio.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all });
 
             const isAmo = Boolean(data.isAmo);
             const statusText = isAmo
@@ -133,6 +134,7 @@ export function useCancelOrderMutation() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all });
 
             dispatch(
                 showToast({
@@ -165,6 +167,7 @@ export function useSquareOffPositionMutation() {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.portfolio.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders.all });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all });
 
             dispatch(
                 showToast({
