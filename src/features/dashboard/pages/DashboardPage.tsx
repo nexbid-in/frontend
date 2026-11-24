@@ -1,100 +1,191 @@
+import { useState, type FC } from "react";
+import { useNavigate } from "react-router-dom";
+import { APP_ROUTES } from "@/constants/routes";
+import { useAppSelector } from "@/store/hooks";
+import {
+    useWatchlistQuery,
+    useAddToWatchlistMutation,
+    useRemoveFromWatchlistMutation,
+    WatchlistSidebar,
+    type WatchlistItemDTO,
+} from "@/features/watchlist";
+import { OrderPlacementModal } from "@/features/trading";
+import { useDashboardOverviewQuery } from "../hooks/useDashboardOverview";
+import {
+    MarketStatusHeader,
+    MarginSummaryCard,
+    HoldingsOverviewCard,
+    PositionsOverviewCard,
+} from "../components";
 
-export function DashboardPage() {
+export const DashboardPage: FC = () => {
+    const navigate = useNavigate();
+
+    // 1. Dashboard overview query
+    const {
+        data,
+        isLoading,
+        isFetching,
+        isError,
+        error,
+        refetch,
+    } = useDashboardOverviewQuery();
+
+    // 2. Watchlist integration for left sidebar
+    const { data: watchlistItems = [], isLoading: isWatchlistLoading } = useWatchlistQuery();
+    const addMutation = useAddToWatchlistMutation();
+    const removeMutation = useRemoveFromWatchlistMutation();
+
+    const userId = useAppSelector((state) => state.auth.user?.id);
+    const lastStockStorageKey = userId ? `nexbid_last_stock_${userId}` : "nexbid_last_stock_guest";
+
+    const [selectedStockId, setSelectedStockId] = useState<string | null>(() => {
+        if (typeof window === "undefined") return null;
+        try {
+            return localStorage.getItem(lastStockStorageKey);
+        } catch {
+            return null;
+        }
+    });
+
+    const [orderModal, setOrderModal] = useState<{
+        isOpen: boolean;
+        type: "BUY" | "SELL";
+        item: WatchlistItemDTO | null;
+    }>({
+        isOpen: false,
+        type: "BUY",
+        item: null,
+    });
+
+    const handleSelectStock = (item: WatchlistItemDTO) => {
+        setSelectedStockId(item.stock.id);
+        try {
+            localStorage.setItem(lastStockStorageKey, item.stock.id);
+        } catch (err) {
+            console.warn("Failed to persist selected stock:", err);
+        }
+        navigate(APP_ROUTES.USER.WATCHLIST);
+    };
+
+    const handleOpenChart = (item: WatchlistItemDTO) => {
+        handleSelectStock(item);
+    };
+
+    const handleOpenOverview = (item: WatchlistItemDTO) => {
+        handleSelectStock(item);
+    };
+
+    const handleBuy = (item: WatchlistItemDTO) => {
+        setOrderModal({
+            isOpen: true,
+            type: "BUY",
+            item,
+        });
+    };
+
+    const handleSell = (item: WatchlistItemDTO) => {
+        setOrderModal({
+            isOpen: true,
+            type: "SELL",
+            item,
+        });
+    };
+
+    const handleAddStock = async (stockId: string) => {
+        await addMutation.mutateAsync(stockId);
+    };
+
+    const handleDeleteStock = async (stockId: string) => {
+        if (selectedStockId === stockId && typeof window !== "undefined") {
+            try {
+                localStorage.removeItem(lastStockStorageKey);
+            } catch (err) {
+                console.warn("Failed to clear deleted stock from storage:", err);
+            }
+        }
+        try {
+            await removeMutation.mutateAsync(stockId);
+        } catch {
+            // Handled within mutation toast
+        }
+    };
+
     return (
-        <div className="flex h-full p-2 gap-2 overflow-hidden">
-            
-            <aside className="w-[380px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto custom-scrollbar shrink-0">
-                <div className="flex justify-between p-4 text-dash-text-muted text-xs font-medium border-b border-dash-border">
-                    <span className="w-2/5">Index</span>
-                    <span className="w-1/5 text-left">Price</span>
-                    <span className="w-1/5 text-center">Chg</span>
-                    <span className="w-1/5 text-right">% Chg</span>
+        <div className="flex flex-col lg:flex-row h-full p-2 gap-2 overflow-hidden bg-dash-bg">
+            {/* Left Column: Watchlist Sidebar */}
+            <WatchlistSidebar
+                items={watchlistItems}
+                isLoading={isWatchlistLoading}
+                selectedStockId={selectedStockId}
+                onSelectStock={handleSelectStock}
+                onOpenChart={handleOpenChart}
+                onOpenOverview={handleOpenOverview}
+                onBuy={handleBuy}
+                onSell={handleSell}
+                onAddStock={handleAddStock}
+                onDeleteStock={handleDeleteStock}
+                isAdding={addMutation.isPending}
+                isDeleting={removeMutation.isPending}
+            />
+
+            {/* Right Column: Dashboard Main Content */}
+            <main className="flex-1 min-w-0 bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-7 space-y-6">
+                {/* 1. Greeting Section (User greeting, Market status, refresh button) */}
+                <MarketStatusHeader
+                    user={data?.user}
+                    marketStatus={data?.marketStatus}
+                    isFetching={isFetching}
+                    onRefresh={() => void refetch()}
+                />
+
+                {/* Error Banner */}
+                {isError && (
+                    <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-between text-xs">
+                        <span>
+                            {error instanceof Error ? error.message : "Failed to load dashboard overview."}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => void refetch()}
+                            className="px-3 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 font-semibold cursor-pointer"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
+
+                {/* 2. Equity & Margin Section */}
+                <MarginSummaryCard
+                    margins={data?.margins}
+                    isLoading={isLoading}
+                />
+
+                {/* 3. Holdings & Positions Sections */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                    <HoldingsOverviewCard
+                        holdings={data?.holdings}
+                        isLoading={isLoading}
+                    />
+
+                    <PositionsOverviewCard
+                        positions={data?.positions}
+                        isLoading={isLoading}
+                    />
                 </div>
+            </main>
 
-                <div>
-                    <div className="text-xs font-semibold text-dash-text-muted px-4 py-4 border-b border-dash-border">Most Popular Indices</div>
-                    <div className="flex items-center justify-between p-4 border-b border-dash-border hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                        <span className="w-2/5 text-xs text-dash-text font-medium">NIFTY 50</span>
-                        <span className="w-1/5 text-xs text-left text-dash-text">25,492.30</span>
-                        <span className="w-1/5 text-xs text-center text-[#ef4444]">-17.40</span>
-                        <span className="w-1/5 text-xs text-right text-[#ef4444]">-0.07%</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 border-b border-dash-border hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                        <span className="w-2/5 text-xs text-dash-text font-medium">NIFTY BANK</span>
-                        <span className="w-1/5 text-xs text-left text-dash-text">56,334.10</span>
-                        <span className="w-1/5 text-xs text-center text-[#22c55e]">102.80</span>
-                        <span className="w-1/5 text-xs text-right text-[#22c55e]">0.18%</span>
-                    </div>
-                </div>
-            </aside>
-
-            <section className="flex-1 bg-dash-panel border border-dash-border rounded-md p-5 h-full overflow-y-auto custom-scrollbar">
-                <div className="flex flex-col gap-6">
-
-                    <div className="border-b border-dash-border pb-4">
-                        <div className="text-base font-semibold text-dash-text mb-2">Holdings</div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Invested</div>
-                                <div className="text-lg font-bold text-dash-text">₹102.30</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Current</div>
-                                <div className="text-lg font-bold text-dash-text">₹63.39</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Total P&L</div>
-                                <div className="text-lg font-bold text-[#ef4444]">-₹38.91 (-38.04%)</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Today's P&L</div>
-                                <div className="text-base font-medium text-[#ef4444]">-₹0.39 (-0.61%)</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="border-b border-dash-border pb-6">
-                        <div className="text-base font-semibold text-dash-text mb-2">Positions</div>
-                        <p className="text-sm text-dash-text-muted mt-2">You don't have any positions yet! Use our screeners for market opportunities. <a href="#" className="text-primary-green font-medium hover:underline">Go to Screeners →</a></p>
-                    </div>
-
-                    <div>
-                        <div className="text-base font-semibold text-dash-text mb-4">Market Snapshot <span className="text-sm text-dash-text-muted ml-4">As on 07-Nov-2025 16:00 IST</span></div>
-                        
-                        <div className="flex gap-x-8 py-4">
-                            <button className="text-dash-text text-xs font-medium border border-dash-border px-3 py-1.5 rounded-md hover:border-dash-text transition-colors cursor-pointer">
-                                GAINERS
-                            </button>
-                            <button className="text-dash-text-muted hover:text-dash-text text-xs font-medium px-3 py-1.5 rounded-md transition-colors cursor-pointer">
-                                LOSERS
-                            </button>
-                        </div>
-                    
-                        <div className="flex-1">
-                            <div>
-                                <div className="flex justify-between p-4 text-dash-text-muted text-xs font-medium border-b border-dash-border">
-                                    <span className="w-2/5">Symbol</span>
-                                    <span className="w-1/5 text-left">Price</span>
-                                    <span className="w-1/5 text-center">Chg</span>
-                                    <span className="w-1/5 text-right">% Chg</span>
-                                </div>
-                                <div className="flex items-center justify-between p-4 border-b border-dash-border hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                                    <span className="w-2/5 text-xs text-dash-text font-medium">HBSL </span>
-                                    <span className="w-1/5 text-xs text-left text-dash-text">99.81</span>
-                                    <span className="w-1/5 text-xs text-center text-primary-green">16.63</span>
-                                    <span className="w-1/5 text-xs text-right text-primary-green">19.99</span>
-                                </div>
-                                <div className="flex items-center justify-between p-4 hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                                    <span className="w-2/5 text-xs text-dash-text font-medium">INTERARCH</span>
-                                    <span className="w-1/5 text-xs text-left text-dash-text">2,542.00</span>
-                                    <span className="w-1/5 text-xs text-center text-primary-green">347.60</span>
-                                    <span className="w-1/5 text-xs text-right text-primary-green">15.84</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {/* Quick Order Placement Modal from Dashboard Watchlist */}
+            {orderModal.isOpen && orderModal.item && (
+                <OrderPlacementModal
+                    isOpen={orderModal.isOpen}
+                    onClose={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
+                    initialSymbol={orderModal.item.stock.symbol}
+                    initialSide={orderModal.type}
+                    initialExchange={orderModal.item.stock.exchange}
+                    stockName={orderModal.item.stock.name}
+                />
+            )}
         </div>
     );
-}
+};

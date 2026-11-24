@@ -110,7 +110,7 @@ export function AppLayout() {
     const fullName = user
         ? `${user.firstName || ""}${user.lastName && user.lastName !== "undefined" ? ` ${user.lastName}` : ""}`.trim() || "User"
         : "User";
-    const isMarketsActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
+    const isDashboardActive = location.pathname === APP_ROUTES.USER.DASHBOARD;
     const isWatchlistActive = location.pathname.startsWith(APP_ROUTES.USER.WATCHLIST);
     const isPortfolioActive = location.pathname.startsWith(APP_ROUTES.USER.PORTFOLIO);
     const isOrdersActive = location.pathname.startsWith(APP_ROUTES.USER.ORDERS);
@@ -152,12 +152,12 @@ export function AppLayout() {
                     <Link
                         to={APP_ROUTES.USER.DASHBOARD}
                         className={`${
-                            isMarketsActive
+                            isDashboardActive
                                 ? "text-primary-green font-medium"
                                 : "text-dash-text-muted hover:text-dash-text"
                         } px-2.5 py-1 rounded-md text-sm transition-colors`}
                     >
-                        Markets
+                        Dashboard
                     </Link>
                     <Link
                         to={APP_ROUTES.USER.WATCHLIST}

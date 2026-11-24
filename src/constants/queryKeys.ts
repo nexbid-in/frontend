@@ -69,4 +69,8 @@ export const QUERY_KEYS = {
         pnl: (params?: Record<string, unknown>) => ["portfolio", "pnl", params ?? {}],
         tradebook: (params?: Record<string, unknown>) => ["portfolio", "tradebook", params ?? {}],
     },
+    dashboard: {
+        all: ["dashboard"],
+        overview: () => ["dashboard", "overview"],
+    },
 };
