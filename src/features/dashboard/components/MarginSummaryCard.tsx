@@ -34,16 +34,13 @@ export const MarginSummaryCard: FC<MarginSummaryCardProps> = ({
 
     return (
         <div className="flex flex-col space-y-3">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-dash-text tracking-tight">
                     Equity
                 </span>
             </div>
 
-            {/* Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                {/* 1. Available Margin */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Available margin
@@ -56,7 +53,6 @@ export const MarginSummaryCard: FC<MarginSummaryCardProps> = ({
                     </span>
                 </div>
 
-                {/* 2. Used Margin */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Used margin
@@ -69,7 +65,6 @@ export const MarginSummaryCard: FC<MarginSummaryCardProps> = ({
                     </span>
                 </div>
 
-                {/* 3. Available Cash */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Available cash
@@ -82,7 +77,6 @@ export const MarginSummaryCard: FC<MarginSummaryCardProps> = ({
                     </span>
                 </div>
 
-                {/* 4. Opening Balance */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Opening balance

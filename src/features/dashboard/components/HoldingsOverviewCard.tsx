@@ -46,7 +46,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
 
     return (
         <div className="flex flex-col space-y-3">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-dash-text tracking-tight">
@@ -66,9 +65,7 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                 </Link>
             </div>
 
-            {/* Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                {/* 1. Current Value */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Current value
@@ -81,7 +78,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                     </span>
                 </div>
 
-                {/* 2. Total Investment */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Total investment
@@ -94,7 +90,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                     </span>
                 </div>
 
-                {/* 3. Total P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Total P&L
@@ -118,7 +113,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                     </div>
                 </div>
 
-                {/* 4. Today's P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Today's P&L
@@ -143,7 +137,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                 </div>
             </div>
 
-            {/* Weightage Allocation Strip (if holdings exist) */}
             {allocation.length > 0 && (
                 <div className="pt-2">
                     <div className="flex items-center justify-between text-xs text-dash-text-muted mb-2">
@@ -151,7 +144,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                         <span className="text-[11px]">Top holdings by value</span>
                     </div>
 
-                    {/* Proportional Segment Bar */}
                     <div className="w-full h-2 rounded-full overflow-hidden bg-dash-panel-2 flex mb-3">
                         {allocation.slice(0, 5).map((item, idx) => {
                             const colors = [
@@ -172,7 +164,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                         })}
                     </div>
 
-                    {/* Allocation Pills */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {allocation.slice(0, 4).map((item) => {
                             const isPos = item.totalPnl >= 0;

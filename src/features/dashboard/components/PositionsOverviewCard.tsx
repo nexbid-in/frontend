@@ -44,7 +44,6 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
 
     return (
         <div className="flex flex-col space-y-3">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-dash-text tracking-tight">
@@ -64,9 +63,7 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                 </Link>
             </div>
 
-            {/* Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                {/* 1. Day Net P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Day net P&L
@@ -81,7 +78,6 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                     </span>
                 </div>
 
-                {/* 2. Realized P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Realized P&L
@@ -96,7 +92,6 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                     </span>
                 </div>
 
-                {/* 3. Unrealized P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Unrealized P&L
@@ -111,7 +106,6 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                     </span>
                 </div>
 
-                {/* 4. Session Positions */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Session positions
@@ -122,7 +116,6 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                 </div>
             </div>
 
-            {/* Recent Positions Table */}
             {recent.length > 0 && (
                 <div className="pt-2 overflow-x-auto">
                     <table className="w-full text-left text-xs">

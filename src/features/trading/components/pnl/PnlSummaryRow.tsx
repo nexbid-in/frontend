@@ -40,7 +40,6 @@ export const PnlSummaryRow: FC<PnlSummaryRowProps> = ({
     return (
         <div className="p-5 sm:py-6 px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32 bg-dash-panel border border-dash-border rounded-lg">
             <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:items-center lg:justify-between w-full gap-6 sm:gap-8 lg:gap-0">
-                {/* 1. Realised P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Realised P&L
@@ -55,7 +54,6 @@ export const PnlSummaryRow: FC<PnlSummaryRowProps> = ({
                     </span>
                 </div>
 
-                {/* 2. Charges & taxes with blue layers breakdown icon */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Charges & taxes
@@ -74,7 +72,6 @@ export const PnlSummaryRow: FC<PnlSummaryRowProps> = ({
                             title="View charges breakdown"
                             aria-label="View charges breakdown"
                         >
-                            {/* Stacked 3-layer isometric icon */}
                             <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                                 <path d="M2 17l10 5 10-5" />
@@ -84,7 +81,6 @@ export const PnlSummaryRow: FC<PnlSummaryRowProps> = ({
                     </div>
                 </div>
 
-                {/* 3. Net realised P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Net realised P&L
@@ -99,7 +95,6 @@ export const PnlSummaryRow: FC<PnlSummaryRowProps> = ({
                     </span>
                 </div>
 
-                {/* 4. Unrealised P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Unrealised P&L

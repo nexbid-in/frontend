@@ -28,11 +28,6 @@ function getFormattedIstTime(): string {
     }
 }
 
-/**
- * Self-contained client-side IST clock.
- * Re-renders ONLY this component every second without triggering
- * parent re-renders, network calls, or query refetches.
- */
 const LiveIstTime: FC<{ initialTime?: string }> = ({ initialTime }) => {
     const [time, setTime] = useState<string>(() => initialTime || getFormattedIstTime());
 
@@ -63,7 +58,6 @@ export const MarketStatusHeader: FC<MarketStatusHeaderProps> = ({
 
     return (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-dash-border">
-            {/* Greeting */}
             <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-dash-text tracking-tight flex items-center gap-2">
                     <span>Hi, {userName}</span>
@@ -74,7 +68,6 @@ export const MarketStatusHeader: FC<MarketStatusHeaderProps> = ({
                 </p>
             </div>
 
-            {/* Time & Refresh Button */}
             <div className="flex items-center gap-3 self-start sm:self-auto">
                 <LiveIstTime initialTime={resolvedInitialTime} />
 

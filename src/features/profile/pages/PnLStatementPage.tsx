@@ -14,7 +14,6 @@ import {
 export const PnLStatementPage: FC = () => {
     const fyPresets = useMemo(() => getIndianFinancialYearPresets(), []);
 
-    // 1. Form Filter State (controlled inputs)
     const [filterForm, setFilterForm] = useState<PnlFilterState>({
         segment: "COMBINED",
         pnlType: "COMBINED",
@@ -23,13 +22,9 @@ export const PnLStatementPage: FC = () => {
         toDate: fyPresets.currentFy.to,
     });
 
-    // 2. Active Applied Query State (triggered on Submit button click or Enter)
     const [appliedFilters, setAppliedFilters] = useState<PnlFilterState>({ ...filterForm });
-
-    // 3. Modals State
     const [isChargesModalOpen, setIsChargesModalOpen] = useState(false);
 
-    // 4. API Query Parameters Construction
     const queryParams = useMemo(() => {
         const fromIso = appliedFilters.fromDate
             ? new Date(`${appliedFilters.fromDate}T00:00:00.000Z`).toISOString()
@@ -107,7 +102,6 @@ export const PnLStatementPage: FC = () => {
                 </div>
             )}
 
-            {/* 1. Filter Bar (Zerodha Console 5 inputs + Blue Arrow button) */}
             <div className="shrink-0">
                 <PnlFilterBar
                     filters={filterForm}
@@ -117,7 +111,6 @@ export const PnLStatementPage: FC = () => {
                 />
             </div>
 
-            {/* 2. Interactive Daily Heatmap Calendar */}
             <PnlHeatmap
                 heatmap={pnlData?.heatmap}
                 fromDate={appliedFilters.fromDate}
@@ -125,7 +118,6 @@ export const PnLStatementPage: FC = () => {
                 isLoading={isLoading}
             />
 
-            {/* 3. Horizontal Summary Metrics Row */}
             <div className="shrink-0">
                 <PnlSummaryRow
                     summary={pnlData?.summary}
@@ -134,7 +126,6 @@ export const PnLStatementPage: FC = () => {
                 />
             </div>
 
-            {/* 4. Symbol Table with Search, FIFO Expansion & Pagination */}
             <div className="shrink-0">
                 <PnlSymbolTable
                     symbols={pnlData?.symbols ?? []}
@@ -143,7 +134,6 @@ export const PnLStatementPage: FC = () => {
                 />
             </div>
 
-            {/* Charges Breakdown Transparency Modal */}
             <PnlChargesModal
                 isOpen={isChargesModalOpen}
                 onClose={() => setIsChargesModalOpen(false)}
