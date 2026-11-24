@@ -166,24 +166,27 @@ export const DashboardPage: FC = () => {
                     </div>
                 )}
 
-                {/* 2. Equity & Margin Section */}
+                {/* 2. Equity Section */}
                 <MarginSummaryCard
                     margins={data?.margins}
                     isLoading={isLoading}
                 />
 
-                {/* 3. Holdings & Positions Sections */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                    <HoldingsOverviewCard
-                        holdings={data?.holdings}
-                        isLoading={isLoading}
-                    />
+                <div className="border-t border-dash-border/60" />
 
-                    <PositionsOverviewCard
-                        positions={data?.positions}
-                        isLoading={isLoading}
-                    />
-                </div>
+                {/* 3. Holdings Section */}
+                <HoldingsOverviewCard
+                    holdings={data?.holdings}
+                    isLoading={isLoading}
+                />
+
+                <div className="border-t border-dash-border/60" />
+
+                {/* 4. Positions Section */}
+                <PositionsOverviewCard
+                    positions={data?.positions}
+                    isLoading={isLoading}
+                />
             </main>
 
             {/* Quick Order Placement Modal from Dashboard Watchlist */}

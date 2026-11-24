@@ -15,12 +15,12 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
 }) => {
     if (isLoading && !positions) {
         return (
-            <div className="bg-dash-panel border border-dash-border rounded-lg p-5 animate-pulse space-y-4">
+            <div className="flex flex-col space-y-3 animate-pulse">
                 <div className="flex justify-between items-center">
-                    <div className="h-4 bg-dash-panel-2 rounded w-28" />
+                    <div className="h-4 bg-dash-panel-2 rounded w-20" />
                     <div className="h-4 bg-dash-panel-2 rounded w-20" />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="space-y-2">
                             <div className="h-3 bg-dash-panel-2 rounded w-20" />
@@ -43,34 +43,28 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
     const isUnrealizedPositive = unrealized >= 0;
 
     return (
-        <div className="bg-dash-panel border border-dash-border rounded-lg p-5 flex flex-col space-y-4">
+        <div className="flex flex-col space-y-3">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-dash-border">
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-dash-text tracking-tight uppercase">
-                        Intraday Positions
+                    <span className="text-sm font-semibold text-dash-text tracking-tight">
+                        Positions
                     </span>
-                    <span
-                        className={`text-xs font-mono font-medium px-2 py-0.5 rounded ${
-                            openCount > 0
-                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                                : "bg-dash-panel-2 text-dash-text-muted"
-                        }`}
-                    >
-                        {openCount} {openCount === 1 ? "open position" : "open positions"}
+                    <span className="text-xs font-mono text-dash-text-muted">
+                        ({openCount})
                     </span>
                 </div>
 
                 <Link
                     to={APP_ROUTES.USER.PORTFOLIO}
-                    className="text-xs text-blue-500 hover:text-blue-400 font-medium inline-flex items-center gap-1 hover:underline cursor-pointer"
+                    className="text-xs text-blue-500 hover:text-blue-400 font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
                 >
                     <span>View Positions</span>
                     <span>↗</span>
                 </Link>
             </div>
 
-            {/* P&L Metrics Strip */}
+            {/* Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                 {/* 1. Day Net P&L */}
                 <div className="flex flex-col">
@@ -85,12 +79,9 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                     >
                         {formatCurrencyINR(netPnL, true, true)}
                     </span>
-                    <span className="text-[10px] text-dash-text-muted mt-0.5">
-                        Realized + MTM
-                    </span>
                 </div>
 
-                {/* 2. Day Realized P&L */}
+                {/* 2. Realized P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Realized P&L
@@ -103,12 +94,9 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                     >
                         {formatCurrencyINR(realized, true, true)}
                     </span>
-                    <span className="text-[10px] text-dash-text-muted mt-0.5">
-                        Closed intraday trades
-                    </span>
                 </div>
 
-                {/* 3. Day Unrealized P&L */}
+                {/* 3. Unrealized P&L */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Unrealized P&L
@@ -121,12 +109,9 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                     >
                         {formatCurrencyINR(unrealized, true, true)}
                     </span>
-                    <span className="text-[10px] text-dash-text-muted mt-0.5">
-                        Active open risk
-                    </span>
                 </div>
 
-                {/* 4. Active Trades Count */}
+                {/* 4. Session Positions */}
                 <div className="flex flex-col">
                     <span className="text-xs text-dash-text-muted mb-1 select-none">
                         Session positions
@@ -134,15 +119,12 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                     <span className="text-xl sm:text-2xl font-bold font-mono text-dash-text tracking-tight">
                         {recent.length}
                     </span>
-                    <span className="text-[10px] text-dash-text-muted mt-0.5">
-                        Total session contracts
-                    </span>
                 </div>
             </div>
 
             {/* Recent Positions Table */}
-            {recent.length > 0 ? (
-                <div className="pt-3 border-t border-dash-border overflow-x-auto">
+            {recent.length > 0 && (
+                <div className="pt-2 overflow-x-auto">
                     <table className="w-full text-left text-xs">
                         <thead>
                             <tr className="border-b border-dash-border text-dash-text-muted select-none text-[10px] font-medium uppercase tracking-wider">
@@ -205,10 +187,6 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                             })}
                         </tbody>
                     </table>
-                </div>
-            ) : (
-                <div className="py-6 text-center text-xs text-dash-text-muted border-t border-dash-border">
-                    <p>No active intraday positions today.</p>
                 </div>
             )}
         </div>
