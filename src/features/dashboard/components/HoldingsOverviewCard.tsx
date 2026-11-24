@@ -39,7 +39,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
     const totalPnlPct = holdings?.totalPnlPercentage ?? 0;
     const dayPnl = holdings?.dayPnl ?? 0;
     const dayPnlPct = holdings?.dayPnlPercentage ?? 0;
-    const allocation = holdings?.allocation ?? [];
 
     const isTotalPositive = totalPnl >= 0;
     const isDayPositive = dayPnl >= 0;
@@ -136,62 +135,6 @@ export const HoldingsOverviewCard: FC<HoldingsOverviewCardProps> = ({
                     </div>
                 </div>
             </div>
-
-            {allocation.length > 0 && (
-                <div className="pt-2">
-                    <div className="flex items-center justify-between text-xs text-dash-text-muted mb-2">
-                        <span className="font-semibold text-dash-text">Portfolio Weightage</span>
-                        <span className="text-[11px]">Top holdings by value</span>
-                    </div>
-
-                    <div className="w-full h-2 rounded-full overflow-hidden bg-dash-panel-2 flex mb-3">
-                        {allocation.slice(0, 5).map((item, idx) => {
-                            const colors = [
-                                "bg-blue-500",
-                                "bg-emerald-500",
-                                "bg-purple-500",
-                                "bg-amber-500",
-                                "bg-cyan-500",
-                            ];
-                            return (
-                                <div
-                                    key={item.symbol}
-                                    style={{ width: `${Math.max(4, item.weightagePercentage)}%` }}
-                                    className={`${colors[idx % colors.length]} h-full transition-all`}
-                                    title={`${item.symbol}: ${item.weightagePercentage}%`}
-                                />
-                            );
-                        })}
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {allocation.slice(0, 4).map((item) => {
-                            const isPos = item.totalPnl >= 0;
-                            return (
-                                <div
-                                    key={item.symbol}
-                                    className="bg-dash-panel-2 border border-dash-border/70 rounded-md p-2 flex flex-col text-xs"
-                                >
-                                    <div className="flex items-center justify-between mb-0.5">
-                                        <span className="font-bold text-dash-text">{item.symbol}</span>
-                                        <span className="text-[10px] text-dash-text-muted font-mono">
-                                            {item.weightagePercentage}%
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[11px] font-mono">
-                                        <span className="text-dash-text">
-                                            {formatCurrencyINR(item.currentValue, false, true)}
-                                        </span>
-                                        <span className={isPos ? "text-emerald-400" : "text-rose-400"}>
-                                            {isPos ? `+${item.totalPnlPercentage}%` : `${item.totalPnlPercentage}%`}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

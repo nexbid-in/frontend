@@ -16,7 +16,7 @@ export const MarginSummaryCard: FC<MarginSummaryCardProps> = ({
             <div className="flex flex-col space-y-3 animate-pulse">
                 <div className="h-4 bg-dash-panel-2 rounded w-16" />
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                    {[1, 2, 3, 4].map((i) => (
+                    {[1, 2, 3].map((i) => (
                         <div key={i} className="space-y-2">
                             <div className="h-3 bg-dash-panel-2 rounded w-20" />
                             <div className="h-7 bg-dash-panel-2 rounded w-28" />
@@ -30,7 +30,6 @@ export const MarginSummaryCard: FC<MarginSummaryCardProps> = ({
     const availableMargin = margins?.availableMargin ?? 0;
     const usedMargin = margins?.usedMargin ?? 0;
     const availableCash = margins?.availableCash ?? 0;
-    const openingBalance = margins?.openingBalance ?? 0;
 
     return (
         <div className="flex flex-col space-y-3">
@@ -74,18 +73,6 @@ export const MarginSummaryCard: FC<MarginSummaryCardProps> = ({
                         title={`Exact: ${formatCurrencyINR(availableCash, false, true)}`}
                     >
                         ₹{formatZerodhaMetric(availableCash, false)}
-                    </span>
-                </div>
-
-                <div className="flex flex-col">
-                    <span className="text-xs text-dash-text-muted mb-1 select-none">
-                        Opening balance
-                    </span>
-                    <span
-                        className="text-xl sm:text-2xl font-bold font-mono text-dash-text tracking-tight cursor-help"
-                        title={`Exact: ${formatCurrencyINR(openingBalance, false, true)}`}
-                    >
-                        ₹{formatZerodhaMetric(openingBalance, false)}
                     </span>
                 </div>
             </div>
