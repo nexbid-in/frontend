@@ -1,4 +1,4 @@
-import { useState, type FC } from "react";
+import { useState, useEffect, useMemo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/constants/routes";
 import { useAppSelector } from "@/store/hooks";
@@ -7,9 +7,14 @@ import {
     useAddToWatchlistMutation,
     useRemoveFromWatchlistMutation,
     WatchlistSidebar,
+    marketWebSocketService,
     type WatchlistItemDTO,
 } from "@/features/watchlist";
-import { OrderPlacementModal } from "@/features/trading";
+import {
+    OrderPlacementModal,
+    usePositionsQuery,
+    useHoldingsQuery,
+} from "@/features/trading";
 import { useDashboardOverviewQuery } from "../hooks/useDashboardOverview";
 import {
     MarketStatusHeader,
@@ -18,6 +23,11 @@ import {
     PositionsOverviewCard,
     DashboardQuickLinks,
 } from "../components";
+import type {
+    DashboardHoldingsOverview,
+    DashboardPositionsOverview,
+    RecentPositionItem,
+} from "../types";
 
 export const DashboardPage: FC = () => {
     const navigate = useNavigate();
@@ -30,16 +40,252 @@ export const DashboardPage: FC = () => {
         refetch,
     } = useDashboardOverviewQuery();
 
+    const positionsQuery = usePositionsQuery("ALL");
+    const holdingsQuery = useHoldingsQuery();
+    const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+
     const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
     const handleManualRefresh = async () => {
         try {
             setIsManualRefreshing(true);
-            await refetch();
+            await Promise.all([
+                refetch(),
+                positionsQuery.refetch(),
+                holdingsQuery.refetch(),
+            ]);
         } finally {
             setIsManualRefreshing(false);
         }
     };
+
+    useEffect(() => {
+        const symbolsToSubscribe = new Set<string>();
+
+        (positionsQuery.data?.positions ?? [])
+            .filter((p) => p.quantity > 0)
+            .forEach((p) => symbolsToSubscribe.add(p.symbol));
+
+        (holdingsQuery.data?.holdings ?? [])
+            .forEach((h) => symbolsToSubscribe.add(h.symbol));
+
+        (holdingsQuery.data?.exitedHoldings ?? [])
+            .forEach((h) => symbolsToSubscribe.add(h.symbol));
+
+        (data?.positions?.recentPositions ?? [])
+            .filter((p) => p.quantity > 0)
+            .forEach((p) => symbolsToSubscribe.add(p.symbol));
+
+        (data?.holdings?.allocation ?? [])
+            .forEach((h) => symbolsToSubscribe.add(h.symbol));
+
+        if (symbolsToSubscribe.size === 0) return;
+
+        const unsubs = Array.from(symbolsToSubscribe).map((symbol) =>
+            marketWebSocketService.subscribe(symbol, (tick) => {
+                setLivePrices((prev) => {
+                    if (prev[symbol] === tick.ltp) return prev;
+                    return { ...prev, [symbol]: tick.ltp };
+                });
+            })
+        );
+
+        return () => {
+            unsubs.forEach((unsub) => unsub());
+        };
+    }, [
+        positionsQuery.data?.positions,
+        holdingsQuery.data?.holdings,
+        holdingsQuery.data?.exitedHoldings,
+        data?.positions?.recentPositions,
+        data?.holdings?.allocation,
+    ]);
+
+    const liveHoldings = useMemo<DashboardHoldingsOverview | undefined>(() => {
+        const holdingsList = holdingsQuery.data?.holdings;
+
+        if (!holdingsList && data?.holdings) {
+            const allocation = data.holdings.allocation ?? [];
+            if (allocation.length === 0) return data.holdings;
+
+            const totalInvested = data.holdings.totalInvestmentValue;
+            let totalCurrentValue = 0;
+            let totalTodayPnL = 0;
+
+            for (const item of allocation) {
+                const cachedTick = marketWebSocketService.getLatestTick(item.symbol);
+                const ltp = livePrices[item.symbol] ?? cachedTick?.ltp ?? item.currentLtp;
+                const currVal = +(ltp * item.quantity).toFixed(2);
+                totalCurrentValue += currVal;
+                const itemDayPnL = +(cachedTick?.change ? cachedTick.change * item.quantity : 0).toFixed(2);
+                totalTodayPnL += itemDayPnL;
+            }
+
+            totalCurrentValue = +totalCurrentValue.toFixed(2);
+            totalTodayPnL = +totalTodayPnL.toFixed(2);
+            const totalPnl = +(totalCurrentValue - totalInvested).toFixed(2);
+            const totalPnlPercentage = totalInvested > 0 ? +((totalPnl / totalInvested) * 100).toFixed(2) : 0;
+            const todayPnLPercentage = totalInvested > 0 ? +((totalTodayPnL / totalInvested) * 100).toFixed(2) : 0;
+
+            return {
+                ...data.holdings,
+                totalCurrentValue,
+                totalPnl,
+                totalPnlPercentage,
+                dayPnl: totalTodayPnL,
+                dayPnlPercentage: todayPnLPercentage,
+            };
+        }
+
+        if (!holdingsList) return data?.holdings;
+
+        if (holdingsList.length === 0) {
+            return {
+                totalHoldingsCount: 0,
+                totalInvestmentValue: 0,
+                totalCurrentValue: 0,
+                totalPnl: 0,
+                totalPnlPercentage: 0,
+                dayPnl: 0,
+                dayPnlPercentage: 0,
+                allocation: [],
+            };
+        }
+
+        let totalInvested = 0;
+        let totalCurrentValue = 0;
+        let totalTodayPnL = 0;
+
+        for (const item of holdingsList) {
+            totalInvested += item.investedAmount;
+            const cachedTick = marketWebSocketService.getLatestTick(item.symbol);
+            const ltp =
+                livePrices[item.symbol] ?? cachedTick?.ltp ?? item.currentLtp ?? item.buyAvgPrice;
+
+            const currVal = +(ltp * item.quantity).toFixed(2);
+            totalCurrentValue += currVal;
+
+            const itemTotalPnL = +((ltp - item.buyAvgPrice) * item.quantity).toFixed(2);
+            const itemDayPnL = item.isBoughtToday
+                ? itemTotalPnL
+                : +((cachedTick?.change ?? item.dayChange) * item.quantity).toFixed(2);
+
+            totalTodayPnL += itemDayPnL;
+        }
+
+        totalInvested = +totalInvested.toFixed(2);
+        totalCurrentValue = +totalCurrentValue.toFixed(2);
+        totalTodayPnL = +totalTodayPnL.toFixed(2);
+
+        const totalPnl = +(totalCurrentValue - totalInvested).toFixed(2);
+        const totalPnlPercentage =
+            totalInvested > 0 ? +((totalPnl / totalInvested) * 100).toFixed(2) : 0;
+        const todayPnLPercentage =
+            totalInvested > 0 ? +((totalTodayPnL / totalInvested) * 100).toFixed(2) : 0;
+
+        return {
+            totalHoldingsCount: holdingsList.length,
+            totalInvestmentValue: totalInvested,
+            totalCurrentValue,
+            totalPnl,
+            totalPnlPercentage,
+            dayPnl: totalTodayPnL,
+            dayPnlPercentage: todayPnLPercentage,
+            allocation: data?.holdings?.allocation ?? [],
+        };
+    }, [holdingsQuery.data?.holdings, data?.holdings, livePrices]);
+
+    const livePositions = useMemo<DashboardPositionsOverview | undefined>(() => {
+        if (!positionsQuery.data && data?.positions) {
+            const recent = data.positions.recentPositions ?? [];
+            let totalUnrealized = 0;
+            const updatedRecent: RecentPositionItem[] = recent.map((pos) => {
+                const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
+                const ltp = livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.ltp ?? pos.averagePrice;
+                const isLong = pos.side === "LONG" || (pos.side as string) === "BUY";
+                const posUnrealized = pos.quantity > 0
+                    ? isLong
+                        ? (ltp - pos.averagePrice) * pos.quantity
+                        : (pos.averagePrice - ltp) * pos.quantity
+                    : 0;
+
+                totalUnrealized += posUnrealized;
+                const pnlPercentage = pos.averagePrice > 0
+                    ? isLong
+                        ? ((ltp - pos.averagePrice) / pos.averagePrice) * 100
+                        : ((pos.averagePrice - ltp) / pos.averagePrice) * 100
+                    : 0;
+
+                return {
+                    ...pos,
+                    ltp,
+                    unrealizedPnL: +posUnrealized.toFixed(2),
+                    pnlPercentage: +pnlPercentage.toFixed(2),
+                };
+            });
+
+            totalUnrealized = +totalUnrealized.toFixed(2);
+            const totalRealized = data.positions.dayRealizedPnL ?? 0;
+
+            return {
+                ...data.positions,
+                dayUnrealizedPnL: totalUnrealized,
+                dayNetPnL: +(totalRealized + totalUnrealized).toFixed(2),
+                recentPositions: updatedRecent,
+            };
+        }
+
+        if (!positionsQuery.data) return data?.positions;
+
+        const positions = positionsQuery.data.positions ?? [];
+        const openPositions = positions.filter((p) => p.quantity > 0);
+        const totalRealizedPnL = positionsQuery.data.summary?.totalRealizedPnL ?? 0;
+
+        let totalUnrealizedPnL = 0;
+        const mappedRecent: RecentPositionItem[] = positions.map((pos) => {
+            const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
+            const ltp = livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.currentLtp ?? pos.averagePrice;
+            const isLong = pos.side === "LONG" || (pos.side as string) === "BUY";
+            const posUnrealized = pos.quantity > 0
+                ? isLong
+                    ? (ltp - pos.averagePrice) * pos.quantity
+                    : (pos.averagePrice - ltp) * pos.quantity
+                : 0;
+
+            if (pos.quantity > 0) {
+                totalUnrealizedPnL += posUnrealized;
+            }
+
+            const pnlPercentage = pos.averagePrice > 0
+                ? isLong
+                    ? ((ltp - pos.averagePrice) / pos.averagePrice) * 100
+                    : ((pos.averagePrice - ltp) / pos.averagePrice) * 100
+                : 0;
+
+            return {
+                id: pos.id,
+                symbol: pos.symbol,
+                productType: pos.productType,
+                side: pos.side,
+                quantity: pos.quantity,
+                averagePrice: pos.averagePrice,
+                ltp,
+                unrealizedPnL: +posUnrealized.toFixed(2),
+                pnlPercentage: +pnlPercentage.toFixed(2),
+            };
+        });
+
+        totalUnrealizedPnL = +totalUnrealizedPnL.toFixed(2);
+        const dayNetPnL = +(totalRealizedPnL + totalUnrealizedPnL).toFixed(2);
+
+        return {
+            openPositionsCount: openPositions.length,
+            dayRealizedPnL: totalRealizedPnL,
+            dayUnrealizedPnL: totalUnrealizedPnL,
+            dayNetPnL,
+            recentPositions: mappedRecent,
+        };
+    }, [positionsQuery.data, data?.positions, livePrices]);
 
     const { data: watchlistItems = [], isLoading: isWatchlistLoading } = useWatchlistQuery();
     const addMutation = useAddToWatchlistMutation();
@@ -168,15 +414,15 @@ export const DashboardPage: FC = () => {
 
                     <div className="pt-2 sm:pt-3 border-t border-dash-border/60">
                         <HoldingsOverviewCard
-                            holdings={data?.holdings}
-                            isLoading={isLoading}
+                            holdings={liveHoldings}
+                            isLoading={isLoading && holdingsQuery.isLoading}
                         />
                     </div>
 
                     <div className="pt-2 sm:pt-3 border-t border-dash-border/60">
                         <PositionsOverviewCard
-                            positions={data?.positions}
-                            isLoading={isLoading}
+                            positions={livePositions}
+                            isLoading={isLoading && positionsQuery.isLoading}
                         />
                     </div>
 
