@@ -35,7 +35,7 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
     const openCount = positions?.openPositionsCount ?? 0;
     const realized = positions?.dayRealizedPnL ?? 0;
     const unrealized = positions?.dayUnrealizedPnL ?? 0;
-    const recent = positions?.recentPositions ?? [];
+    const sessionCount = positions?.sessionPositionsCount ?? 0;
 
     const isRealizedPositive = realized >= 0;
     const isUnrealizedPositive = unrealized >= 0;
@@ -95,7 +95,7 @@ export const PositionsOverviewCard: FC<PositionsOverviewCardProps> = ({
                         Session positions
                     </span>
                     <span className="text-xl sm:text-2xl font-bold font-mono text-dash-text tracking-tight">
-                        {recent.length}
+                        {sessionCount}
                     </span>
                 </div>
             </div>

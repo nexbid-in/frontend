@@ -10,15 +10,6 @@ export interface DashboardMarketStatus {
     isOpen: boolean;
     session: MarketSessionType;
     currentIstTime: string;
-    statusText: string;
-}
-
-export interface DashboardBenchmarkIndex {
-    symbol: string;
-    name: string;
-    ltp: number;
-    change: number;
-    changePercent: number;
 }
 
 export interface DashboardMargins {
@@ -29,17 +20,6 @@ export interface DashboardMargins {
     tradingStatus: string;
 }
 
-export interface HoldingAllocationItem {
-    symbol: string;
-    quantity: number;
-    currentLtp: number;
-    investmentValue: number;
-    currentValue: number;
-    totalPnl: number;
-    totalPnlPercentage: number;
-    weightagePercentage: number;
-}
-
 export interface DashboardHoldingsOverview {
     totalHoldingsCount: number;
     totalInvestmentValue: number;
@@ -48,19 +28,6 @@ export interface DashboardHoldingsOverview {
     totalPnlPercentage: number;
     dayPnl: number;
     dayPnlPercentage: number;
-    allocation: HoldingAllocationItem[];
-}
-
-export interface RecentPositionItem {
-    id: string;
-    symbol: string;
-    productType: string;
-    side: string;
-    quantity: number;
-    averagePrice: number;
-    ltp: number;
-    unrealizedPnL: number;
-    pnlPercentage: number;
 }
 
 export interface DashboardPositionsOverview {
@@ -68,13 +35,12 @@ export interface DashboardPositionsOverview {
     dayRealizedPnL: number;
     dayUnrealizedPnL: number;
     dayNetPnL: number;
-    recentPositions: RecentPositionItem[];
+    sessionPositionsCount: number;
 }
 
 export interface DashboardOverviewData {
     user: DashboardUserProfile;
     marketStatus: DashboardMarketStatus;
-    indices: DashboardBenchmarkIndex[];
     margins: DashboardMargins;
     holdings: DashboardHoldingsOverview;
     positions: DashboardPositionsOverview;

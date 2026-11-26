@@ -28,7 +28,6 @@ import type {
     DashboardMargins,
     DashboardHoldingsOverview,
     DashboardPositionsOverview,
-    RecentPositionItem,
 } from "../types";
 
 export const DashboardPage: FC = () => {
@@ -93,13 +92,6 @@ export const DashboardPage: FC = () => {
         (holdingsQuery.data?.exitedHoldings ?? [])
             .forEach((h) => symbolsToSubscribe.add(h.symbol));
 
-        (data?.positions?.recentPositions ?? [])
-            .filter((p) => p.quantity > 0)
-            .forEach((p) => symbolsToSubscribe.add(p.symbol));
-
-        (data?.holdings?.allocation ?? [])
-            .forEach((h) => symbolsToSubscribe.add(h.symbol));
-
         if (symbolsToSubscribe.size === 0) return;
 
         const unsubs = Array.from(symbolsToSubscribe).map((symbol) =>
@@ -118,44 +110,13 @@ export const DashboardPage: FC = () => {
         positionsQuery.data?.positions,
         holdingsQuery.data?.holdings,
         holdingsQuery.data?.exitedHoldings,
-        data?.positions?.recentPositions,
-        data?.holdings?.allocation,
     ]);
 
     const liveHoldings = useMemo<DashboardHoldingsOverview | undefined>(() => {
         const holdingsList = holdingsQuery.data?.holdings;
 
         if (!holdingsList && data?.holdings) {
-            const allocation = data.holdings.allocation ?? [];
-            if (allocation.length === 0) return data.holdings;
-
-            const totalInvested = data.holdings.totalInvestmentValue;
-            let totalCurrentValue = 0;
-            let totalTodayPnL = 0;
-
-            for (const item of allocation) {
-                const cachedTick = marketWebSocketService.getLatestTick(item.symbol);
-                const ltp = livePrices[item.symbol] ?? cachedTick?.ltp ?? item.currentLtp;
-                const currVal = +(ltp * item.quantity).toFixed(2);
-                totalCurrentValue += currVal;
-                const itemDayPnL = +(cachedTick?.change ? cachedTick.change * item.quantity : 0).toFixed(2);
-                totalTodayPnL += itemDayPnL;
-            }
-
-            totalCurrentValue = +totalCurrentValue.toFixed(2);
-            totalTodayPnL = +totalTodayPnL.toFixed(2);
-            const totalPnl = +(totalCurrentValue - totalInvested).toFixed(2);
-            const totalPnlPercentage = totalInvested > 0 ? +((totalPnl / totalInvested) * 100).toFixed(2) : 0;
-            const todayPnLPercentage = totalInvested > 0 ? +((totalTodayPnL / totalInvested) * 100).toFixed(2) : 0;
-
-            return {
-                ...data.holdings,
-                totalCurrentValue,
-                totalPnl,
-                totalPnlPercentage,
-                dayPnl: totalTodayPnL,
-                dayPnlPercentage: todayPnLPercentage,
-            };
+            return data.holdings;
         }
 
         if (!holdingsList) return data?.holdings;
@@ -212,48 +173,12 @@ export const DashboardPage: FC = () => {
             totalPnlPercentage,
             dayPnl: totalTodayPnL,
             dayPnlPercentage: todayPnLPercentage,
-            allocation: data?.holdings?.allocation ?? [],
         };
     }, [holdingsQuery.data?.holdings, data?.holdings, livePrices]);
 
     const livePositions = useMemo<DashboardPositionsOverview | undefined>(() => {
         if (!positionsQuery.data && data?.positions) {
-            const recent = data.positions.recentPositions ?? [];
-            let totalUnrealized = 0;
-            const updatedRecent: RecentPositionItem[] = recent.map((pos) => {
-                const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
-                const ltp = livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.ltp ?? pos.averagePrice;
-                const isLong = pos.side === "LONG" || (pos.side as string) === "BUY";
-                const posUnrealized = pos.quantity > 0
-                    ? isLong
-                        ? (ltp - pos.averagePrice) * pos.quantity
-                        : (pos.averagePrice - ltp) * pos.quantity
-                    : 0;
-
-                totalUnrealized += posUnrealized;
-                const pnlPercentage = pos.averagePrice > 0
-                    ? isLong
-                        ? ((ltp - pos.averagePrice) / pos.averagePrice) * 100
-                        : ((pos.averagePrice - ltp) / pos.averagePrice) * 100
-                    : 0;
-
-                return {
-                    ...pos,
-                    ltp,
-                    unrealizedPnL: +posUnrealized.toFixed(2),
-                    pnlPercentage: +pnlPercentage.toFixed(2),
-                };
-            });
-
-            totalUnrealized = +totalUnrealized.toFixed(2);
-            const totalRealized = data.positions.dayRealizedPnL ?? 0;
-
-            return {
-                ...data.positions,
-                dayUnrealizedPnL: totalUnrealized,
-                dayNetPnL: +(totalRealized + totalUnrealized).toFixed(2),
-                recentPositions: updatedRecent,
-            };
+            return data.positions;
         }
 
         if (!positionsQuery.data) return data?.positions;
@@ -263,38 +188,15 @@ export const DashboardPage: FC = () => {
         const totalRealizedPnL = positionsQuery.data.summary?.totalRealizedPnL ?? 0;
 
         let totalUnrealizedPnL = 0;
-        const mappedRecent: RecentPositionItem[] = positions.map((pos) => {
+        for (const pos of openPositions) {
             const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
             const ltp = livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.currentLtp ?? pos.averagePrice;
             const isLong = pos.side === "LONG" || (pos.side as string) === "BUY";
-            const posUnrealized = pos.quantity > 0
-                ? isLong
-                    ? (ltp - pos.averagePrice) * pos.quantity
-                    : (pos.averagePrice - ltp) * pos.quantity
-                : 0;
-
-            if (pos.quantity > 0) {
-                totalUnrealizedPnL += posUnrealized;
-            }
-
-            const pnlPercentage = pos.averagePrice > 0
-                ? isLong
-                    ? ((ltp - pos.averagePrice) / pos.averagePrice) * 100
-                    : ((pos.averagePrice - ltp) / pos.averagePrice) * 100
-                : 0;
-
-            return {
-                id: pos.id,
-                symbol: pos.symbol,
-                productType: pos.productType,
-                side: pos.side,
-                quantity: pos.quantity,
-                averagePrice: pos.averagePrice,
-                ltp,
-                unrealizedPnL: +posUnrealized.toFixed(2),
-                pnlPercentage: +pnlPercentage.toFixed(2),
-            };
-        });
+            const posUnrealized = isLong
+                ? (ltp - pos.averagePrice) * pos.quantity
+                : (pos.averagePrice - ltp) * pos.quantity;
+            totalUnrealizedPnL += posUnrealized;
+        }
 
         totalUnrealizedPnL = +totalUnrealizedPnL.toFixed(2);
         const dayNetPnL = +(totalRealizedPnL + totalUnrealizedPnL).toFixed(2);
@@ -304,7 +206,7 @@ export const DashboardPage: FC = () => {
             dayRealizedPnL: totalRealizedPnL,
             dayUnrealizedPnL: totalUnrealizedPnL,
             dayNetPnL,
-            recentPositions: mappedRecent,
+            sessionPositionsCount: positions.length,
         };
     }, [positionsQuery.data, data?.positions, livePrices]);
 
