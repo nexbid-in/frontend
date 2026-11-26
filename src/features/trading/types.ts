@@ -238,6 +238,7 @@ export interface TradebookSummary {
   totalBuyTurnover: number;
   totalSellTurnover: number;
   totalCharges: number;
+  chargesBreakdown?: PnlChargesBreakdown;
 }
 
 export interface TradebookPagination {

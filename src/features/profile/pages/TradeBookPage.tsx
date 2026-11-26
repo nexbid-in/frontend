@@ -91,11 +91,10 @@ export const TradeBookPage: FC = () => {
         setCurrentPage(1);
     };
 
-    // Calculate aggregated charges breakdown across currently fetched trades
+    // Aggregate charges breakdown across all executions directly from backend summary (independent of pagination)
     const totalChargesBreakdown: PnlChargesBreakdown = useMemo(() => {
-        const trades = tradebookData?.trades;
-        if (!trades || trades.length === 0) {
-            return {
+        return (
+            tradebookData?.summary?.chargesBreakdown ?? {
                 brokerage: 0,
                 stt: 0,
                 exchangeTurnoverCharges: 0,
@@ -103,28 +102,6 @@ export const TradeBookPage: FC = () => {
                 stampDuty: 0,
                 gst: 0,
                 totalCharges: tradebookData?.summary?.totalCharges ?? 0,
-            };
-        }
-
-        return trades.reduce(
-            (acc, t) => {
-                acc.brokerage += t.charges?.brokerage ?? 0;
-                acc.stt += t.charges?.stt ?? 0;
-                acc.exchangeTurnoverCharges += t.charges?.exchangeTurnoverCharges ?? 0;
-                acc.sebiCharges += t.charges?.sebiCharges ?? 0;
-                acc.stampDuty += t.charges?.stampDuty ?? 0;
-                acc.gst += t.charges?.gst ?? 0;
-                acc.totalCharges += t.charges?.total ?? 0;
-                return acc;
-            },
-            {
-                brokerage: 0,
-                stt: 0,
-                exchangeTurnoverCharges: 0,
-                sebiCharges: 0,
-                stampDuty: 0,
-                gst: 0,
-                totalCharges: 0,
             }
         );
     }, [tradebookData]);
