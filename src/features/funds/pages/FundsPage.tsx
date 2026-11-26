@@ -102,6 +102,7 @@ export const FundsPage: React.FC = () => {
         setIsPaymentOpen(false);
 
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.wallet.all });
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all });
 
         dispatch(
             showToast({

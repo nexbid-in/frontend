@@ -40,7 +40,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
             isFetching ? "opacity-75" : "opacity-100"
         }`}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 items-start justify-between">
-                {/* 1. Total Executions */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Total executions
@@ -50,7 +49,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                     </span>
                 </div>
 
-                {/* 2. Buy Turnover */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Buy turnover
@@ -63,7 +61,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                     </span>
                 </div>
 
-                {/* 3. Sell Turnover */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Sell turnover
@@ -76,7 +73,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                     </span>
                 </div>
 
-                {/* 4. Total Charges & Taxes */}
                 <div className="flex flex-col">
                     <span className="text-xs sm:text-[13px] font-normal text-dash-text-muted mb-1 select-none">
                         Charges & taxes
@@ -95,7 +91,6 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                             title="View charges breakdown"
                             aria-label="View charges breakdown"
                         >
-                            {/* Stacked 3-layer isometric icon */}
                             <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                                 <path d="M2 17l10 5 10-5" />

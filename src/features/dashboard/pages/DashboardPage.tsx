@@ -1,100 +1,369 @@
+import { useState, useEffect, useMemo, type FC } from "react";
+import { useNavigate } from "react-router-dom";
+import { APP_ROUTES } from "@/constants/routes";
+import { useAppSelector } from "@/store/hooks";
+import {
+    useWatchlistQuery,
+    useAddToWatchlistMutation,
+    useRemoveFromWatchlistMutation,
+    WatchlistSidebar,
+    marketWebSocketService,
+    type WatchlistItemDTO,
+} from "@/features/watchlist";
+import {
+    OrderPlacementModal,
+    usePositionsQuery,
+    useHoldingsQuery,
+} from "@/features/trading";
+import { useWalletOverview } from "@/features/funds";
+import { useDashboardOverviewQuery } from "../hooks/useDashboardOverview";
+import {
+    MarketStatusHeader,
+    MarginSummaryCard,
+    HoldingsOverviewCard,
+    PositionsOverviewCard,
+    DashboardQuickLinks,
+} from "../components";
+import type {
+    DashboardMargins,
+    DashboardHoldingsOverview,
+    DashboardPositionsOverview,
+} from "../types";
 
-export function DashboardPage() {
+export const DashboardPage: FC = () => {
+    const navigate = useNavigate();
+    const userId = useAppSelector((state) => state.auth.user?.id);
+
+    const {
+        data,
+        isLoading,
+        isError,
+        error,
+        refetch,
+    } = useDashboardOverviewQuery();
+
+    const { data: walletOverview, refetch: refetchWallet } = useWalletOverview({ enabled: !!userId });
+    const positionsQuery = usePositionsQuery("ALL");
+    const holdingsQuery = useHoldingsQuery();
+    const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+
+    const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+    const handleManualRefresh = async () => {
+        try {
+            setIsManualRefreshing(true);
+            await Promise.all([
+                refetch(),
+                positionsQuery.refetch(),
+                holdingsQuery.refetch(),
+                refetchWallet(),
+            ]);
+        } finally {
+            setIsManualRefreshing(false);
+        }
+    };
+
+    const liveMargins = useMemo<DashboardMargins | undefined>(() => {
+        if (walletOverview) {
+            return {
+                availableMargin:
+                    walletOverview.availableMargin ??
+                    (walletOverview.balance - (walletOverview.usedMargin ?? 0)),
+                usedMargin: walletOverview.usedMargin ?? 0,
+                availableCash: walletOverview.balance ?? 0,
+                openingBalance: data?.margins?.openingBalance ?? walletOverview.balance ?? 0,
+                tradingStatus:
+                    walletOverview.tradingStatus ?? data?.margins?.tradingStatus ?? "ACTIVE",
+            };
+        }
+        return data?.margins;
+    }, [walletOverview, data?.margins]);
+
+    useEffect(() => {
+        const symbolsToSubscribe = new Set<string>();
+
+        (positionsQuery.data?.positions ?? [])
+            .filter((p) => p.quantity > 0)
+            .forEach((p) => symbolsToSubscribe.add(p.symbol));
+
+        (holdingsQuery.data?.holdings ?? [])
+            .forEach((h) => symbolsToSubscribe.add(h.symbol));
+
+        (holdingsQuery.data?.exitedHoldings ?? [])
+            .forEach((h) => symbolsToSubscribe.add(h.symbol));
+
+        if (symbolsToSubscribe.size === 0) return;
+
+        const unsubs = Array.from(symbolsToSubscribe).map((symbol) =>
+            marketWebSocketService.subscribe(symbol, (tick) => {
+                setLivePrices((prev) => {
+                    if (prev[symbol] === tick.ltp) return prev;
+                    return { ...prev, [symbol]: tick.ltp };
+                });
+            })
+        );
+
+        return () => {
+            unsubs.forEach((unsub) => unsub());
+        };
+    }, [
+        positionsQuery.data?.positions,
+        holdingsQuery.data?.holdings,
+        holdingsQuery.data?.exitedHoldings,
+    ]);
+
+    const liveHoldings = useMemo<DashboardHoldingsOverview | undefined>(() => {
+        const holdingsList = holdingsQuery.data?.holdings;
+
+        if (!holdingsList && data?.holdings) {
+            return data.holdings;
+        }
+
+        if (!holdingsList) return data?.holdings;
+
+        if (holdingsList.length === 0) {
+            return {
+                totalHoldingsCount: 0,
+                totalInvestmentValue: 0,
+                totalCurrentValue: 0,
+                totalPnl: 0,
+                totalPnlPercentage: 0,
+                dayPnl: 0,
+                dayPnlPercentage: 0,
+                allocation: [],
+            };
+        }
+
+        let totalInvested = 0;
+        let totalCurrentValue = 0;
+        let totalTodayPnL = 0;
+
+        for (const item of holdingsList) {
+            totalInvested += item.investedAmount;
+            const cachedTick = marketWebSocketService.getLatestTick(item.symbol);
+            const ltp =
+                livePrices[item.symbol] ?? cachedTick?.ltp ?? item.currentLtp ?? item.buyAvgPrice;
+
+            const currVal = +(ltp * item.quantity).toFixed(2);
+            totalCurrentValue += currVal;
+
+            const itemTotalPnL = +((ltp - item.buyAvgPrice) * item.quantity).toFixed(2);
+            const itemDayPnL = item.isBoughtToday
+                ? itemTotalPnL
+                : +((cachedTick?.change ?? item.dayChange) * item.quantity).toFixed(2);
+
+            totalTodayPnL += itemDayPnL;
+        }
+
+        totalInvested = +totalInvested.toFixed(2);
+        totalCurrentValue = +totalCurrentValue.toFixed(2);
+        totalTodayPnL = +totalTodayPnL.toFixed(2);
+
+        const totalPnl = +(totalCurrentValue - totalInvested).toFixed(2);
+        const totalPnlPercentage =
+            totalInvested > 0 ? +((totalPnl / totalInvested) * 100).toFixed(2) : 0;
+        const todayPnLPercentage =
+            totalInvested > 0 ? +((totalTodayPnL / totalInvested) * 100).toFixed(2) : 0;
+
+        return {
+            totalHoldingsCount: holdingsList.length,
+            totalInvestmentValue: totalInvested,
+            totalCurrentValue,
+            totalPnl,
+            totalPnlPercentage,
+            dayPnl: totalTodayPnL,
+            dayPnlPercentage: todayPnLPercentage,
+        };
+    }, [holdingsQuery.data?.holdings, data?.holdings, livePrices]);
+
+    const livePositions = useMemo<DashboardPositionsOverview | undefined>(() => {
+        if (!positionsQuery.data && data?.positions) {
+            return data.positions;
+        }
+
+        if (!positionsQuery.data) return data?.positions;
+
+        const positions = positionsQuery.data.positions ?? [];
+        const openPositions = positions.filter((p) => p.quantity > 0);
+        const totalRealizedPnL = positionsQuery.data.summary?.totalRealizedPnL ?? 0;
+
+        let totalUnrealizedPnL = 0;
+        for (const pos of openPositions) {
+            const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
+            const ltp = livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.currentLtp ?? pos.averagePrice;
+            const isLong = pos.side === "LONG" || (pos.side as string) === "BUY";
+            const posUnrealized = isLong
+                ? (ltp - pos.averagePrice) * pos.quantity
+                : (pos.averagePrice - ltp) * pos.quantity;
+            totalUnrealizedPnL += posUnrealized;
+        }
+
+        totalUnrealizedPnL = +totalUnrealizedPnL.toFixed(2);
+        const dayNetPnL = +(totalRealizedPnL + totalUnrealizedPnL).toFixed(2);
+
+        return {
+            openPositionsCount: openPositions.length,
+            dayRealizedPnL: totalRealizedPnL,
+            dayUnrealizedPnL: totalUnrealizedPnL,
+            dayNetPnL,
+            sessionPositionsCount: positions.length,
+        };
+    }, [positionsQuery.data, data?.positions, livePrices]);
+
+    const { data: watchlistItems = [], isLoading: isWatchlistLoading } = useWatchlistQuery();
+    const addMutation = useAddToWatchlistMutation();
+    const removeMutation = useRemoveFromWatchlistMutation();
+
+    const lastStockStorageKey = userId ? `nexbid_last_stock_${userId}` : "nexbid_last_stock_guest";
+
+    const [selectedStockId, setSelectedStockId] = useState<string | null>(() => {
+        if (typeof window === "undefined") return null;
+        try {
+            return localStorage.getItem(lastStockStorageKey);
+        } catch {
+            return null;
+        }
+    });
+
+    const [orderModal, setOrderModal] = useState<{
+        isOpen: boolean;
+        type: "BUY" | "SELL";
+        item: WatchlistItemDTO | null;
+    }>({
+        isOpen: false,
+        type: "BUY",
+        item: null,
+    });
+
+    const handleSelectStock = (item: WatchlistItemDTO) => {
+        setSelectedStockId(item.stock.id);
+        try {
+            localStorage.setItem(lastStockStorageKey, item.stock.id);
+        } catch (err) {
+            console.warn("Failed to persist selected stock:", err);
+        }
+        navigate(APP_ROUTES.USER.WATCHLIST);
+    };
+
+    const handleOpenChart = (item: WatchlistItemDTO) => {
+        handleSelectStock(item);
+    };
+
+    const handleOpenOverview = (item: WatchlistItemDTO) => {
+        handleSelectStock(item);
+    };
+
+    const handleBuy = (item: WatchlistItemDTO) => {
+        setOrderModal({
+            isOpen: true,
+            type: "BUY",
+            item,
+        });
+    };
+
+    const handleSell = (item: WatchlistItemDTO) => {
+        setOrderModal({
+            isOpen: true,
+            type: "SELL",
+            item,
+        });
+    };
+
+    const handleAddStock = async (stockId: string) => {
+        await addMutation.mutateAsync(stockId);
+    };
+
+    const handleDeleteStock = async (stockId: string) => {
+        if (selectedStockId === stockId && typeof window !== "undefined") {
+            try {
+                localStorage.removeItem(lastStockStorageKey);
+            } catch (err) {
+                console.warn("Failed to clear deleted stock from storage:", err);
+            }
+        }
+        try {
+            await removeMutation.mutateAsync(stockId);
+        } catch {
+            // Handled within mutation toast
+        }
+    };
+
     return (
-        <div className="flex h-full p-2 gap-2 overflow-hidden">
-            
-            <aside className="w-[380px] bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto custom-scrollbar shrink-0">
-                <div className="flex justify-between p-4 text-dash-text-muted text-xs font-medium border-b border-dash-border">
-                    <span className="w-2/5">Index</span>
-                    <span className="w-1/5 text-left">Price</span>
-                    <span className="w-1/5 text-center">Chg</span>
-                    <span className="w-1/5 text-right">% Chg</span>
-                </div>
+        <div className="flex flex-col lg:flex-row h-full p-2 gap-2 overflow-hidden bg-dash-bg">
+            <WatchlistSidebar
+                items={watchlistItems}
+                isLoading={isWatchlistLoading}
+                selectedStockId={selectedStockId}
+                onSelectStock={handleSelectStock}
+                onOpenChart={handleOpenChart}
+                onOpenOverview={handleOpenOverview}
+                onBuy={handleBuy}
+                onSell={handleSell}
+                onAddStock={handleAddStock}
+                onDeleteStock={handleDeleteStock}
+                isAdding={addMutation.isPending}
+                isDeleting={removeMutation.isPending}
+            />
 
-                <div>
-                    <div className="text-xs font-semibold text-dash-text-muted px-4 py-4 border-b border-dash-border">Most Popular Indices</div>
-                    <div className="flex items-center justify-between p-4 border-b border-dash-border hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                        <span className="w-2/5 text-xs text-dash-text font-medium">NIFTY 50</span>
-                        <span className="w-1/5 text-xs text-left text-dash-text">25,492.30</span>
-                        <span className="w-1/5 text-xs text-center text-[#ef4444]">-17.40</span>
-                        <span className="w-1/5 text-xs text-right text-[#ef4444]">-0.07%</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 border-b border-dash-border hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                        <span className="w-2/5 text-xs text-dash-text font-medium">NIFTY BANK</span>
-                        <span className="w-1/5 text-xs text-left text-dash-text">56,334.10</span>
-                        <span className="w-1/5 text-xs text-center text-[#22c55e]">102.80</span>
-                        <span className="w-1/5 text-xs text-right text-[#22c55e]">0.18%</span>
-                    </div>
-                </div>
-            </aside>
+            <main className="flex-1 min-w-0 bg-dash-panel border border-dash-border rounded-md flex flex-col h-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] p-4 sm:p-5 lg:p-6">
+                <div className="flex-1 flex flex-col justify-between min-h-full gap-3 sm:gap-4">
+                    <MarketStatusHeader
+                        user={data?.user}
+                        marketStatus={data?.marketStatus}
+                        isFetching={isManualRefreshing}
+                        onRefresh={() => void handleManualRefresh()}
+                    />
 
-            <section className="flex-1 bg-dash-panel border border-dash-border rounded-md p-5 h-full overflow-y-auto custom-scrollbar">
-                <div className="flex flex-col gap-6">
-
-                    <div className="border-b border-dash-border pb-4">
-                        <div className="text-base font-semibold text-dash-text mb-2">Holdings</div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Invested</div>
-                                <div className="text-lg font-bold text-dash-text">₹102.30</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Current</div>
-                                <div className="text-lg font-bold text-dash-text">₹63.39</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Total P&L</div>
-                                <div className="text-lg font-bold text-[#ef4444]">-₹38.91 (-38.04%)</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-dash-text-muted">Today's P&L</div>
-                                <div className="text-base font-medium text-[#ef4444]">-₹0.39 (-0.61%)</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="border-b border-dash-border pb-6">
-                        <div className="text-base font-semibold text-dash-text mb-2">Positions</div>
-                        <p className="text-sm text-dash-text-muted mt-2">You don't have any positions yet! Use our screeners for market opportunities. <a href="#" className="text-primary-green font-medium hover:underline">Go to Screeners →</a></p>
-                    </div>
-
-                    <div>
-                        <div className="text-base font-semibold text-dash-text mb-4">Market Snapshot <span className="text-sm text-dash-text-muted ml-4">As on 07-Nov-2025 16:00 IST</span></div>
-                        
-                        <div className="flex gap-x-8 py-4">
-                            <button className="text-dash-text text-xs font-medium border border-dash-border px-3 py-1.5 rounded-md hover:border-dash-text transition-colors cursor-pointer">
-                                GAINERS
-                            </button>
-                            <button className="text-dash-text-muted hover:text-dash-text text-xs font-medium px-3 py-1.5 rounded-md transition-colors cursor-pointer">
-                                LOSERS
+                    {isError && (
+                        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-between text-xs">
+                            <span>
+                                {error instanceof Error ? error.message : "Failed to load dashboard overview."}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => void handleManualRefresh()}
+                                className="px-3 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 font-semibold cursor-pointer"
+                            >
+                                Retry
                             </button>
                         </div>
-                    
-                        <div className="flex-1">
-                            <div>
-                                <div className="flex justify-between p-4 text-dash-text-muted text-xs font-medium border-b border-dash-border">
-                                    <span className="w-2/5">Symbol</span>
-                                    <span className="w-1/5 text-left">Price</span>
-                                    <span className="w-1/5 text-center">Chg</span>
-                                    <span className="w-1/5 text-right">% Chg</span>
-                                </div>
-                                <div className="flex items-center justify-between p-4 border-b border-dash-border hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                                    <span className="w-2/5 text-xs text-dash-text font-medium">HBSL </span>
-                                    <span className="w-1/5 text-xs text-left text-dash-text">99.81</span>
-                                    <span className="w-1/5 text-xs text-center text-primary-green">16.63</span>
-                                    <span className="w-1/5 text-xs text-right text-primary-green">19.99</span>
-                                </div>
-                                <div className="flex items-center justify-between p-4 hover:bg-dash-panel-2 cursor-pointer transition-colors">
-                                    <span className="w-2/5 text-xs text-dash-text font-medium">INTERARCH</span>
-                                    <span className="w-1/5 text-xs text-left text-dash-text">2,542.00</span>
-                                    <span className="w-1/5 text-xs text-center text-primary-green">347.60</span>
-                                    <span className="w-1/5 text-xs text-right text-primary-green">15.84</span>
-                                </div>
-                            </div>
-                        </div>
+                    )}
+
+                    <MarginSummaryCard
+                        margins={liveMargins}
+                        isLoading={isLoading && !walletOverview}
+                    />
+
+                    <div className="pt-2 sm:pt-3 border-t border-dash-border/60">
+                        <HoldingsOverviewCard
+                            holdings={liveHoldings}
+                            isLoading={isLoading && holdingsQuery.isLoading}
+                        />
+                    </div>
+
+                    <div className="pt-2 sm:pt-3 border-t border-dash-border/60">
+                        <PositionsOverviewCard
+                            positions={livePositions}
+                            isLoading={isLoading && positionsQuery.isLoading}
+                        />
+                    </div>
+
+                    <div className="pt-2 sm:pt-3 border-t border-dash-border/60">
+                        <DashboardQuickLinks />
                     </div>
                 </div>
-            </section>
+            </main>
+
+            {orderModal.isOpen && orderModal.item && (
+                <OrderPlacementModal
+                    isOpen={orderModal.isOpen}
+                    onClose={() => setOrderModal({ isOpen: false, type: "BUY", item: null })}
+                    initialSymbol={orderModal.item.stock.symbol}
+                    initialSide={orderModal.type}
+                    initialExchange={orderModal.item.stock.exchange}
+                    stockName={orderModal.item.stock.name}
+                />
+            )}
         </div>
     );
-}
+};

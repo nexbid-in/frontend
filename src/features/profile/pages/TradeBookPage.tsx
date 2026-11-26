@@ -14,7 +14,6 @@ import {
 export const TradeBookPage: FC = () => {
     const fyPresets = useMemo(() => getIndianFinancialYearPresets(), []);
 
-    // 1. Form Filter State
     const [filterForm, setFilterForm] = useState<TradebookFilterState>({
         segment: "COMBINED",
         side: "ALL",
@@ -23,12 +22,10 @@ export const TradeBookPage: FC = () => {
         toDate: fyPresets.currentFy.to,
     });
 
-    // 2. Applied Query State
     const [appliedFilters, setAppliedFilters] = useState<TradebookFilterState>({ ...filterForm });
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageLimit, setPageLimit] = useState<number>(20);
 
-    // 3. Charges Transparency Modal State
     const [isChargesModalOpen, setIsChargesModalOpen] = useState(false);
     const [modalChargesData, setModalChargesData] = useState<{
         breakdown: PnlChargesBreakdown;
@@ -48,7 +45,6 @@ export const TradeBookPage: FC = () => {
         subtitle: "Itemized statutory levies and platform fees deducted for this trade execution.",
     });
 
-    // 4. API Query Parameters Construction
     const queryParams = useMemo(() => {
         const fromIso = appliedFilters.fromDate
             ? new Date(`${appliedFilters.fromDate}T00:00:00.000Z`).toISOString()
@@ -191,7 +187,6 @@ export const TradeBookPage: FC = () => {
                 </div>
             )}
 
-            {/* 1. Filter Bar (Segment, Side, Symbol, Date Range + Actions) */}
             <div className="shrink-0">
                 <TradebookFilterBar
                     filters={filterForm}
@@ -202,7 +197,6 @@ export const TradeBookPage: FC = () => {
                 />
             </div>
 
-            {/* 2. Macro Summary Metrics Strip */}
             <div className="shrink-0">
                 <TradebookSummaryRow
                     summary={tradebookData?.summary}
@@ -212,7 +206,6 @@ export const TradeBookPage: FC = () => {
                 />
             </div>
 
-            {/* 3. Trades Execution Ledger Table */}
             <div className="shrink-0">
                 <TradebookTable
                     trades={tradebookData?.trades ?? []}
@@ -229,7 +222,6 @@ export const TradeBookPage: FC = () => {
                 />
             </div>
 
-            {/* Charges Breakdown Transparency Modal */}
             <PnlChargesModal
                 isOpen={isChargesModalOpen}
                 onClose={() => setIsChargesModalOpen(false)}
