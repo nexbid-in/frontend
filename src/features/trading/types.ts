@@ -257,10 +257,6 @@ export interface TradebookItem {
 
 export interface TradebookSummary {
   totalTrades: number;
-  buyTradesCount: number;
-  sellTradesCount: number;
-  totalBuyQty: number;
-  totalSellQty: number;
   totalBuyTurnover: number;
   totalSellTurnover: number;
   totalCharges: number;
