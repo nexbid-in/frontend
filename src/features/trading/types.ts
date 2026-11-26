@@ -158,7 +158,6 @@ export interface PnlHeatmapDay {
 export interface PnlHeatmapSummary {
   greenDays: number;
   redDays: number;
-  neutralDays: number;
   days: PnlHeatmapDay[];
 }
 
@@ -170,38 +169,17 @@ export interface PnlSummary {
   chargesBreakdown: PnlChargesBreakdown;
 }
 
-export interface PnlFifoLeg {
-  status: "Closed" | "Open";
-  productType: ProductType; // "CNC" | "MIS"
-  buyDate: string;          // ISO date or YYYY-MM-DD
-  sellDate: string | null;  // ISO date or null (displayed as "—" when Open)
-  quantity: number;
-  buyPrice: number;
-  sellPrice: number;        // Exit fill price if Closed, or current LTP if Open
-  isLtp: boolean;           // True if Open leg evaluated at market LTP
-  tradePnL: number;         // Realized P&L if Closed, Unrealized P&L if Open
-  charges: PnlChargesBreakdown;
-  netPnL: number;           // tradePnL - totalCharges
-}
-
 export interface PnlSymbolSummary {
   symbol: string;
   exchange: string;         // e.g. "NSE"
-  productType: ProductType; // "CNC" | "MIS"
   quantity: number;         // Matched closed quantity
   buyAvg: number;
   buyValue: number;
   sellAvg: number;
   sellValue: number;
-  grossRealizedPnL: number;
-  charges: number;
   netRealizedPnL: number;   // Net Realized P&L (Zerodha primary column)
-  chargesBreakdown: PnlChargesBreakdown;
   unrealizedPnL: number;    // MTM on open quantity
   openQuantity: number;     // Open inventory still holding
-  currentLtp: number;
-  legs?: PnlFifoLeg[];       // Optional FIFO trade breakdown
-  tags?: string[];
 }
 
 export interface PnlStatementResponse {
