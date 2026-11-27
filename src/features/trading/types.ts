@@ -49,34 +49,23 @@ export interface OrderResponseDTO {
 
 export interface PositionResponseDTO {
     id: string;
-    userId: string;
-    stockId: string;
     symbol: string;
     productType: ProductType;
     side: PositionSide;
     quantity: number;
-    buyQty: number;
-    buyAmount: number;
-    sellQty: number;
-    sellAmount: number;
     averagePrice: number;
     currentLtp: number;
     unrealizedPnL: number;
     realizedPnL: number;
     totalPnL: number;
     pnlPercentage: number;
-    blockedMargin: number;
-    createdAt: string;
     updatedAt: string;
 }
 
 export interface PortfolioSummaryDTO {
-    totalInvestment: number;
-    currentPortfolioValue: number;
-    totalUnrealizedPnL: number;
     totalRealizedPnL: number;
+    totalUnrealizedPnL: number;
     netPnL: number;
-    overallReturnPercentage: number;
     positionsCount: {
         total: number;
         open: number;
@@ -91,7 +80,6 @@ export interface GetPositionsResponseDTO {
 
 export interface HoldingItem {
     id: string;
-    stockId: string;
     symbol: string;
     quantity: number;
     buyAvgPrice: number;
@@ -105,8 +93,6 @@ export interface HoldingItem {
     dayPnL: number;
     isBoughtToday?: boolean;
     isExited?: boolean;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface HoldingsSummary {

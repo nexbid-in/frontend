@@ -425,14 +425,9 @@ export const PortfolioPage: React.FC = () => {
         const openPositions = positions.filter((p) => p.quantity > 0);
         const totalRealizedPnL = positionsQuery.data?.summary?.totalRealizedPnL ?? 0;
 
-        let totalInvestment = 0;
-        let currentPortfolioValue = 0;
         let totalUnrealizedPnL = 0;
 
         for (const pos of openPositions) {
-            const cost = pos.averagePrice * pos.quantity;
-            totalInvestment += cost;
-
             const cachedTick = marketWebSocketService.getLatestTick(pos.symbol);
             const currentLtp =
                 livePrices[pos.symbol] ?? cachedTick?.ltp ?? pos.currentLtp ?? pos.averagePrice;
@@ -443,31 +438,14 @@ export const PortfolioPage: React.FC = () => {
                 : (pos.averagePrice - currentLtp) * pos.quantity;
 
             totalUnrealizedPnL += posUnrealized;
-
-            if (isLong) {
-                currentPortfolioValue += currentLtp * pos.quantity;
-            } else {
-                currentPortfolioValue += cost + posUnrealized;
-            }
         }
 
         const netPnL = totalRealizedPnL + totalUnrealizedPnL;
-        const overallReturnPercentage =
-            totalInvestment > 0 ? (totalUnrealizedPnL / totalInvestment) * 100 : 0;
 
         return {
-            totalInvestment:
-                totalInvestment > 0
-                    ? totalInvestment
-                    : (positionsQuery.data?.summary?.totalInvestment ?? 0),
-            currentPortfolioValue:
-                totalInvestment > 0
-                    ? currentPortfolioValue
-                    : (positionsQuery.data?.summary?.currentPortfolioValue ?? 0),
             totalUnrealizedPnL,
             totalRealizedPnL,
             netPnL,
-            overallReturnPercentage,
             positionsCount:
                 positionsQuery.data?.summary?.positionsCount ?? { total: 0, open: 0, closed: 0 },
         };
