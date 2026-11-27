@@ -18,9 +18,6 @@ export interface StockItemDTO {
 
 export interface WatchlistItemDTO {
     id: string;
-    stockId: string;
-    order: number;
-    addedAt: string | Date;
     stock: StockItemDTO;
 }
 

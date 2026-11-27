@@ -25,7 +25,6 @@ export interface WalletStatementItemDTO {
     amount: number;
     balanceAfter: number;
     description: string;
-    metadata?: Record<string, unknown> | null;
     createdAt: string;
 }
 
@@ -57,7 +56,6 @@ export interface CreateTopupOrderRequestDTO {
 
 export interface CreateTopupOrderResponseDTO {
     orderId: string;
-    paymentOrderId: string;
     amount: number; 
     currency: string;
     virtualAmount: number;
@@ -98,7 +96,6 @@ export interface TopupHistoryItemDTO {
     virtualAmount: number;
     status: PaymentOrderStatus;
     createdAt: string;
-    updatedAt: string;
 }
 
 export interface TopupHistoryPagination {

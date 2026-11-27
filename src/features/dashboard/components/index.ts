@@ -2,7 +2,6 @@ export * from "./AppLayout";
 export * from "./NavbarMarginAvailable";
 export * from "./NavbarNiftyTicker";
 export * from "./MarketStatusHeader";
-export * from "./BenchmarkIndicesPanel";
 export * from "./MarginSummaryCard";
 export * from "./HoldingsOverviewCard";
 export * from "./PositionsOverviewCard";
