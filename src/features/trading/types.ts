@@ -28,8 +28,6 @@ export interface PlaceOrderRequestDTO {
 
 export interface OrderResponseDTO {
     id: string;
-    userId: string;
-    stockId: string;
     symbol: string;
     side: OrderSide;
     orderType: OrderType;
@@ -39,12 +37,10 @@ export interface OrderResponseDTO {
     filledQuantity: number;
     price: number | null;
     averagePrice: number | null;
-    triggerPrice: number | null;
     rejectionReason: string | null;
     blockedMargin: number;
     isAmo: boolean;
     createdAt: string;
-    updatedAt: string;
 }
 
 export interface PositionResponseDTO {
