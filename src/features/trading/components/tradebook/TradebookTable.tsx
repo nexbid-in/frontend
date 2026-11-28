@@ -70,7 +70,7 @@ export const TradebookTable: FC<TradebookTableProps> = ({
                         <select
                             value={limit}
                             onChange={(e) => onLimitChange(Number(e.target.value))}
-                            className="bg-dash-panel-2 border border-dash-border rounded px-2 py-1 text-xs text-dash-text focus:outline-none cursor-pointer"
+                            className="bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-2 py-1 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
                         >
                             <option value={10}>10 / page</option>
                             <option value={20}>20 / page</option>
@@ -98,7 +98,7 @@ export const TradebookTable: FC<TradebookTableProps> = ({
                     <button
                         type="button"
                         onClick={onResetFilters}
-                        className="px-3.5 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition-colors cursor-pointer"
+                        className="px-3.5 py-1.5 rounded bg-primary-green hover:bg-primary-green-hover text-white font-medium text-xs transition-colors cursor-pointer"
                     >
                         Reset filters
                     </button>
@@ -164,7 +164,7 @@ export const TradebookTable: FC<TradebookTableProps> = ({
                                             <span
                                                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                                                     isDelivery
-                                                        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                                        ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
                                                         : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                                                 }`}
                                             >
@@ -202,11 +202,11 @@ export const TradebookTable: FC<TradebookTableProps> = ({
                                                                 `${item.symbol} ${item.side} Trade Charges`
                                                             )
                                                         }
-                                                        className="text-blue-500 hover:text-blue-400 p-0.5 rounded hover:bg-blue-500/10 transition-colors cursor-pointer"
+                                                        className="text-primary-green hover:text-emerald-400 p-0.5 rounded hover:bg-primary-green/10 transition-colors cursor-pointer"
                                                         title="View itemized trade charges"
                                                         aria-label="View trade charges breakdown"
                                                     >
-                                                        <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <svg className="w-3.5 h-3.5 text-primary-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                             <path d="M12 2L2 7l10 5 10-5-10-5z" />
                                                             <path d="M2 17l10 5 10-5" />
                                                             <path d="M2 12l10 5 10-5" />
@@ -277,7 +277,7 @@ export const TradebookTable: FC<TradebookTableProps> = ({
                                     onClick={() => onPageChange(pageNum)}
                                     className={`w-8 h-8 rounded border text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
                                         isActive
-                                            ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                                            ? "border-primary-green text-primary-green bg-primary-green/10"
                                             : "border-dash-border text-dash-text hover:bg-dash-panel-2"
                                     }`}
                                 >

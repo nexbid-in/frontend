@@ -7,7 +7,7 @@ import {
     type TradebookFilterState,
 } from "../components/tradebook";
 import { PnlChargesModal } from "../components/pnl";
-import { getIndianFinancialYearPresets } from "../utils/pnlFormatters";
+import { getIndianFinancialYearPresets, validateDateRange } from "../utils/pnlFormatters";
 import type { TradeChargesItem, PnlChargesBreakdown } from "../types";
 
 export const TradeBookPage: FC = () => {
@@ -73,6 +73,9 @@ export const TradeBookPage: FC = () => {
     } = useTradebookQuery(queryParams);
 
     const handleFormSubmit = () => {
+        if (!validateDateRange(filterForm.fromDate, filterForm.toDate).isValid) {
+            return;
+        }
         setCurrentPage(1);
         setAppliedFilters({ ...filterForm });
     };
@@ -166,7 +169,6 @@ export const TradeBookPage: FC = () => {
                     filters={filterForm}
                     onChange={setFilterForm}
                     onSubmit={handleFormSubmit}
-                    onReset={handleResetFilters}
                     isLoading={isFetching}
                 />
             </div>

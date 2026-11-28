@@ -87,11 +87,11 @@ export const TradebookSummaryRow: FC<TradebookSummaryRowProps> = ({
                         <button
                             type="button"
                             onClick={onOpenChargesBreakdown}
-                            className="text-blue-500 hover:text-blue-400 p-0.5 rounded hover:bg-blue-500/10 transition-colors cursor-pointer inline-flex items-center justify-center"
+                            className="text-primary-green hover:text-emerald-400 p-0.5 rounded hover:bg-primary-green/10 transition-colors cursor-pointer inline-flex items-center justify-center"
                             title="View charges breakdown"
                             aria-label="View charges breakdown"
                         >
-                            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg className="w-4 h-4 text-primary-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                                 <path d="M2 17l10 5 10-5" />
                                 <path d="M2 12l10 5 10-5" />
