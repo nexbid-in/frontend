@@ -75,7 +75,7 @@ export const PnlSymbolTable: FC<PnlSymbolTableProps> = ({
                             setSearchQuery(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="w-full bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 pl-8 py-2 text-xs text-dash-text placeholder-dash-text-muted focus:outline-none transition-colors"
+                        className="w-full bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-3 pl-8 py-2 text-xs text-dash-text placeholder-dash-text-muted focus:outline-none transition-colors"
                     />
                     <svg
                         className="w-3.5 h-3.5 text-dash-text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -92,7 +92,7 @@ export const PnlSymbolTable: FC<PnlSymbolTableProps> = ({
                 <div className="flex items-center gap-4 text-xs font-medium text-dash-text">
                     <button
                         type="button"
-                        className="inline-flex items-center gap-1.5 text-blue-500 hover:text-blue-400 hover:underline cursor-pointer transition-colors"
+                        className="inline-flex items-center gap-1.5 text-primary-green hover:text-emerald-400 hover:underline cursor-pointer transition-colors"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -250,7 +250,7 @@ export const PnlSymbolTable: FC<PnlSymbolTableProps> = ({
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`w-8 h-8 rounded border text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
                                         isActive
-                                            ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                                            ? "border-primary-green text-primary-green bg-primary-green/10"
                                             : "border-dash-border text-dash-text hover:bg-dash-panel-2"
                                     }`}
                                 >

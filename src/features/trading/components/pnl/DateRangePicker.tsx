@@ -148,7 +148,7 @@ const CalendarMonthPanel: FC<CalendarMonthPanelProps> = ({
 
     return (
         <div className="flex flex-col w-full min-w-[244px]">
-            <div className="bg-[#1353a3] text-white text-xs font-semibold text-center py-1.5 rounded mb-2 select-none shadow-xs">
+            <div className="bg-emerald-600 text-white text-xs font-semibold text-center py-1.5 rounded mb-2 select-none shadow-xs">
                 {title}
             </div>
 
@@ -231,7 +231,7 @@ const CalendarMonthPanel: FC<CalendarMonthPanelProps> = ({
                                     isOutOfBounds
                                         ? "text-dash-text-muted/35 cursor-not-allowed"
                                         : isActiveMonth
-                                        ? "bg-[#1353a3] text-white font-semibold cursor-pointer"
+                                        ? "bg-emerald-600 text-white font-semibold cursor-pointer"
                                         : "text-dash-text hover:bg-dash-panel-2 cursor-pointer"
                                 }`}
                             >
@@ -285,11 +285,11 @@ const CalendarMonthPanel: FC<CalendarMonthPanelProps> = ({
                                     : "text-dash-text-muted/35 cursor-not-allowed ";
                             } else if (isEndpoint) {
                                 cellClass +=
-                                    "bg-[#1353a3] text-white font-semibold rounded cursor-pointer shadow-xs ";
+                                    "bg-emerald-600 text-white font-semibold rounded cursor-pointer shadow-xs ";
                             } else if (isInRange) {
                                 cellClass += cell.isCurrentMonth
-                                    ? "bg-[#387ed1]/18 text-dash-text hover:bg-[#387ed1]/30 cursor-pointer "
-                                    : "bg-[#387ed1]/12 text-dash-text-muted/80 hover:bg-[#387ed1]/25 cursor-pointer ";
+                                    ? "bg-primary-green/18 text-dash-text hover:bg-primary-green/30 cursor-pointer "
+                                    : "bg-primary-green/12 text-dash-text-muted/80 hover:bg-primary-green/25 cursor-pointer ";
                             } else if (!cell.isCurrentMonth) {
                                 cellClass +=
                                     "text-dash-text-muted/45 hover:bg-dash-panel-2 hover:text-dash-text rounded cursor-pointer ";
@@ -299,7 +299,7 @@ const CalendarMonthPanel: FC<CalendarMonthPanelProps> = ({
                             }
 
                             if (isToday && !isEndpoint && !isDisabled) {
-                                cellClass += "ring-1 ring-inset ring-[#387ed1]/60 font-semibold ";
+                                cellClass += "ring-1 ring-inset ring-primary-green/60 font-semibold ";
                             }
 
                             return (
@@ -520,8 +520,8 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                 onClick={handleToggleOpen}
                 className={`w-full h-9 bg-dash-panel-2 border rounded px-3 py-2 text-xs text-dash-text flex items-center justify-between gap-2 focus:outline-none transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed ${
                     isOpen
-                        ? "border-[#387ed1] ring-1 ring-[#387ed1]/30"
-                        : "border-dash-border hover:border-dash-border-hover focus:border-[#387ed1]"
+                        ? "border-primary-green ring-1 ring-primary-green/30"
+                        : "border-dash-border hover:border-dash-border-hover focus:border-primary-green"
                 }`}
             >
                 <span className="font-mono tabular-nums truncate">
@@ -565,7 +565,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                                             }
                                             className={`transition-colors cursor-pointer whitespace-nowrap ${
                                                 isActive
-                                                    ? "text-[#387ed1] font-semibold"
+                                                    ? "text-primary-green font-semibold"
                                                     : "text-dash-text-muted hover:text-dash-text font-medium"
                                             }`}
                                         >

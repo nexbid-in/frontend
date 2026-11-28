@@ -58,7 +58,7 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                                 : "DELIVERY"
                         }
                         onChange={(e) => onChange({ ...filters, segment: e.target.value as PnlSegment })}
-                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
+                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
                     >
                         <option value="COMBINED">Combined</option>
                         <option value="INTRADAY">Intraday</option>
@@ -74,7 +74,7 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                     <select
                         value={filters.pnlType}
                         onChange={(e) => onChange({ ...filters, pnlType: e.target.value as PnlViewType })}
-                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
+                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
                     >
                         <option value="COMBINED">Combined</option>
                         <option value="REALIZED">Realised</option>
@@ -94,7 +94,7 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                             value={filters.symbol}
                             onChange={(e) => onChange({ ...filters, symbol: e.target.value.toUpperCase() })}
                             onKeyDown={(e) => e.key === "Enter" && handleValidatedSubmit()}
-                            className={`w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-blue-500 rounded pl-3 ${
+                            className={`w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded pl-3 ${
                                 filters.symbol ? "pr-8" : "pr-3"
                             } py-2 text-xs text-dash-text placeholder-dash-text-muted/60 uppercase focus:outline-none transition-colors`}
                         />
@@ -123,13 +123,13 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                     disabled={isLoading}
                 />
 
-                {/* 5. Blue Arrow Submit Button */}
+                {/* 5. Submit Button */}
                 <div className="sm:col-span-2 lg:col-span-auto shrink-0 flex items-end">
                     <button
                         type="button"
                         onClick={handleValidatedSubmit}
                         disabled={isLoading}
-                        className="w-full sm:w-11 lg:w-11 h-9 rounded bg-[#387ed1] hover:bg-[#2b6cb8] active:bg-[#225796] text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
+                        className="w-full sm:w-11 lg:w-11 h-9 rounded bg-primary-green hover:bg-primary-green-hover active:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
                         title="Submit / Apply Filters"
                         aria-label="Submit filters"
                     >
