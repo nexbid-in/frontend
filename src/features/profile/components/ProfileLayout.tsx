@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useScrollToTopOnRouteChange } from "@/hooks/useScrollToTopOnRouteChange";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout } from "@/features/auth/store/authSlice";
 import { authService } from "@/features/auth/services/authService";
@@ -70,6 +71,9 @@ export function ProfileLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [showSignOutModal, setShowSignOutModal] = useState(false);
+    const mainScrollRef = useRef<HTMLElement>(null);
+
+    useScrollToTopOnRouteChange(mainScrollRef);
 
     const handleSignOut = async () => {
         try {
@@ -156,7 +160,7 @@ export function ProfileLayout() {
                     </div>
                 </aside>
 
-                <main className="flex-1 p-8 md:p-10 overflow-y-auto custom-scrollbar flex flex-col">
+                <main ref={mainScrollRef} className="flex-1 p-8 md:p-10 overflow-y-auto custom-scrollbar flex flex-col">
                     <Outlet />
                 </main>
             </section>

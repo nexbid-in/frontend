@@ -17,6 +17,7 @@ import {
 } from "@/features/watchlist";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useScrollToTopOnRouteChange } from "@/hooks/useScrollToTopOnRouteChange";
 
 export function AppLayout() {
     const user = useAppSelector((state) => state.auth.user);
@@ -29,6 +30,9 @@ export function AppLayout() {
     const [prevPathname, setPrevPathname] = useState(location.pathname);
     const [showSignOutModal, setShowSignOutModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const mainScrollRef = useRef<HTMLElement>(null);
+
+    useScrollToTopOnRouteChange(mainScrollRef);
 
     if (prevPathname !== location.pathname) {
         setPrevPathname(location.pathname);
@@ -312,7 +316,7 @@ export function AppLayout() {
                 
             </nav>
 
-            <main className="flex-1 overflow-hidden h-[calc(100vh-48px)]">
+            <main ref={mainScrollRef} className="flex-1 overflow-hidden h-[calc(100vh-48px)]">
                 <Outlet />
             </main>
 
