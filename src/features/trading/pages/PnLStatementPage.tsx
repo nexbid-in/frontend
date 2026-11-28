@@ -8,7 +8,7 @@ import {
     PnlChargesModal,
     type PnlFilterState,
 } from "../components/pnl";
-import { getIndianFinancialYearPresets } from "../utils/pnlFormatters";
+import { getIndianFinancialYearPresets, validateDateRange } from "../utils/pnlFormatters";
 import type { PnlChargesBreakdown } from "../types";
 
 export const PnLStatementPage: FC = () => {
@@ -52,6 +52,9 @@ export const PnLStatementPage: FC = () => {
     } = usePnlStatementQuery(queryParams);
 
     const handleFormSubmit = () => {
+        if (!validateDateRange(filterForm.fromDate, filterForm.toDate).isValid) {
+            return;
+        }
         setAppliedFilters({ ...filterForm });
     };
 
