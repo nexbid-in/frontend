@@ -6,15 +6,18 @@ import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { AdminDashboardPage, AdminUsersPage, AdminOrdersPage, AdminStocksPage, AdminLayout } from "@/features/admin";
 import { FundsPage } from "@/features/funds";
 import { WatchlistPage } from "@/features/watchlist";
-import { OrdersPage, PortfolioPage } from "@/features/trading";
+import {
+    OrdersPage,
+    PortfolioPage,
+    PnLStatementPage,
+    TradeBookPage,
+} from "@/features/trading";
 
 import { PrivateRoute, PublicRoute, AdminRoute } from "@/features/auth";
 import { AppLayout } from "@/features/dashboard/components/AppLayout";
 import {
     ProfileLayout,
     PersonalDetailsPage,
-    PnLStatementPage,
-    TradeBookPage,
     JournalPage,
     MyTicketsPage
 } from "@/features/profile";

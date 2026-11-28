@@ -1,15 +1,15 @@
 import { useState, useMemo, type FC } from "react";
+import { usePnlStatementQuery } from "../hooks/useTrading";
 import {
-    usePnlStatementQuery,
     PnlHeatmap,
     PnlSummaryRow,
     PnlFilterBar,
     PnlSymbolTable,
     PnlChargesModal,
-    getIndianFinancialYearPresets,
     type PnlFilterState,
-    type PnlChargesBreakdown,
-} from "@/features/trading";
+} from "../components/pnl";
+import { getIndianFinancialYearPresets } from "../utils/pnlFormatters";
+import type { PnlChargesBreakdown } from "../types";
 
 export const PnLStatementPage: FC = () => {
     const fyPresets = useMemo(() => getIndianFinancialYearPresets(), []);
@@ -79,14 +79,12 @@ export const PnLStatementPage: FC = () => {
 
     return (
         <div className="flex flex-col space-y-5 animate-in fade-in duration-150 pb-10">
-            {/* Header: Title matching sidebar "P&L Statement" */}
             <div className="flex items-center justify-between pb-1 shrink-0">
                 <h1 className="text-xl md:text-2xl font-bold text-dash-text tracking-tight select-none">
                     P&L Statement
                 </h1>
             </div>
 
-            {/* Error Message if query fails */}
             {isError && (
                 <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-between text-xs shrink-0">
                     <span>
