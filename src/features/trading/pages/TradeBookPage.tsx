@@ -1,4 +1,4 @@
-import { useState, useMemo, type FC } from "react";
+import { useState, useMemo, useRef, type FC } from "react";
 import { useTradebookQuery } from "../hooks/useTrading";
 import {
     TradebookFilterBar,
@@ -24,6 +24,17 @@ export const TradeBookPage: FC = () => {
     const [appliedFilters, setAppliedFilters] = useState<TradebookFilterState>({ ...filterForm });
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageLimit, setPageLimit] = useState<number>(20);
+    const tableSectionRef = useRef<HTMLDivElement>(null);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage !== currentPage) {
+            setCurrentPage(newPage);
+        }
+        tableSectionRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+        });
+    };
 
     const [isChargesModalOpen, setIsChargesModalOpen] = useState(false);
     const [modalChargesData, setModalChargesData] = useState<{
@@ -182,11 +193,11 @@ export const TradeBookPage: FC = () => {
                 />
             </div>
 
-            <div className="shrink-0">
+            <div ref={tableSectionRef} className="shrink-0 scroll-mt-4">
                 <TradebookTable
                     trades={tradebookData?.trades ?? []}
                     pagination={paginationData}
-                    onPageChange={(newPage) => setCurrentPage(newPage)}
+                    onPageChange={handlePageChange}
                     onLimitChange={(newLimit) => {
                         setPageLimit(newLimit);
                         setCurrentPage(1);
