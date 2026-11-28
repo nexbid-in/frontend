@@ -152,7 +152,7 @@ export const PnlHeatmap: FC<PnlHeatmapProps> = ({
     // Color intensity helper
     const getTileStyle = (netPnL: number, hasTrades: boolean) => {
         if (!hasTrades) {
-            return "bg-white/[0.05] border border-white/[0.07] hover:border-white/20";
+            return "bg-dash-panel-3/65 border border-dash-border hover:border-dash-text-muted/60";
         }
 
         if (netPnL > 0) {
