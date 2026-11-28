@@ -97,7 +97,7 @@ export function PersonalDetailsPage() {
                     <button
                         type="button"
                         onClick={() => setIsEditModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-green hover:text-emerald-400 transition-colors cursor-pointer"
                     >
                         <svg
                             className="w-3.5 h-3.5"
@@ -208,12 +208,12 @@ export function PersonalDetailsPage() {
                                 <div
                                     className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                         theme === "light"
-                                            ? "border-blue-500 bg-dash-panel-2"
+                                            ? "border-primary-green bg-dash-panel-2"
                                             : "border-dash-border bg-dash-panel-2 group-hover:border-dash-text-muted"
                                     }`}
                                 >
                                     {theme === "light" && (
-                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                        <div className="w-2 h-2 rounded-full bg-primary-green" />
                                     )}
                                 </div>
                                 <span className="text-dash-text">Light</span>
@@ -230,12 +230,12 @@ export function PersonalDetailsPage() {
                                 <div
                                     className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                         theme === "dark"
-                                            ? "border-blue-500 bg-dash-panel-2"
+                                            ? "border-primary-green bg-dash-panel-2"
                                             : "border-dash-border bg-dash-panel-2 group-hover:border-dash-text-muted"
                                     }`}
                                 >
                                     {theme === "dark" && (
-                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                        <div className="w-2 h-2 rounded-full bg-primary-green" />
                                     )}
                                 </div>
                                 <span className="text-dash-text">Dark</span>
@@ -249,7 +249,7 @@ export function PersonalDetailsPage() {
                             <button
                                 type="button"
                                 onClick={() => setIsChangePasswordModalOpen(true)}
-                                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-green hover:text-emerald-400 transition-colors cursor-pointer"
                             >
                                 <svg
                                     className="w-3.5 h-3.5"

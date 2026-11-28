@@ -236,12 +236,12 @@ export function EditProfileModal({
                                     lastName={currentProfile?.lastName || authUser?.lastName}
                                     size="lg"
                                     className="border-2 border-dash-border shadow-inner"
-                                    fallbackClassName="bg-blue-600 text-white"
+                                    fallbackClassName="bg-emerald-600 text-white"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-md border-2 border-dash-panel transition-colors cursor-pointer"
+                                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary-green hover:bg-primary-green-hover text-white flex items-center justify-center shadow-md border-2 border-dash-panel transition-colors cursor-pointer"
                                     title="Choose photo"
                                 >
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -256,7 +256,7 @@ export function EditProfileModal({
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                                        className="text-xs font-medium text-primary-green hover:text-emerald-400 transition-colors cursor-pointer"
                                     >
                                         Upload photo
                                     </button>

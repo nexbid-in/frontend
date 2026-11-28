@@ -105,7 +105,7 @@ export function ProfileLayout() {
                                 lastName={user?.lastName}
                                 size="lg"
                                 className="mb-2 shadow-inner"
-                                fallbackClassName="bg-blue-600 text-white"
+                                fallbackClassName="bg-emerald-600 text-white"
                             />
                             <div className="text-center">
                                 <p className="font-semibold text-lg text-dash-text">{user?.firstName}</p>
