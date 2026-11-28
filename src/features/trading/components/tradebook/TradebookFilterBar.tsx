@@ -1,7 +1,19 @@
 import { useState, type FC } from "react";
 import type { TradebookSegment, TradebookSide } from "../../types";
 import { validateDateRange } from "../../utils/pnlFormatters";
-import { DateRangePicker } from "../pnl";
+import { DateRangePicker, FilterSelect, type FilterSelectOption } from "../pnl";
+
+const TRADEBOOK_SEGMENT_OPTIONS: readonly FilterSelectOption<TradebookSegment>[] = [
+    { value: "COMBINED", label: "Combined" },
+    { value: "INTRADAY", label: "Intraday" },
+    { value: "DELIVERY", label: "Delivery" },
+];
+
+const TRADEBOOK_SIDE_OPTIONS: readonly FilterSelectOption<TradebookSide>[] = [
+    { value: "ALL", label: "All Sides" },
+    { value: "BUY", label: "Buy" },
+    { value: "SELL", label: "Sell" },
+];
 
 export interface TradebookFilterState {
     segment: TradebookSegment;
@@ -49,7 +61,8 @@ export const TradebookFilterBar: FC<TradebookFilterBarProps> = ({
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         Segment
                     </label>
-                    <select
+                    <FilterSelect<TradebookSegment>
+                        ariaLabel="Segment"
                         value={
                             filters.segment === "ALL" || filters.segment === "COMBINED"
                                 ? "COMBINED"
@@ -57,13 +70,10 @@ export const TradebookFilterBar: FC<TradebookFilterBarProps> = ({
                                 ? "INTRADAY"
                                 : "DELIVERY"
                         }
-                        onChange={(e) => onChange({ ...filters, segment: e.target.value as TradebookSegment })}
-                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
-                    >
-                        <option value="COMBINED">Combined</option>
-                        <option value="INTRADAY">Intraday</option>
-                        <option value="DELIVERY">Delivery</option>
-                    </select>
+                        options={TRADEBOOK_SEGMENT_OPTIONS}
+                        onChange={(segment) => onChange({ ...filters, segment })}
+                        disabled={isLoading}
+                    />
                 </div>
 
                 {/* 2. Side (Buy / Sell) */}
@@ -71,15 +81,13 @@ export const TradebookFilterBar: FC<TradebookFilterBarProps> = ({
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         Side
                     </label>
-                    <select
+                    <FilterSelect<TradebookSide>
+                        ariaLabel="Side"
                         value={filters.side}
-                        onChange={(e) => onChange({ ...filters, side: e.target.value as TradebookSide })}
-                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
-                    >
-                        <option value="ALL">All Sides</option>
-                        <option value="BUY">Buy</option>
-                        <option value="SELL">Sell</option>
-                    </select>
+                        options={TRADEBOOK_SIDE_OPTIONS}
+                        onChange={(side) => onChange({ ...filters, side })}
+                        disabled={isLoading}
+                    />
                 </div>
 
                 {/* 3. Symbol Search */}

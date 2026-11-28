@@ -2,6 +2,19 @@ import { useState, type FC } from "react";
 import type { PnlSegment, PnlViewType } from "../../types";
 import { validateDateRange } from "../../utils/pnlFormatters";
 import { DateRangePicker } from "./DateRangePicker";
+import { FilterSelect, type FilterSelectOption } from "./FilterSelect";
+
+const PNL_SEGMENT_OPTIONS: readonly FilterSelectOption<PnlSegment>[] = [
+    { value: "COMBINED", label: "Combined" },
+    { value: "INTRADAY", label: "Intraday" },
+    { value: "DELIVERY", label: "Delivery" },
+];
+
+const PNL_VIEW_OPTIONS: readonly FilterSelectOption<PnlViewType>[] = [
+    { value: "COMBINED", label: "Combined" },
+    { value: "REALIZED", label: "Realised" },
+    { value: "UNREALIZED", label: "Unrealised" },
+];
 
 export interface PnlFilterState {
     segment: PnlSegment;
@@ -49,7 +62,8 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         Segment
                     </label>
-                    <select
+                    <FilterSelect<PnlSegment>
+                        ariaLabel="Segment"
                         value={
                             filters.segment === "ALL" || filters.segment === "COMBINED"
                                 ? "COMBINED"
@@ -57,13 +71,10 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                                 ? "INTRADAY"
                                 : "DELIVERY"
                         }
-                        onChange={(e) => onChange({ ...filters, segment: e.target.value as PnlSegment })}
-                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
-                    >
-                        <option value="COMBINED">Combined</option>
-                        <option value="INTRADAY">Intraday</option>
-                        <option value="DELIVERY">Delivery</option>
-                    </select>
+                        options={PNL_SEGMENT_OPTIONS}
+                        onChange={(segment) => onChange({ ...filters, segment })}
+                        disabled={isLoading}
+                    />
                 </div>
 
                 {/* 2. P&L View */}
@@ -71,15 +82,13 @@ export const PnlFilterBar: FC<PnlFilterBarProps> = ({
                     <label className="text-[11px] font-medium text-dash-text-muted select-none">
                         P&L
                     </label>
-                    <select
+                    <FilterSelect<PnlViewType>
+                        ariaLabel="P&L view"
                         value={filters.pnlType}
-                        onChange={(e) => onChange({ ...filters, pnlType: e.target.value as PnlViewType })}
-                        className="w-full h-9 bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-3 py-2 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
-                    >
-                        <option value="COMBINED">Combined</option>
-                        <option value="REALIZED">Realised</option>
-                        <option value="UNREALIZED">Unrealised</option>
-                    </select>
+                        options={PNL_VIEW_OPTIONS}
+                        onChange={(pnlType) => onChange({ ...filters, pnlType })}
+                        disabled={isLoading}
+                    />
                 </div>
 
                 {/* 3. Symbol Search */}

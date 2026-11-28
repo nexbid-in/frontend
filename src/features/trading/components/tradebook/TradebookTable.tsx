@@ -1,6 +1,14 @@
 import { useState, type FC } from "react";
 import type { TradebookItem, TradebookPagination, TradeChargesItem } from "../../types";
 import { formatCurrencyINR, formatTradeDateTime } from "../../utils/pnlFormatters";
+import { FilterSelect, type FilterSelectOption } from "../pnl";
+
+const PAGE_LIMIT_OPTIONS: readonly FilterSelectOption<number>[] = [
+    { value: 10, label: "10 / page" },
+    { value: 20, label: "20 / page" },
+    { value: 50, label: "50 / page" },
+    { value: 100, label: "100 / page" },
+];
 
 interface TradebookTableProps {
     trades: TradebookItem[];
@@ -67,16 +75,15 @@ export const TradebookTable: FC<TradebookTableProps> = ({
                 {onLimitChange && (
                     <div className="flex items-center gap-2 text-xs text-dash-text-muted">
                         <span>Show</span>
-                        <select
+                        <FilterSelect<number>
+                            ariaLabel="Rows per page"
                             value={limit}
-                            onChange={(e) => onLimitChange(Number(e.target.value))}
-                            className="bg-dash-panel-2 border border-dash-border hover:border-dash-border-hover focus:border-primary-green rounded px-2 py-1 text-xs text-dash-text focus:outline-none transition-colors cursor-pointer"
-                        >
-                            <option value={10}>10 / page</option>
-                            <option value={20}>20 / page</option>
-                            <option value={50}>50 / page</option>
-                            <option value={100}>100 / page</option>
-                        </select>
+                            options={PAGE_LIMIT_OPTIONS}
+                            onChange={(newLimit) => onLimitChange(newLimit)}
+                            className="w-28"
+                            buttonClassName="h-7 px-2.5 py-1"
+                            menuAlign="right"
+                        />
                     </div>
                 )}
             </div>
