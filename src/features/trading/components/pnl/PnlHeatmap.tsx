@@ -269,22 +269,29 @@ export const PnlHeatmap: FC<PnlHeatmapProps> = ({
                     </span>
                 </div>
 
-                {/* Right: Zerodha Less/More Legend */}
-                <div className="flex items-center gap-1.5 text-[10px] text-dash-text-muted select-none">
-                    <span>Less</span>
-                    <div className="flex items-center gap-0.5">
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#fca5a5]" title="Small Loss" />
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#f87171]" title="Moderate Loss" />
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#ef4444]" title="High Loss" />
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#dc2626]" title="Max Loss" />
+                {/* Right: Loss & Profit Intensity Legend */}
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-dash-text-muted select-none">
+                    <div className="flex items-center gap-1.5">
+                        <span>Min. loss</span>
+                        <div className="flex items-center gap-0.5">
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#fca5a5]" title="Min. loss" />
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#f87171]" title="Moderate loss" />
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#ef4444]" title="High loss" />
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#dc2626]" title="Max. loss" />
+                        </div>
+                        <span>Max. loss</span>
                     </div>
-                    <div className="flex items-center gap-0.5 ml-1">
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#86efac]" title="Small Profit" />
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#4ade80]" title="Moderate Profit" />
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#22c55e]" title="High Profit" />
-                        <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#00a35c]" title="Max Profit" />
+
+                    <div className="flex items-center gap-1.5">
+                        <span>Min. profit</span>
+                        <div className="flex items-center gap-0.5">
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#86efac]" title="Min. profit" />
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#4ade80]" title="Moderate profit" />
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#22c55e]" title="High profit" />
+                            <div className="w-2.5 h-2.5 rounded-[1.5px] bg-[#00a35c]" title="Max. profit" />
+                        </div>
+                        <span>Max. profit</span>
                     </div>
-                    <span>More</span>
                 </div>
             </div>
 
