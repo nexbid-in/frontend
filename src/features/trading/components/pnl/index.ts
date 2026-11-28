@@ -5,3 +5,4 @@ export * from "./PnlSymbolTable";
 export * from "./PnlChargesModal";
 export * from "./DateRangePicker";
 export * from "./FilterSelect";
+export * from "./ReportFilterBar";

@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./services/tradingService";
 export * from "./hooks/useTrading";
+export * from "./hooks/usePortfolioLiveData";
 export * from "./utils/pnlFormatters";
 export * from "./components/OrderPlacementModal";
 export * from "./pages/OrdersPage";

@@ -73,6 +73,24 @@ export function formatCurrencyINR(
 }
 
 /**
+ * Formats a numeric value with an explicit +₹ / -₹ sign (e.g. "+₹1,250.00", "-₹420.50", "+₹0.00").
+ */
+export function formatSignedINR(val: number): string {
+    const absFormatted = new Intl.NumberFormat("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Math.abs(val));
+    return val >= 0 ? `+₹${absFormatted}` : `-₹${absFormatted}`;
+}
+
+/**
+ * Formats a percentage with an explicit +/- sign and 2 decimals (e.g. "+2.45%", "-1.20%").
+ */
+export function formatSignedPercent(pct: number): string {
+    return pct >= 0 ? `+${pct.toFixed(2)}%` : `${pct.toFixed(2)}%`;
+}
+
+/**
  * Formats an ISO date/time string into: "DD MMM YYYY, HH:mm:ss"
  * e.g. "23 Nov 2026, 14:32:05"
  */
